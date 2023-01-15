@@ -62,31 +62,9 @@ fn main() {
     }
 
     // Setup initial configs
-    //let app_cfg = AppConfig::default();
-    //app_cfg.init();
     let mut app = App::default();
-    //app.sp_cfg.shortpaths.aliases.insert(String::from("test_alias"), PathBuf::from("test_path"));
-    //app.sp_cfg.insert(String::from("test_alias"), PathBuf::from("test_path"));
-    //app.sp_cfg.shortpaths.insert(String::from("test_alias"), PathBuf::from("test_path"));
-    //app.shortpaths.insert(String::from("test_alias"), PathBuf::from("test_path"));
-    debug!("Current Configuration:");
-    //debug!("{}", toml::to_string_pretty(&app.sp_cfg.shortpaths).expect("Could not serialize"));
-    //debug!("{}", toml::to_string_pretty(&app.shortpaths).expect("Could not serialize"));
-    debug!("{}", toml::to_string_pretty(&app).expect("Could not serialize"));
-
-    //let cfg_fp = get_config_path(CONFIG_FILE_PATH);
-    //let cfg_path = Path::new(&cfg_fp);
-    //if !cfg_path.exists() {
-        //make_config_dir();
-        //make_default_config();
-        //// TODO Create the initial toml config file
-    //}
-
-    // TODO:
-    // lib.rs: config
-    // 1. Create basic toml config
-    // 2. Read the basic toml config
-    // 3. Write to basic toml config
+    debug!("Current App Shortpaths:");
+    debug!("\n{}", toml::to_string_pretty(&app).expect("Could not serialize"));
 
     // lib.rs: shortpaths
     // 1. Make add, remove, check, update functions
@@ -98,14 +76,12 @@ fn main() {
         Some(("add", sub_matches)) => {
             let (alias_name, alias_path) = (
                 sub_matches.get_one::<String>("ALIAS_NAME").unwrap().to_owned(),
-                sub_matches.get_one::<String>("ALIAS_PATH").unwrap().to_owned());
-            
-            
-            //let sp = Shortpath::new(alias_name, PathBuf::from(alias_path));
-            
+                sub_matches.get_one::<String>("ALIAS_PATH").unwrap());
 
-            // If there is an existing shortpath file, append the things to it/load it and overwrite
-            // Else make new directory and file
+            let path = PathBuf::from(alias_path);
+            println!("Saved shortpath {}: {}", alias_name, alias_path);
+            app.shortpaths.insert(alias_name, path);
+            app.save_to_disk();
         }
         Some(("remove", sub_matches)) => {
         }
