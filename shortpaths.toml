@@ -1,0 +1,3 @@
+shortpaths = [
+    {name: alias_name, path: alias_path}
+]
