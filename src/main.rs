@@ -1,4 +1,4 @@
-use shortpaths::config::AppConfig;
+use shortpaths::config::App;
 use shortpaths::consts::{
     PROGRAM_NAME,
     VERSION,
@@ -6,9 +6,9 @@ use shortpaths::consts::{
     PROGRAM_DESCRIPTION,
 };
 
-//use std::{
-    //path::Path,
-//};
+use std::{
+    path::PathBuf,
+};
 
 //use shortpaths::config::{
     //CONFIG_FILE_PATH,
@@ -16,6 +16,8 @@ use shortpaths::consts::{
     //get_config_path, make_config_dir};
 
 use clap::{arg, ArgAction, Command};
+use log::{debug, error, trace, info, warn, LevelFilter};
+use pretty_env_logger::formatted_timed_builder;
 
 /// Creates the command line interface
 pub fn build_cli() -> Command {
@@ -51,11 +53,24 @@ pub fn build_cli() -> Command {
 }
 
 fn main() {
-    pretty_env_logger::init();
     let matches = build_cli().get_matches();
 
+    // Enable logging with `-v --verbose` flags
+    let verbose: &bool = matches.get_one("verbose").unwrap();
+    if *verbose == true {
+        formatted_timed_builder().filter_level(LevelFilter::Trace).init();
+    }
+
     // Setup initial configs
-    let app_cfg = AppConfig::default();
+    //let app_cfg = AppConfig::default();
+    //app_cfg.init();
+    let mut app = App::default();
+    //app.sp_cfg.shortpaths.aliases.insert(String::from("test_alias"), PathBuf::from("test_path"));
+    //app.sp_cfg.insert(String::from("test_alias"), PathBuf::from("test_path"));
+    app.sp_cfg.shortpaths.insert(String::from("test_alias"), PathBuf::from("test_path"));
+    debug!("Current Configuration:");
+    debug!("{}", toml::to_string_pretty(&app.sp_cfg.shortpaths).expect("Could not serialize"));
+
     //let cfg_fp = get_config_path(CONFIG_FILE_PATH);
     //let cfg_path = Path::new(&cfg_fp);
     //if !cfg_path.exists() {
