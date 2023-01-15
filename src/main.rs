@@ -1,3 +1,4 @@
+use shortpaths::config::AppConfig;
 use shortpaths::consts::{
     PROGRAM_NAME,
     VERSION,
@@ -5,20 +6,18 @@ use shortpaths::consts::{
     PROGRAM_DESCRIPTION,
 };
 
+//use std::{
+    //path::Path,
+//};
+
 //use shortpaths::config::{
     //CONFIG_FILE_PATH,
     //ShortpathsConfig,
     //get_config_path, make_config_dir};
 
-//use std::{
-    //path::{Path, PathBuf},
-    //fs,
-//};
-
 use clap::{arg, ArgAction, Command};
-//use directories::{UserDirs, ProjectDirs};
-//use walkdir::{DirEntry, WalkDir};
 
+/// Creates the command line interface
 pub fn build_cli() -> Command {
     let cli = Command::new(PROGRAM_NAME)
         .version(VERSION)
@@ -56,10 +55,12 @@ fn main() {
     let matches = build_cli().get_matches();
 
     // Setup initial configs
+    let app_cfg = AppConfig::default();
     //let cfg_fp = get_config_path(CONFIG_FILE_PATH);
     //let cfg_path = Path::new(&cfg_fp);
     //if !cfg_path.exists() {
-        //make_config_dir(); // Make the config directory
+        //make_config_dir();
+        //make_default_config();
         //// TODO Create the initial toml config file
     //}
 
