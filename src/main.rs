@@ -9,12 +9,8 @@ use shortpaths::shortpaths::find_matching_path;
 
 use std::{
     path::PathBuf,
+    process::exit,
 };
-
-//use shortpaths::config::{
-    //CONFIG_FILE_PATH,
-    //ShortpathsConfig,
-    //get_config_path, make_config_dir};
 
 use clap::{arg, ArgAction, Command};
 use log::{debug, error, trace, info, warn, LevelFilter};
@@ -76,9 +72,6 @@ fn main() {
     let mut app = App::default();
     info!("Current App Shortpaths:\n{}", toml::to_string_pretty(&app).expect("Could not serialize"));
 
-    // lib.rs: shortpaths
-    // 1. Make add, remove, check, update functions
-
     // lib.rs: export
     // 1. make_shell_completions function to generate bash shell completions
 
@@ -108,9 +101,6 @@ fn main() {
                 }
             });
             println!("Check Complete");
-            // For all shortpaths
-            // Check that the path name exist, if it does not, then attempt to find
-            // Go through every path in order even if they fail
         }
         Some(("autoindex", _)) => {
             println!("Updating shortpaths");
@@ -119,7 +109,6 @@ fn main() {
                 .into_iter()
                 .map(|(alias_name, alias_path)| {
                     if !alias_path.exists() {
-                        //find_matching_path(alias_path.as_path());
                         let path = find_matching_path(alias_path.as_path());
                         println!("Updating shortpath {} from {} to {}", alias_name, alias_path.display(), path.display());
                         (alias_name, path)
@@ -129,29 +118,6 @@ fn main() {
                 }).collect();
             app.shortpaths = shortpaths;
             app.save_to_disk();
-
-            //for (k, v) in app.shortpaths.into_iter() {
-                //if v.to_str().is_none() || !v.exists() {
-                    //println!("{} shortpath is unreachable: {}", k, v.display());
-                    //let path = find_matching_path(&v);
-                    ////app.shortpaths.insert(k.clone(), path);
-                    //app.shortpaths.insert(k.clone(), path);
-                //}
-            //}
-
-
-            //app.shortpaths.into_iter().for_each(|(k, v)| {
-                //// If the path doesn't exist
-                //if v.to_str().is_none() || !v.exists() {
-                    //println!("{} shortpath is unreachable: {}", k, v.display());
-                    //let path = find_matching_path(&v);
-                    ////app.shortpaths.insert(k.clone(), path);
-                    //app.shortpaths.insert(k.clone(), path);
-                //}
-            //});
-            // For all shortpaths
-            // Check that the path name exist, if it does not, then attempt to find
-            // Go through every path in order even if they fail
         }
 
         Some(("update", sub_matches)) => {
@@ -160,22 +126,20 @@ fn main() {
                 sub_matches.get_one::<String>("ALIAS_NAME"),
                 sub_matches.get_one::<String>("ALIAS_PATH"),
                 );
-
-            match alias_path {
-                Some(new_path) => {
-                    let path = PathBuf::from(new_path);
-                    app.shortpaths.insert(current_name.to_owned(), path);
-                }
-                None => {}
+            
+            if alias_name.is_none() && alias_path.is_none() {
+                println!("Shortpath name or path must be provided");
+                exit(1);
             }
-
-            match alias_name {
-                Some(new_name) => {
-                    let path = app.shortpaths.remove(current_name).unwrap();
-                    app.shortpaths.insert(new_name.to_owned(), path);
-                }
-                None => {}
-            }
+            
+            // Change only the name or path of the alias if those are modified and given
+            if let Some(new_path) = alias_path {
+                let path = PathBuf::from(new_path);
+                app.shortpaths.insert(current_name.to_owned(), path);
+            } else if let Some(new_name) = alias_name {
+                let path = app.shortpaths.remove(current_name).unwrap();
+                app.shortpaths.insert(new_name.to_owned(), path);
+            } 
             app.save_to_disk();
         }
         _ => {}
