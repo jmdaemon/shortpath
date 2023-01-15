@@ -47,9 +47,23 @@ pub fn build_cli() -> Command {
         .subcommand(
             Command::new("update")
             .about("Update a shortpath")
-            .arg(arg!([CURRENT_NAME]).required(true))
-            .arg(arg!(-n --name "New shortpath name").value_name("ALIAS_NAME"))
-            .arg(arg!(-p --path "New shortpath path").value_name("ALIAS_PATH")),
+            .args(
+                &[
+
+                    //arg!([CURRENT_NAME]).requires("CURRENT_NAME").required(true),
+                    arg!([CURRENT_NAME]).required(true),
+                    arg!(ALIAS_NAME: -n --name <ALIAS_NAME> "New shortpath name"),
+                    arg!(ALIAS_PATH: -p --path <ALIAS_PATH> "New shortpath path"),
+
+                    //arg!(-n --name "New shortpath name").value_name("ALIAS_NAME"),
+                    //arg!(-p --path "New shortpath path").value_name("ALIAS_PATH"),
+                ])
+            //.arg(arg!([CURRENT_NAME]).required(true))
+            //.arg(arg!(-n --name "New shortpath name").value_name("ALIAS_NAME"))
+            //.arg(arg!(-p --path "New shortpath path").value_name("ALIAS_PATH"))
+
+            //.arg(arg!([CURRENT_NAME]).required(true).value_name("CURRENT_NAME"))
+
         );
     cli
 }
@@ -65,8 +79,10 @@ fn main() {
 
     // Setup initial configs
     let mut app = App::default();
-    debug!("Current App Shortpaths:");
-    debug!("\n{}", toml::to_string_pretty(&app).expect("Could not serialize"));
+    debug!("Current App Shortpaths:\n{}", toml::to_string_pretty(&app).expect("Could not serialize"));
+
+    //debug!("Current App Shortpaths:");
+    //debug!("\n{}", toml::to_string_pretty(&app).expect("Could not serialize"));
 
     // lib.rs: shortpaths
     // 1. Make add, remove, check, update functions
@@ -104,7 +120,43 @@ fn main() {
             // Go through every path in order even if they fail
         }
         Some(("update", sub_matches)) => {
-            // Change existing 
+            //println!("{}", sub_matches.get_one::<String>("CURRENT_NAME").unwrap());
+            //println!("{:?}", sub_matches.get_one::<String>("ALIAS_NAME"));
+
+            let (current_name, alias_name, alias_path) = (
+                sub_matches.get_one::<String>("CURRENT_NAME").unwrap(),
+                sub_matches.get_one::<String>("ALIAS_NAME"),
+                sub_matches.get_one::<String>("ALIAS_PATH"),
+                //sub_matches.get_one::<String>("name"),
+                //sub_matches.get_one::<String>("path"),
+                );
+
+            match alias_path {
+                Some(new_path) => {
+                    let path = PathBuf::from(new_path);
+                    app.shortpaths.insert(current_name.to_owned(), path);
+
+                    //let mut path = PathBuf::from(new_path);
+                    //let mut key = &*app.shortpaths.get_mut(current_name.as_str()).unwrap();
+                    //key = &path;
+                    
+                    //key = &mut path;
+                    //= &mut path;
+                    //app.shortpaths.entry(*current_name).and_modify(|k| k = path);
+                    //app.shortpaths.j[current_name] = new_path;
+
+                }
+                None => {}
+            }
+
+            match alias_name {
+                Some(new_name) => {
+                    let path = app.shortpaths.remove(current_name).unwrap();
+                    app.shortpaths.insert(new_name.to_owned(), path);
+                }
+                None => {}
+            }
+            app.save_to_disk();
         }
         _ => {}
     }
