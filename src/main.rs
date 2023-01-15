@@ -35,8 +35,10 @@ pub fn build_cli() -> Command {
         .subcommand(
             Command::new("remove")
             .about("Remove a shortpath")
-            .arg(arg!(-n --name "Remove shortpath by name"))
-            .arg(arg!(-p --path "Remove shortpath by path")),
+            .arg(arg!([ALIAS_NAME]).required(true))
+            //.arg(arg!([CURRENT_NAME]).required(true))
+            //.arg(arg!(-n --name "Remove shortpath by name").value_name("ALIAS_NAME"))
+            //.arg(arg!(-p --path "Remove shortpath by path").value_name("ALIAS_PATH")),
             )
         .subcommand(
             Command::new("check")
@@ -46,8 +48,8 @@ pub fn build_cli() -> Command {
             Command::new("update")
             .about("Update a shortpath")
             .arg(arg!([CURRENT_NAME]).required(true))
-            .arg(arg!(-n --name "New shortpath name"))
-            .arg(arg!(-p --path "New shortpath path")),
+            .arg(arg!(-n --name "New shortpath name").value_name("ALIAS_NAME"))
+            .arg(arg!(-p --path "New shortpath path").value_name("ALIAS_PATH")),
         );
     cli
 }
@@ -76,7 +78,8 @@ fn main() {
         Some(("add", sub_matches)) => {
             let (alias_name, alias_path) = (
                 sub_matches.get_one::<String>("ALIAS_NAME").unwrap().to_owned(),
-                sub_matches.get_one::<String>("ALIAS_PATH").unwrap());
+                sub_matches.get_one::<String>("ALIAS_PATH").unwrap(),
+                );
 
             let path = PathBuf::from(alias_path);
             println!("Saved shortpath {}: {}", alias_name, alias_path);
@@ -84,6 +87,16 @@ fn main() {
             app.save_to_disk();
         }
         Some(("remove", sub_matches)) => {
+            let current_name = sub_matches.get_one::<String>("ALIAS_NAME").unwrap();
+            let path = app.shortpaths.remove(current_name).unwrap();
+            println!("Removed {}: {}", current_name.to_owned(), path.display());
+            app.save_to_disk();
+            //let (alias_name, alias_path): (Option<&str>, Option<&str>) = (matches.get_one("name"), matches.get_one("path"));
+            //let alias_name: &str = matches.get_one("ALIAS_NAME");
+            
+            
+//, matches.get_one("path"))
+
         }
         Some(("check", sub_matches)) => {
             // For all shortpaths
