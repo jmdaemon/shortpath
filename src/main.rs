@@ -5,7 +5,6 @@ use shortpaths::consts::{
     PROGRAM_DESCRIPTION,
 };
 
-
 //use shortpaths::config::{
     //CONFIG_FILE_PATH,
     //ShortpathsConfig,
@@ -20,11 +19,8 @@ use clap::{arg, ArgAction, Command};
 //use directories::{UserDirs, ProjectDirs};
 //use walkdir::{DirEntry, WalkDir};
 
-fn main() {
-    pretty_env_logger::init();
-
-    // CLI
-    let matches = Command::new(PROGRAM_NAME)
+pub fn build_cli() -> Command {
+    let cli = Command::new(PROGRAM_NAME)
         .version(VERSION)
         .author(AUTHOR)
         .about(PROGRAM_DESCRIPTION)
@@ -51,8 +47,13 @@ fn main() {
             .arg(arg!([CURRENT_NAME]).required(true))
             .arg(arg!(-n --name "New shortpath name"))
             .arg(arg!(-p --path "New shortpath path")),
-            )
-        .get_matches();
+        );
+    cli
+}
+
+fn main() {
+    pretty_env_logger::init();
+    let matches = build_cli().get_matches();
 
     // Setup initial configs
     //let cfg_fp = get_config_path(CONFIG_FILE_PATH);
