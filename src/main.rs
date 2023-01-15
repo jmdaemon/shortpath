@@ -67,9 +67,12 @@ fn main() {
     let mut app = App::default();
     //app.sp_cfg.shortpaths.aliases.insert(String::from("test_alias"), PathBuf::from("test_path"));
     //app.sp_cfg.insert(String::from("test_alias"), PathBuf::from("test_path"));
-    app.sp_cfg.shortpaths.insert(String::from("test_alias"), PathBuf::from("test_path"));
+    //app.sp_cfg.shortpaths.insert(String::from("test_alias"), PathBuf::from("test_path"));
+    //app.shortpaths.insert(String::from("test_alias"), PathBuf::from("test_path"));
     debug!("Current Configuration:");
-    debug!("{}", toml::to_string_pretty(&app.sp_cfg.shortpaths).expect("Could not serialize"));
+    //debug!("{}", toml::to_string_pretty(&app.sp_cfg.shortpaths).expect("Could not serialize"));
+    //debug!("{}", toml::to_string_pretty(&app.shortpaths).expect("Could not serialize"));
+    debug!("{}", toml::to_string_pretty(&app).expect("Could not serialize"));
 
     //let cfg_fp = get_config_path(CONFIG_FILE_PATH);
     //let cfg_path = Path::new(&cfg_fp);

@@ -1,5 +1,5 @@
 //use crate::shortpaths::{ShortpathsConfig, Shortpaths};
-use crate::shortpaths::{ShortpathsConfig};
+//use crate::shortpaths::{ShortpathsConfig};
 use crate::consts::{
     QUALIFIER,
     ORGANIZATION,
@@ -13,26 +13,44 @@ use std::{
     path::PathBuf,
 };
 
+use serde::{Serialize, Deserialize};
 use directories::ProjectDirs;
 
+type Shortpaths = HashMap<String, PathBuf>;
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct App {
+    #[serde(skip)]
     pub path: PathBuf,
-    pub sp_cfg: ShortpathsConfig,
+    //pub sp_cfg: ShortpathsConfig,
+    //#[serde(serialize_with = "toml::ser::tables_last")]
+    //#[serde(rename(serialize = "shortpaths", deserialize = "shortpaths"))]
+    #[serde(serialize_with = "toml::ser::tables_last")]
+    pub shortpaths: Shortpaths,
 }
 
 impl App {
 
-    pub fn new(path: PathBuf, sp_cfg: ShortpathsConfig) -> App {
-        App { path, sp_cfg }
+    //pub fn new(path: PathBuf, sp_cfg: ShortpathsConfig) -> App {
+        //App { path, sp_cfg }
+    //}
+
+    pub fn new(path: PathBuf, shortpaths: Shortpaths) -> App {
+        App { path, shortpaths }
     }
+
 
     pub fn default() -> App {
         let path = get_config_path();
-        let sp_cfg = ShortpathsConfig { shortpaths: HashMap::new() };
+        //let sp_cfg = ShortpathsConfig { shortpaths: HashMap::new() };
         //let sp_cfg = ShortpathsConfig { shortpaths: Shortpaths { shortpaths: HashMap::new() } };
         //let sp = Shortpaths { aliases: HashMap::new() };
         //let sp_cfg = ShortpathsConfig { shortpaths: sp };
-        let mut app = App::new(path, sp_cfg);
+        //let mut hmap: Shortpaths = HashMap::new();
+        //hmap.insert(String::from("test_alias"), PathBuf::from("test_path"));
+
+        //let mut app = App::new(path, hmap);
+        let mut app = App::new(path, HashMap::new());
         app.init();
         app
         //if !path.exists() {
@@ -51,14 +69,17 @@ impl App {
 
             // Load config
             let toml_conts = fs::read_to_string(&self.path).expect(&format!("Could not read file: {}", self.path.display()));
-            let sp_cfg: ShortpathsConfig = toml::from_str(&toml_conts).expect("Could not deserialize shortpaths");
-            self.sp_cfg = sp_cfg;
+            let shortpaths = toml::from_str(&toml_conts).expect("Could not deserialize shortpaths");
+            self.shortpaths = shortpaths;
 
         } else {
             // Initialize config
             make_config_dir();
-            let toml_conts = toml::to_string_pretty(&self.sp_cfg).expect("Could not serialize shortpaths");
+            //let toml_conts = toml::to_string_pretty(&self.shortpaths).expect("Could not serialize shortpaths");
+            //fs::write(&self.path, toml_conts).expect("Unable to write file");
+            let toml_conts = toml::to_string_pretty(&self).expect("Could not serialize shortpaths");
             fs::write(&self.path, toml_conts).expect("Unable to write file");
+
 
             //make_default_cfg(self);
         }
