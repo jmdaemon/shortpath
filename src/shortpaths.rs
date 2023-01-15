@@ -3,6 +3,7 @@ use std::{
     collections::HashMap,
 };
 
+use log::{debug, trace};
 use serde::{Serialize, Deserialize};
 use walkdir::{DirEntry, WalkDir};
 use directories::UserDirs;
@@ -69,10 +70,21 @@ pub struct ShortpathsConfig {
 
 /// Finds the matching path
 pub fn is_equals(e: &DirEntry, p: &Path) -> bool {
-    if e.path() == p { true } else { false }
+    //if e.path() == p { true } else { false }
+
+    let actual_fname = e.path().file_name().unwrap();
+    let sp_fname = p.file_name().unwrap();
+
+    trace!("actual_fname: {}", actual_fname.clone().to_str().unwrap());
+    trace!("sp_fname: {}", sp_fname.clone().to_str().unwrap());
+
+    //if e.file_name() == p.file_name().unwrap() { true } else { false }
+    if actual_fname == sp_fname { true } else { false }
 }
 
-pub fn find_matching_path(shortpath: &Path) -> String {
+////pub fn find_matching_path(shortpath: &Path) -> String {
+// TODO: Ensure the searching is done by using the file stem of the original path
+pub fn find_matching_path(shortpath: &Path) -> PathBuf {
     let user_dirs = UserDirs::new().expect("No valid home directory found.");
     let home = user_dirs.home_dir();
 
@@ -80,26 +92,62 @@ pub fn find_matching_path(shortpath: &Path) -> String {
 
     // If we match the current user's home, then we exit early
     // TODO: This could lead to bugs in the future if the directory isn't a subdir of $HOME
-    if next == home {
-        eprintln!("Could not find directory: {}", shortpath.to_str().unwrap());
-        return shortpath.to_str().unwrap().to_string();
-    }
+
+    //if next == home {
+        //eprintln!("Could not find directory: {}", shortpath.to_str().unwrap());
+        ////return shortpath.to_str().unwrap().to_string();
+        //return shortpath.to_path_buf();
+    //}
     
-    let mut new_path = String::new();
+    //let mut new_path = String::new();
+    let mut new_path = PathBuf::new();
+    //while next.parent().unwrap() != shortpath {
+    //while next.parent().unwrap() != home {
     while next.parent().unwrap() != shortpath {
         // Check if parent directory contains any files that match the shortpath
-        let mut files = WalkDir::new(next)
-            .into_iter()
-            .filter_entry(|e| is_equals(e, next.parent().unwrap()))
-            .filter_map(|v| v.ok());
+        //let mut files = WalkDir::new(next);
+
+        // Get all files within the next directory
+        debug!("Getting list of files of directory {}", next.display());
+        let mut parent_files = WalkDir::new(next).max_depth(1);
+        //let mut parent_files = WalkDir::new(next);
+        
+        // Check if any of these files match our given file name
+        debug!("Searching for matching file names");
+        let mut files: Vec<DirEntry> = vec![];
+        for file in parent_files {
+            if let Ok(e) = file {
+                if is_equals(&e, shortpath) {
+                    files.push(e);
+                }
+            }
+            //let e = file.unwrap();
+            //if is_equals(&e, shortpath) {
+                //files.push(e);
+            //}
+        }
+        //let mut files: Vec<DirEntry> = parent_files.into_iter()
+            //.filter(|e| {
+                //let e = e.unwrap();
+                //is_equals(&e, next.parent().unwrap())
+        //}).collect();
+
+        //let mut files = WalkDir::new(next)
+            //.into_iter()
+            ////.filter_entry(|e| is_equals(e, next.parent().unwrap()))
+            //.filter_entry(|e| is_equals(e, shortpath))
+            //.filter_map(|v| v.ok());
 
         // Get first matching result
-        let first = files.next();
+        //let first = files.next();
+        let first = files.first();
         
         // Return the shortpath if it exists
         match first {
             Some(path) => {
-                new_path = path.path().to_str().unwrap().to_owned();
+                //new_path = path.path().to_str().unwrap().to_owned();
+                new_path = path.path().to_path_buf();
+                debug!("Match Found: {}", new_path.display());
 
                 // TODO: Set alias's path to new path
 
@@ -112,7 +160,12 @@ pub fn find_matching_path(shortpath: &Path) -> String {
             }
         }
     }
-    eprintln!("Could not find directory: {}", shortpath.to_str().unwrap());
+    //eprintln!("Could not find directory: {}", shortpath.to_str().unwrap());
+
+    if let None = new_path.to_str() {
+        eprintln!("Could not find directory: {}", shortpath.to_str().unwrap());
+        eprintln!("Unsetting shortpath");
+    }
     new_path
 }
 

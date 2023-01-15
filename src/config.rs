@@ -14,7 +14,7 @@ use std::{
 use serde::{Serialize, Deserialize};
 use directories::ProjectDirs;
 
-type Shortpaths = HashMap<String, PathBuf>;
+pub type Shortpaths = HashMap<String, PathBuf>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct App {

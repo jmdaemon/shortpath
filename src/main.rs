@@ -1,10 +1,11 @@
-use shortpaths::config::App;
+use shortpaths::config::{App, Shortpaths};
 use shortpaths::consts::{
     PROGRAM_NAME,
     VERSION,
     AUTHOR,
     PROGRAM_DESCRIPTION,
 };
+use shortpaths::shortpaths::find_matching_path;
 
 use std::{
     path::PathBuf,
@@ -36,37 +37,31 @@ pub fn build_cli() -> Command {
             Command::new("remove")
             .about("Remove a shortpath")
             .arg(arg!([ALIAS_NAME]).required(true))
-            //.arg(arg!([CURRENT_NAME]).required(true))
-            //.arg(arg!(-n --name "Remove shortpath by name").value_name("ALIAS_NAME"))
-            //.arg(arg!(-p --path "Remove shortpath by path").value_name("ALIAS_PATH")),
             )
         .subcommand(
             Command::new("check")
             .about("Checks all shortpaths")
             )
         .subcommand(
+            Command::new("autoindex")
+            .about("Fixes all shortpaths.")
+            )
+        .subcommand(
             Command::new("update")
             .about("Update a shortpath")
             .args(
                 &[
-
-                    //arg!([CURRENT_NAME]).requires("CURRENT_NAME").required(true),
-                    arg!([CURRENT_NAME]).required(true),
-                    arg!(ALIAS_NAME: -n --name <ALIAS_NAME> "New shortpath name"),
-                    arg!(ALIAS_PATH: -p --path <ALIAS_PATH> "New shortpath path"),
-
-                    //arg!(-n --name "New shortpath name").value_name("ALIAS_NAME"),
-                    //arg!(-p --path "New shortpath path").value_name("ALIAS_PATH"),
+                arg!([CURRENT_NAME]).required(true),
+                arg!(ALIAS_NAME: -n --name <ALIAS_NAME> "New shortpath name"),
+                arg!(ALIAS_PATH: -p --path <ALIAS_PATH> "New shortpath path"),
                 ])
-            //.arg(arg!([CURRENT_NAME]).required(true))
-            //.arg(arg!(-n --name "New shortpath name").value_name("ALIAS_NAME"))
-            //.arg(arg!(-p --path "New shortpath path").value_name("ALIAS_PATH"))
-
-            //.arg(arg!([CURRENT_NAME]).required(true).value_name("CURRENT_NAME"))
-
         );
     cli
 }
+
+// TODO: Make a custom expand function when you check for the existence of a path
+// We'll need to deal with nested shortpaths soon in order to provide more resilient paths.
+// TODO: Make function to get just the filename part of a path
 
 fn main() {
     let matches = build_cli().get_matches();
@@ -79,10 +74,7 @@ fn main() {
 
     // Setup initial configs
     let mut app = App::default();
-    debug!("Current App Shortpaths:\n{}", toml::to_string_pretty(&app).expect("Could not serialize"));
-
-    //debug!("Current App Shortpaths:");
-    //debug!("\n{}", toml::to_string_pretty(&app).expect("Could not serialize"));
+    info!("Current App Shortpaths:\n{}", toml::to_string_pretty(&app).expect("Could not serialize"));
 
     // lib.rs: shortpaths
     // 1. Make add, remove, check, update functions
@@ -107,44 +99,72 @@ fn main() {
             let path = app.shortpaths.remove(current_name).unwrap();
             println!("Removed {}: {}", current_name.to_owned(), path.display());
             app.save_to_disk();
-            //let (alias_name, alias_path): (Option<&str>, Option<&str>) = (matches.get_one("name"), matches.get_one("path"));
-            //let alias_name: &str = matches.get_one("ALIAS_NAME");
-            
-            
-//, matches.get_one("path"))
-
         }
-        Some(("check", sub_matches)) => {
+        Some(("check", _)) => {
+            app.shortpaths.into_iter().for_each(|(k, v)| {
+                // If the path doesn't exist
+                if v.to_str().is_none() || !v.exists() {
+                    println!("{} shortpath is unreachable: {}", k, v.display());
+                }
+            });
+            println!("Check Complete");
             // For all shortpaths
             // Check that the path name exist, if it does not, then attempt to find
             // Go through every path in order even if they fail
         }
-        Some(("update", sub_matches)) => {
-            //println!("{}", sub_matches.get_one::<String>("CURRENT_NAME").unwrap());
-            //println!("{:?}", sub_matches.get_one::<String>("ALIAS_NAME"));
+        Some(("autoindex", _)) => {
+            println!("Updating shortpaths");
+            info!("Finding unreachable shortpaths");
+            let shortpaths: Shortpaths = app.shortpaths
+                .into_iter()
+                .map(|(alias_name, alias_path)| {
+                    if !alias_path.exists() {
+                        //find_matching_path(alias_path.as_path());
+                        let path = find_matching_path(alias_path.as_path());
+                        println!("Updating shortpath {} from {} to {}", alias_name, alias_path.display(), path.display());
+                        (alias_name, path)
+                    } else {
+                        (alias_name, alias_path)
+                    }
+                }).collect();
+            app.shortpaths = shortpaths;
+            app.save_to_disk();
 
+            //for (k, v) in app.shortpaths.into_iter() {
+                //if v.to_str().is_none() || !v.exists() {
+                    //println!("{} shortpath is unreachable: {}", k, v.display());
+                    //let path = find_matching_path(&v);
+                    ////app.shortpaths.insert(k.clone(), path);
+                    //app.shortpaths.insert(k.clone(), path);
+                //}
+            //}
+
+
+            //app.shortpaths.into_iter().for_each(|(k, v)| {
+                //// If the path doesn't exist
+                //if v.to_str().is_none() || !v.exists() {
+                    //println!("{} shortpath is unreachable: {}", k, v.display());
+                    //let path = find_matching_path(&v);
+                    ////app.shortpaths.insert(k.clone(), path);
+                    //app.shortpaths.insert(k.clone(), path);
+                //}
+            //});
+            // For all shortpaths
+            // Check that the path name exist, if it does not, then attempt to find
+            // Go through every path in order even if they fail
+        }
+
+        Some(("update", sub_matches)) => {
             let (current_name, alias_name, alias_path) = (
                 sub_matches.get_one::<String>("CURRENT_NAME").unwrap(),
                 sub_matches.get_one::<String>("ALIAS_NAME"),
                 sub_matches.get_one::<String>("ALIAS_PATH"),
-                //sub_matches.get_one::<String>("name"),
-                //sub_matches.get_one::<String>("path"),
                 );
 
             match alias_path {
                 Some(new_path) => {
                     let path = PathBuf::from(new_path);
                     app.shortpaths.insert(current_name.to_owned(), path);
-
-                    //let mut path = PathBuf::from(new_path);
-                    //let mut key = &*app.shortpaths.get_mut(current_name.as_str()).unwrap();
-                    //key = &path;
-                    
-                    //key = &mut path;
-                    //= &mut path;
-                    //app.shortpaths.entry(*current_name).and_modify(|k| k = path);
-                    //app.shortpaths.j[current_name] = new_path;
-
                 }
                 None => {}
             }
