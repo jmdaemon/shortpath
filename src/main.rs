@@ -6,9 +6,14 @@ use shortpaths::consts::{
     PROGRAM_DESCRIPTION,
 };
 use shortpaths::shortpaths::find_matching_path;
+use shortpaths::export::bash::{fmt_export_path, serialize_bash, export};
+//use shortpaths::export::bash::ExportType;
 
+use std::fmt::format;
 use std::{
-    path::PathBuf,
+    fs,
+    env,
+    path::{Path, PathBuf},
     process::exit,
 };
 
@@ -41,6 +46,17 @@ pub fn build_cli() -> Command {
         .subcommand(
             Command::new("autoindex")
             .about("Fixes all shortpaths.")
+            )
+        .subcommand(
+            Command::new("export")
+            .about("Fixes all shortpaths.")
+            .args(
+                &[
+                arg!([EXPORT_TYPE])
+                    .required(true)
+                    .value_parser(["bash", "powershell"]),
+                arg!(OUTPUT_FILE: -o --output <OUTPUT_FILE> "Output to file"),
+                ])
             )
         .subcommand(
             Command::new("update")
@@ -119,7 +135,36 @@ fn main() {
             app.shortpaths = shortpaths;
             app.save_to_disk();
         }
+        Some(("export", sub_matches)) => {
+            let (export_type, output_file) = (
+                sub_matches.get_one::<String>("EXPORT_TYPE").unwrap(),
+                sub_matches.get_one::<String>("OUTPUT_FILE"),
+            );
+            
+            // Get export path
+            let dest = match output_file {
+                Some(path) => {
+                    Path::new(path).to_path_buf()
+                    //PathBuf::from(path)
+                }
+                None => {
+                    let p = env::current_dir().unwrap();
+                    p.join(fmt_export_path()) // TODO: Change format based on export_type
+                }
+            };
 
+            // Make the directories if needed
+            fs::create_dir_all(dest.parent().expect("Could not get parent directory"))
+                .expect("Could not create shell completions directory");
+
+            // Serialize
+            let output = match export_type.as_str() {
+                "bash"          => serialize_bash(app.shortpaths),
+                _               => String::from("Not yet implemented"),
+            };
+            export(&dest, output);
+            println!("Exported shell completions to {}", &dest.display());
+        }
         Some(("update", sub_matches)) => {
             let (current_name, alias_name, alias_path) = (
                 sub_matches.get_one::<String>("CURRENT_NAME").unwrap(),
