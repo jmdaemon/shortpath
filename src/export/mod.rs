@@ -1,5 +1,5 @@
 pub mod bash;
-// TODO: Be sure to implement the powershell shell completions module
+// TODO: Implement the powershell shell completions module
 
 use crate::config::Shortpaths;
 
@@ -20,9 +20,26 @@ pub fn get_shell_completions_path(shell_type: &str) -> String {
     }
 }
 
-// TODO: Make function to get the universally installed shell completions path
-// TODO: Make function to set completion files to correct user permissions
+/** Get the local platform independent shell completions path
+  * This results in:
+  * Bash        : /usr/share/bash-completion/completions/shortpaths
+  * Powershell  : $profile/shortpaths.ps1
+  */
 
+pub fn get_shell_completions_sys_path(shell_type: &str) -> String {
+    match shell_type {
+        "bash" => bash::fmt_export_sys_path(),
+        _ => String::from("")
+    }
+}
+
+/** Let only users with equal permissions edit
+  * the shell completions file */
+pub fn set_shell_completions_perms(_shell_type: &str) {
+    todo!("Set user completion file perms");
+}
+
+/** Generate shell completion files for a given shell type */
 pub fn gen_shell_completions(shell_type: &str, spaths: &Shortpaths) -> String {
     match shell_type {
         "bash"          => bash::serialize_bash(&spaths),
@@ -34,11 +51,4 @@ pub fn gen_shell_completions(shell_type: &str, spaths: &Shortpaths) -> String {
   * If this function fails, execution stops */
 pub fn export(dest: &PathBuf, output: String) {
     fs::write(dest, output).expect("Could not export file");
-    //match fs::write(dest, output) {
-        //Ok(_) => {}
-        //Err(e) => {
-            //error!("Could not export file");
-            //eprintln!("{e}");
-        //}
-    //}
 }

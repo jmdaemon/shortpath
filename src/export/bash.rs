@@ -26,6 +26,10 @@ pub fn fmt_export_path() -> String {
     format!("completions/{}.bash", PROGRAM_NAME)
 }
 
+pub fn fmt_export_sys_path() -> String {
+    format!("/usr/share/bash-completion/completions/{}", PROGRAM_NAME)
+}
+
 // Unit Tests
 #[test]
 fn test_serialize_bash() {
