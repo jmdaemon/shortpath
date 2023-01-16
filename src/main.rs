@@ -119,11 +119,12 @@ fn main() {
         Some(("autoindex", _)) => {
             println!("Updating shortpaths");
             info!("Finding unreachable shortpaths");
+            let spaths = app.shortpaths.clone();
             let shortpaths: Shortpaths = app.shortpaths
                 .into_iter()
                 .map(|(alias_name, alias_path)| {
                     if !alias_path.exists() {
-                        let path = find_matching_path(alias_path.as_path());
+                        let path = find_matching_path(alias_path.as_path(), &spaths);
                         println!("Updating shortpath {} from {} to {}", alias_name, alias_path.display(), path.display());
                         (alias_name, path)
                     } else {
