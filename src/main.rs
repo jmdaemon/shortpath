@@ -6,10 +6,12 @@ use shortpaths::consts::{
     PROGRAM_DESCRIPTION,
 };
 use shortpaths::shortpaths::find_matching_path;
-use shortpaths::export::bash::{fmt_export_path, serialize_bash, export};
-//use shortpaths::export::bash::ExportType;
+use shortpaths::export::{
+    get_shell_completions_path,
+    gen_shell_completions,
+    export
+};
 
-use std::fmt::format;
 use std::{
     fs,
     env,
@@ -73,7 +75,6 @@ pub fn build_cli() -> Command {
 
 // TODO: Make a custom expand function when you check for the existence of a path
 // We'll need to deal with nested shortpaths soon in order to provide more resilient paths.
-// TODO: Make function to get just the filename part of a path
 
 fn main() {
     let matches = build_cli().get_matches();
@@ -87,9 +88,6 @@ fn main() {
     // Setup initial configs
     let mut app = App::default();
     info!("Current App Shortpaths:\n{}", toml::to_string_pretty(&app).expect("Could not serialize"));
-
-    // lib.rs: export
-    // 1. make_shell_completions function to generate bash shell completions
 
     match matches.subcommand() {
         Some(("add", sub_matches)) => {
@@ -145,11 +143,10 @@ fn main() {
             let dest = match output_file {
                 Some(path) => {
                     Path::new(path).to_path_buf()
-                    //PathBuf::from(path)
                 }
                 None => {
                     let p = env::current_dir().unwrap();
-                    p.join(fmt_export_path()) // TODO: Change format based on export_type
+                    p.join(get_shell_completions_path(export_type))
                 }
             };
 
@@ -158,10 +155,8 @@ fn main() {
                 .expect("Could not create shell completions directory");
 
             // Serialize
-            let output = match export_type.as_str() {
-                "bash"          => serialize_bash(app.shortpaths),
-                _               => String::from("Not yet implemented"),
-            };
+            let output = gen_shell_completions(export_type, &app.shortpaths);
+
             export(&dest, output);
             println!("Exported shell completions to {}", &dest.display());
         }
