@@ -1,7 +1,7 @@
 use crate::config::Shortpaths;
 
 use std::{
-    path::{Path, PathBuf},
+    path::{Path, PathBuf, Component},
     collections::HashMap, fmt::format,
 };
 
@@ -24,35 +24,45 @@ pub fn has_equal_fname(e: &DirEntry, p: &Path) -> bool {
     if entry_fname == search_fname { true } else { false }
 }
 
+//pub fn parse_alias(s: String) -> String {
+    //s.split_at(1).1.to_string()
+//}
+
+pub fn parse_alias(s: String) -> String {
+    s.split_at(1).1.to_string()
+}
+
+/** Removes the shortpath alias formatting
+    This removes the '$' prefix from nested shortpaths */
+pub fn parse_alias_from_comp(c: &Component) -> Option<String> {
+    let comp = c.as_os_str().to_str().unwrap();
+    if comp.starts_with("$") {
+        let stripped = String::from(comp).split_at(1).1.to_string();
+        Some(stripped)
+    } else {
+        None
+    }
+}
+
+//pub fn fmt_alias() -> String {
+//}
+
 /// Expands nested shortpaths, environment variables
 pub fn expand_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
-    //let mut output: PathBuf = PathBuf::new();
     let mut output: String = String::from(path.to_str().unwrap());
     // Decompose path components
     for comp in path.components() {
         let compstr = comp.as_os_str().to_str().unwrap();
-        trace!("compstr: {}", compstr);
-        for (alias_name, _) in spaths {
-            // If path components are shortpath aliases
-            if compstr.starts_with("$") {
-                // Strip $ prefix for parsing
-                let stripped = String::from(compstr);
-                let stripped = stripped.split_at(1).1;
-                if stripped == alias_name {
-                    // Lookup the actual path
-                    let expanded_path = spaths.get(alias_name).unwrap();
-                    //output.push(expanded_path);
-                    output = output.replace(compstr, expanded_path.to_str().unwrap());
-                    // Expand shortpath
-                }
-                //else {
-                    //output.push(compstr);
-                //}
-            }
+        let shortpath_name = parse_alias_from_comp(&comp);
+        trace!("component: {}", compstr);
+
+        if let Some(stripped) = &shortpath_name {
+            let expanded_path = spaths.get(stripped).unwrap(); // Lookup the actual path
+            output = output.replace(compstr, expanded_path.to_str().unwrap());
         }
+        trace!("output: {}", output);
     }
-    let expanded = PathBuf::from(output);
-    expanded
+    PathBuf::from(output)
 }
 
 fn find_key_for_value(spaths: &Shortpaths, value: PathBuf) -> Option<&String> {
