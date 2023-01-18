@@ -22,10 +22,6 @@ pub fn has_equal_fname(e: &DirEntry, p: &Path) -> bool {
     if entry_fname == search_fname { true } else { false }
 }
 
-//pub fn parse_alias(s: String) -> String {
-    //s.split_at(1).1.to_string()
-//}
-
 pub fn parse_alias(s: String) -> String {
     s.split_at(1).1.to_string()
 }
@@ -41,9 +37,6 @@ pub fn parse_alias_from_comp(c: &Component) -> Option<String> {
         None
     }
 }
-
-//pub fn fmt_alias() -> String {
-//}
 
 /// Expands nested shortpaths, environment variables
 pub fn expand_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
@@ -64,123 +57,38 @@ pub fn expand_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
     PathBuf::from(output)
 }
 
-//fn find_key_for_value(spaths: &Shortpaths, value: PathBuf) -> Option<&String> {
-//fn find_key_for_value<K, V: Eq>(map: &HashMap<K,V>, value: V) -> Option<&K> {
-    //map.into_iter().find_map(|(k,v)| {
-        //if v == value { Some(k) } else { None }
-    //})
-//}
-
 /// Folds nested shortpaths, environment variables
 pub fn fold_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
-    //let mut output = path.to_str().unwrap().to_string();
     let mut output = String::from(path.to_str().unwrap());
-    // /home/user/test/appthing -> $test/appthing
-    // $test/appthing -> $test/appthing
 
     // Algorithm:
     // For every path found in our shortpaths
     // Attempt to replace the path by the longest possible matching substring alias
     // How to calculate this huh
     // TODO: If the aliased path is null, return none
-
-    //let current_key = path.to_str().unwrap().to_owned();
-    //let current_key = path.components().last();
     let current_key = path.file_name().unwrap().to_str().to_owned().unwrap().to_owned();
     trace!("current_key: {}", current_key);
-    
-    //let key = spaths.get_by_right(v);
-    //trace!("Key: {:?}", key);
 
     // Get the shortpath alias associated with this path
-    //for v in spaths.right_values() {
     for (k, v) in spaths.into_iter() {
+        let key = spaths.get_by_right(path);
+        trace!("Key: {:?}", key);
         //let key = spaths.get_by_right(v);
         //trace!("Key: {:?}", key);
-
-        //if let Some(key) = key {
-            //if key != &current_key {
-                //output = String::from(path.to_str().unwrap());
-                //break;
-            //}
-        //}
         if k != &current_key {
-            let alias = format!("${}", k); // Format with $alias_name
-            let replaced = path.to_str().unwrap();
-            let to_replace = String::from(path.to_str().unwrap());
-            //let s = to_replace.split_once("/$").unwrap();
-            // TODO: Fix this, select the right amount of text
-            // TODO: Use 'v'
+            let nested_alias_name = format!("${}", k);
+            let nested_alias_path = String::from(v.to_str().unwrap());
 
-            //let (leftover, subdir) = to_replace.split_once(&to_replace).unwrap();
-            let (leftover, subdir) = to_replace.split_once(v.to_str().unwrap()).unwrap();
-            trace!("leftover: {}", leftover);
-            trace!("subdir: {}", subdir);
+            let alias_path = String::from(path.to_str().unwrap());
 
-            let replace_with = format!("{}{}", alias, subdir);
+            let (_, alias_subdir) = alias_path.split_once(&nested_alias_path).unwrap();
+            trace!("alias_subdir: {}", alias_subdir);
 
-            // replace /home/jmd/test -> $test
-            //output = output.replace(&replace_with, &alias);
-            output = output.replace(&replaced, &replace_with);
+            let replace_with = format!("{}{}", nested_alias_name, alias_subdir);
+            output = output.replace(&output, &replace_with);
+            trace!("output: {}", output);
         }
-
-        //match key {
-            //Some(name) => {
-                //if name != &current_key {
-                    //let alias = format!("${}", name); // Format with $alias_name
-                    //let replaced = path.to_str().unwrap();
-                    //output = output.replace(replaced, &alias);
-                    //}
-
-                ////if *name != current_key {
-                    ////let alias = format!("${}", name); // Format with $alias_name
-                    ////let replaced = path.to_str().unwrap();
-                    ////output = output.replace(replaced, &alias);
-                    ////}
-                //}
-            //None => {
-                //output = String::from(path.to_str().unwrap());
-            //}
-        //}
-    trace!("output: {}", output);
     }
-
-    
-    // Replace full exact matching paths with shortpath aliases
-    //for (alias_name, alias_path) in spaths {
-
-    //for (_, alias_path) in spaths {
-        ////let path_string = alias_path.to_str().unwrap();
-        ////let key = find_key_for_value(&spaths, alias_path.to_owned());
-        ////let p = &alias_path.to_owned();
-        ////let p = &alias_path.to_owned();
-        ////let key = spaths.get_by_left(&(&p));
-        ////let key = spaths.get_by_left(&alias_path.as_path());
-        ////let p =  &alias_path.to_owned().to_str().unwrap().to_string();
-        ////let key = spaths.get_by_left(p);
-
-        //// Get the shortpath alias associated with this path
-        //let key = spaths.get_by_right(alias_path);
-        //trace!("Key: {:?}", key);
-
-        ////let alias = format!("${}", &alias_name); // Format with $alias_name
-
-        //match key {
-            //Some(name) => {
-                ////let name = name.to_str().unwrap();
-                ////let alias = format!("${}", &key); // Format with $alias_name
-                ////output = output.replace(path_string, &alias);
-                ////output = output.replace(&alias, &alias);
-                //let alias = format!("${}", name); // Format with $alias_name
-                //let replaced = alias_path.to_str().unwrap();
-                //output = output.replace(replaced, &alias);
-                //}
-            //None => {
-                //output = String::from(alias_path.to_str().unwrap());
-            //}
-        //}
-        //trace!("output: {}", output);
-    //}
     PathBuf::from(output)
 }
 
