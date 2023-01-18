@@ -11,10 +11,12 @@ use std::{
     path::PathBuf,
 };
 
+use bimap::BiHashMap;
 use serde::{Serialize, Deserialize};
 use directories::ProjectDirs;
 
-pub type Shortpaths = HashMap<String, PathBuf>;
+//pub type Shortpaths = HashMap<String, PathBuf>;
+pub type Shortpaths = BiHashMap<String, PathBuf>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct App {
@@ -30,7 +32,7 @@ impl App {
 
     pub fn default() -> App {
         let path = get_config_path();
-        let mut app = App::new(path, HashMap::new());
+        let mut app = App::new(path, BiHashMap::new());
         app.init();
         app
     }

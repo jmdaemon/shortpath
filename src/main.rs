@@ -103,7 +103,7 @@ fn main() {
         }
         Some(("remove", sub_matches)) => {
             let current_name = sub_matches.get_one::<String>("ALIAS_NAME").unwrap();
-            let path = app.shortpaths.remove(current_name).unwrap();
+            let path = app.shortpaths.remove_by_left(current_name).unwrap().1;
             println!("Removed {}: {}", current_name.to_owned(), path.display());
             app.save_to_disk();
         }
@@ -178,7 +178,7 @@ fn main() {
                 let path = PathBuf::from(new_path);
                 app.shortpaths.insert(current_name.to_owned(), path);
             } else if let Some(new_name) = alias_name {
-                let path = app.shortpaths.remove(current_name).unwrap();
+                let path = app.shortpaths.remove_by_left(current_name).unwrap().1;
                 app.shortpaths.insert(new_name.to_owned(), path);
             } 
             app.save_to_disk();
