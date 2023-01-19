@@ -2,7 +2,7 @@ use crate::config::Shortpaths;
 
 use std::{
     path::{Path, PathBuf, Component},
-    collections::HashMap, fmt::format,
+    collections::HashMap,
 };
 
 use log::{debug, trace};
@@ -75,18 +75,23 @@ pub fn fold_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
         trace!("Key: {:?}", key);
         //let key = spaths.get_by_right(v);
         //trace!("Key: {:?}", key);
-        if k != &current_key {
-            let nested_alias_name = format!("${}", k);
-            let nested_alias_path = String::from(v.to_str().unwrap());
+        if output.contains(&v.to_str().unwrap()) {
+            if k != &current_key {
+                let nested_alias_name = format!("${}", k);
+                trace!("nested_alias_name: {}", nested_alias_name);
+                let nested_alias_path = String::from(v.to_str().unwrap());
+                //let nested_alias_path = String::from(spaths.get_by_right(v).unwrap());
+                trace!("nested_alias_path: {}", nested_alias_path);
 
-            let alias_path = String::from(path.to_str().unwrap());
+                let alias_path = String::from(path.to_str().unwrap());
 
-            let (_, alias_subdir) = alias_path.split_once(&nested_alias_path).unwrap();
-            trace!("alias_subdir: {}", alias_subdir);
+                let (_, alias_subdir) = alias_path.split_once(&nested_alias_path).unwrap();
+                trace!("alias_subdir: {}", alias_subdir);
 
-            let replace_with = format!("{}{}", nested_alias_name, alias_subdir);
-            output = output.replace(&output, &replace_with);
-            trace!("output: {}", output);
+                let replace_with = format!("{}{}", nested_alias_name, alias_subdir);
+                output = output.replace(&output, &replace_with);
+                trace!("output: {}", output);
+            }
         }
     }
     PathBuf::from(output)

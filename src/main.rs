@@ -5,7 +5,7 @@ use shortpaths::consts::{
     AUTHOR,
     PROGRAM_DESCRIPTION,
 };
-use shortpaths::shortpaths::find_matching_path;
+use shortpaths::shortpaths::{find_matching_path, fold_shortpath};
 use shortpaths::export::{
     get_shell_completions_path,
     gen_shell_completions,
@@ -125,10 +125,15 @@ fn main() {
                 .map(|(alias_name, alias_path)| {
                     if !alias_path.exists() {
                         let path = find_matching_path(alias_path.as_path(), &spaths);
-                        println!("Updating shortpath {} from {} to {}", alias_name, alias_path.display(), path.display());
+                        if path != alias_path.as_path() {
+                            println!("Updating shortpath {} from {} to {}", alias_name, alias_path.display(), path.display());
+                        } else {
+                            println!("Keeping shortpath {}: {}", alias_name, alias_path.display());
+                        }
                         (alias_name, path)
                     } else {
-                        (alias_name, alias_path)
+                        //(alias_name, alias_path)
+                        (alias_name, fold_shortpath(&alias_path.to_path_buf(), &spaths))
                     }
                 }).collect();
             app.shortpaths = shortpaths;
