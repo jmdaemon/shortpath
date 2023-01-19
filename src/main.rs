@@ -7,9 +7,9 @@ use shortpaths::consts::{
 };
 use shortpaths::shortpaths::{find_matching_path, fold_shortpath};
 use shortpaths::export::{
-    get_shell_completions_path,
-    gen_shell_completions,
-    export
+    //get_shell_completions_path,
+    //gen_shell_completions,
+    export, get_exporter
 };
 
 use std::{
@@ -143,6 +143,9 @@ fn main() {
                 sub_matches.get_one::<String>("EXPORT_TYPE").unwrap(),
                 sub_matches.get_one::<String>("OUTPUT_FILE"),
             );
+
+            let mut exp = get_exporter(export_type);
+            exp.set_shortpaths(&app.shortpaths);
             
             // Get export path
             let dest = match output_file {
@@ -150,8 +153,10 @@ fn main() {
                     Path::new(path).to_path_buf()
                 }
                 None => {
-                    let p = env::current_dir().unwrap();
-                    p.join(get_shell_completions_path(export_type))
+                    PathBuf::from(exp.get_completions_path())
+                    //PathBuf::from(get_shell_completions_path(export_type))
+                    //let p = env::current_dir().unwrap();
+                    //p.join(get_shell_completions_path(export_type))
                 }
             };
 
@@ -160,7 +165,8 @@ fn main() {
                 .expect("Could not create shell completions directory");
 
             // Serialize
-            let output = gen_shell_completions(export_type, &app.shortpaths);
+            //let output = gen_shell_completions(export_type, &app.shortpaths);
+            let output = exp.gen_completions();
 
             export(&dest, output);
             println!("Exported shell completions to {}", &dest.display());

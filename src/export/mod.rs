@@ -2,48 +2,30 @@ pub mod bash;
 // TODO: Implement the powershell shell completions module
 
 use crate::config::Shortpaths;
+use crate::export::bash::BashExporter;
 
 use std::{
     fs,
     path::PathBuf
 };
 
-/** Get the local platform independent shell completions path
-  * This results in:
-  * Bash        : ./completions/shortpaths.bash
-  * Powershell  : ./completions/shortpaths.ps1
-  */
-pub fn get_shell_completions_path(shell_type: &str) -> String {
-    match shell_type {
-        "bash" => bash::fmt_export_path(),
-        _ => String::from("")
-    }
+/*
+ * Completion Paths
+ * Bash        : ./completions/shortpaths.bash
+ * Powershell  : ./completions/shortpaths.ps1
+ */
+pub trait Export {
+    fn get_completions_path(&self) -> String;
+    fn get_completions_sys_path(&self) -> String;
+    fn set_completions_fileperms(&self) -> String;
+    fn gen_completions(&self) -> String;
+    fn set_shortpaths(&mut self, spaths: &Shortpaths);
 }
 
-/** Get the local platform independent shell completions path
-  * This results in:
-  * Bash        : /usr/share/bash-completion/completions/shortpaths
-  * Powershell  : $profile/shortpaths.ps1
-  */
-
-pub fn get_shell_completions_sys_path(shell_type: &str) -> String {
+pub fn get_exporter(shell_type: &str) -> Box<dyn Export> {
     match shell_type {
-        "bash" => bash::fmt_export_sys_path(),
-        _ => String::from("")
-    }
-}
-
-/** Let only users with equal permissions edit
-  * the shell completions file */
-pub fn set_shell_completions_perms(_shell_type: &str) {
-    todo!("Set user completion file perms");
-}
-
-/** Generate shell completion files for a given shell type */
-pub fn gen_shell_completions(shell_type: &str, spaths: &Shortpaths) -> String {
-    match shell_type {
-        "bash"          => bash::serialize_bash(&spaths),
-        _               => String::from("Not yet implemented"),
+        "bash" => Box::new(BashExporter::default()),
+        _ => Box::new(BashExporter::default())
     }
 }
 
