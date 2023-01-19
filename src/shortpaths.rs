@@ -60,12 +60,6 @@ pub fn expand_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
 /// Folds nested shortpaths, environment variables
 pub fn fold_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
     let mut output = String::from(path.to_str().unwrap());
-
-    // Algorithm:
-    // For every path found in our shortpaths
-    // Attempt to replace the path by the longest possible matching substring alias
-    // How to calculate this huh
-    // TODO: If the aliased path is null, return none
     let current_key = path.file_name().unwrap().to_str().to_owned().unwrap().to_owned();
     trace!("current_key: {}", current_key);
 
@@ -73,14 +67,12 @@ pub fn fold_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
     for (k, v) in spaths.into_iter() {
         let key = spaths.get_by_right(path);
         trace!("Key: {:?}", key);
-        //let key = spaths.get_by_right(v);
-        //trace!("Key: {:?}", key);
         if output.contains(&v.to_str().unwrap()) {
             if k != &current_key {
                 let nested_alias_name = format!("${}", k);
                 trace!("nested_alias_name: {}", nested_alias_name);
+
                 let nested_alias_path = String::from(v.to_str().unwrap());
-                //let nested_alias_path = String::from(spaths.get_by_right(v).unwrap());
                 trace!("nested_alias_path: {}", nested_alias_path);
 
                 let alias_path = String::from(path.to_str().unwrap());
@@ -115,7 +107,6 @@ pub fn find_matching_path(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
     let mut next = expanded.as_path();
 
     let mut new_path = PathBuf::new();
-    //while next.parent().unwrap() != shortpath {
     while next.parent().unwrap() != expanded {
         // Check if the next directory contains any files that match our old path filename
         debug!("Getting list of files of directory {}", next.display());

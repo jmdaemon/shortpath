@@ -7,7 +7,6 @@ use crate::consts::{
 
 use std::{
     fs,
-    collections::HashMap,
     path::PathBuf,
 };
 
@@ -15,7 +14,6 @@ use bimap::BiHashMap;
 use serde::{Serialize, Deserialize};
 use directories::ProjectDirs;
 
-//pub type Shortpaths = HashMap<String, PathBuf>;
 pub type Shortpaths = BiHashMap<String, PathBuf>;
 
 #[derive(Serialize, Deserialize, Debug)]

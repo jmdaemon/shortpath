@@ -132,7 +132,6 @@ fn main() {
                         }
                         (alias_name, path)
                     } else {
-                        //(alias_name, alias_path)
                         (alias_name, fold_shortpath(&alias_path.to_path_buf(), &spaths))
                     }
                 }).collect();
