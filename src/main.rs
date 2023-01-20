@@ -86,23 +86,23 @@ fn main() {
                 sub_matches.get_one::<String>("ALIAS_NAME").unwrap().to_owned(),
                 sub_matches.get_one::<String>("ALIAS_PATH").unwrap(),
                 );
-            //add(&alias_name, alias_path, &mut app);
-            //add(&alias_name, &Path::from(alias_path), &mut app);
             add(&alias_name, &Path::new(&alias_path), &mut app);
-            //println!("Saved shortpath {}: {}", alias_name.into(), &alias_path.into().display());
             println!("Saved shortpath {}: {}", alias_name, alias_path);
             app.save_to_disk();
         }
         Some(("remove", sub_matches)) => {
             let current_name = sub_matches.get_one::<String>("ALIAS_NAME").unwrap();
-            remove(&current_name, &mut app);
+            let path = remove(&current_name, &mut app);
+            println!("Removed {}: {}", current_name.to_owned(), path.display());
             app.save_to_disk();
         }
         Some(("check", _)) => {
             check(app);
+            println!("Check Complete");
         }
         Some(("autoindex", _)) => {
             println!("Updating shortpaths");
+            info!("Finding unreachable shortpaths");
             autoindex(&mut app);
             app.save_to_disk();
         }

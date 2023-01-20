@@ -11,33 +11,22 @@ use std::{
 
 use log::{debug, error, trace, info, warn};
 
-//pub fn add(alias_name: &str, alias_path: &str, app: &mut App) {
-//pub fn add<S: Into<String> + Copy>(alias_name: S, alias_path: &str, app: &mut App) {
-
 //pub fn add<S, P>(alias_name: S, alias_path: P, app: &mut App)
 //where
 //S: Into<String>,
 //P: Into<PathBuf>
 
-pub fn add(alias_name: &str, alias_path: &Path, app: &mut App)
-//S: Into<String> + Copy,
-//P: AsRef<PathBuf>
-//P: Into<PathBuf> + Copy
-{
-    //let path = PathBuf::from(alias_path.into());
-    //app.shortpaths.insert(alias_name.into(), path);
-    //let path = alias_path.into();
-    //app.shortpaths.insert(alias_name.into(), path);
-    app.shortpaths.insert(alias_name.into(), alias_path.into());
-    //println!("Saved shortpath {}: {}", alias_name.into(), &path.to_path_buf().display());
-    //println!("Saved shortpath {}: {}", alias_name.into(), &alias_path.into().display());
+/// Adds a new shortpath to the list of shortpaths
+pub fn add(alias_name: &str, alias_path: &Path, app: &mut App) -> bimap::Overwritten<String, PathBuf> {
+    app.shortpaths.insert(alias_name.into(), alias_path.into())
 }
 
-pub fn remove(current_name: &str, app: &mut App) {
-    let path = app.shortpaths.remove_by_left(current_name).unwrap().1;
-    println!("Removed {}: {}", current_name.to_owned(), path.display());
+/// Remove a shortpath
+pub fn remove(current_name: &str, app: &mut App) -> PathBuf {
+    app.shortpaths.remove_by_left(current_name).unwrap().1
 }
 
+/// Checks if all the paths are available
 pub fn check(app: App) {
     app.shortpaths.into_iter().for_each(|(k, v)| {
         // If the path doesn't exist
@@ -45,9 +34,10 @@ pub fn check(app: App) {
             println!("{} shortpath is unreachable: {}", k, v.display());
         }
     });
-    println!("Check Complete");
 }
 
+/** Find and fix all unreachable paths
+  * Also expands/folds nested or aliased shortpaths */
 pub fn autoindex(app: &mut App) {
     info!("Finding unreachable shortpaths");
     let spaths = app.shortpaths.clone();
@@ -71,8 +61,6 @@ pub fn autoindex(app: &mut App) {
 }
 
 pub fn export(export_type: &str, output_file: Option<&String>, app: &mut App) {
-//pub fn export<S: Into<String>>(export_type: S, output_file: Option<&String>, app: &mut App) {
-    //fn new<S: Into<String>>(name: S)
     let mut exp = get_exporter(export_type.into());
     exp.set_shortpaths(&app.shortpaths);
     
