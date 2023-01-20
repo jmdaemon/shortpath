@@ -1,23 +1,26 @@
-use shortpaths::config::{App, Shortpaths};
+use shortpaths::config::App;
+//use shortpaths::config::{App, Shortpaths};
 use shortpaths::consts::{
     PROGRAM_NAME,
     VERSION,
     AUTHOR,
     PROGRAM_DESCRIPTION,
 };
-use shortpaths::shortpaths::{find_matching_path, fold_shortpath};
-use shortpaths::export::{
+//use shortpaths::shortpaths::{find_matching_path, fold_shortpath};
+//use shortpaths::export::{
     //get_shell_completions_path,
     //gen_shell_completions,
-    export, get_exporter
-};
+    //export, get_exporter
+//};
 
-use std::{
-    fs,
-    env,
-    path::{Path, PathBuf},
-    process::exit,
-};
+//use std::{
+    //fs,
+    //env,
+    //path::{Path, PathBuf},
+    //process::exit,
+//};
+
+use shortpaths::commands::{add,remove,check, autoindex, export,update};
 
 use clap::{arg, ArgAction, Command};
 use log::{debug, error, trace, info, warn, LevelFilter};
@@ -95,47 +98,20 @@ fn main() {
                 sub_matches.get_one::<String>("ALIAS_NAME").unwrap().to_owned(),
                 sub_matches.get_one::<String>("ALIAS_PATH").unwrap(),
                 );
-
-            let path = PathBuf::from(alias_path);
-            println!("Saved shortpath {}: {}", alias_name, alias_path);
-            app.shortpaths.insert(alias_name, path);
+            add(&alias_name, alias_path, &mut app);
             app.save_to_disk();
         }
         Some(("remove", sub_matches)) => {
             let current_name = sub_matches.get_one::<String>("ALIAS_NAME").unwrap();
-            let path = app.shortpaths.remove_by_left(current_name).unwrap().1;
-            println!("Removed {}: {}", current_name.to_owned(), path.display());
+            remove(&current_name, &mut app);
             app.save_to_disk();
         }
         Some(("check", _)) => {
-            app.shortpaths.into_iter().for_each(|(k, v)| {
-                // If the path doesn't exist
-                if v.to_str().is_none() || !v.exists() {
-                    println!("{} shortpath is unreachable: {}", k, v.display());
-                }
-            });
-            println!("Check Complete");
+            check(app);
         }
         Some(("autoindex", _)) => {
             println!("Updating shortpaths");
-            info!("Finding unreachable shortpaths");
-            let spaths = app.shortpaths.clone();
-            let shortpaths: Shortpaths = app.shortpaths
-                .into_iter()
-                .map(|(alias_name, alias_path)| {
-                    if !alias_path.exists() {
-                        let path = find_matching_path(alias_path.as_path(), &spaths);
-                        if path != alias_path.as_path() {
-                            println!("Updating shortpath {} from {} to {}", alias_name, alias_path.display(), path.display());
-                        } else {
-                            println!("Keeping shortpath {}: {}", alias_name, alias_path.display());
-                        }
-                        (alias_name, path)
-                    } else {
-                        (alias_name, fold_shortpath(&alias_path.to_path_buf(), &spaths))
-                    }
-                }).collect();
-            app.shortpaths = shortpaths;
+            autoindex(&mut app);
             app.save_to_disk();
         }
         Some(("export", sub_matches)) => {
@@ -143,33 +119,8 @@ fn main() {
                 sub_matches.get_one::<String>("EXPORT_TYPE").unwrap(),
                 sub_matches.get_one::<String>("OUTPUT_FILE"),
             );
-
-            let mut exp = get_exporter(export_type);
-            exp.set_shortpaths(&app.shortpaths);
-            
-            // Get export path
-            let dest = match output_file {
-                Some(path) => {
-                    Path::new(path).to_path_buf()
-                }
-                None => {
-                    PathBuf::from(exp.get_completions_path())
-                    //PathBuf::from(get_shell_completions_path(export_type))
-                    //let p = env::current_dir().unwrap();
-                    //p.join(get_shell_completions_path(export_type))
-                }
-            };
-
-            // Make the directories if needed
-            fs::create_dir_all(dest.parent().expect("Could not get parent directory"))
-                .expect("Could not create shell completions directory");
-
-            // Serialize
-            //let output = gen_shell_completions(export_type, &app.shortpaths);
-            let output = exp.gen_completions();
-
-            export(&dest, output);
-            println!("Exported shell completions to {}", &dest.display());
+            export(export_type, output_file, &mut app);
+            app.save_to_disk();
         }
         Some(("update", sub_matches)) => {
             let (current_name, alias_name, alias_path) = (
@@ -177,20 +128,7 @@ fn main() {
                 sub_matches.get_one::<String>("ALIAS_NAME"),
                 sub_matches.get_one::<String>("ALIAS_PATH"),
                 );
-            
-            if alias_name.is_none() && alias_path.is_none() {
-                println!("Shortpath name or path must be provided");
-                exit(1);
-            }
-            
-            // Change only the name or path of the alias if those are modified and given
-            if let Some(new_path) = alias_path {
-                let path = PathBuf::from(new_path);
-                app.shortpaths.insert(current_name.to_owned(), path);
-            } else if let Some(new_name) = alias_name {
-                let path = app.shortpaths.remove_by_left(current_name).unwrap().1;
-                app.shortpaths.insert(new_name.to_owned(), path);
-            } 
+            update(current_name, alias_name, alias_path, &mut app);
             app.save_to_disk();
         }
         _ => {}
