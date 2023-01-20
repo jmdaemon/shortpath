@@ -6,6 +6,8 @@ use shortpaths::consts::{
     PROGRAM_DESCRIPTION,
 };
 
+use std::path::{Path, PathBuf};
+
 use shortpaths::commands::{add,remove,check, autoindex, export,update};
 
 use clap::{arg, ArgAction, Command};
@@ -84,7 +86,11 @@ fn main() {
                 sub_matches.get_one::<String>("ALIAS_NAME").unwrap().to_owned(),
                 sub_matches.get_one::<String>("ALIAS_PATH").unwrap(),
                 );
-            add(&alias_name, alias_path, &mut app);
+            //add(&alias_name, alias_path, &mut app);
+            //add(&alias_name, &Path::from(alias_path), &mut app);
+            add(&alias_name, &Path::new(&alias_path), &mut app);
+            //println!("Saved shortpath {}: {}", alias_name.into(), &alias_path.into().display());
+            println!("Saved shortpath {}: {}", alias_name, alias_path);
             app.save_to_disk();
         }
         Some(("remove", sub_matches)) => {

@@ -11,10 +11,26 @@ use std::{
 
 use log::{debug, error, trace, info, warn};
 
-pub fn add(alias_name: &str, alias_path: &str, app: &mut App) {
-    let path = PathBuf::from(alias_path);
-    println!("Saved shortpath {}: {}", alias_name, alias_path);
-    app.shortpaths.insert(alias_name.to_owned(), path);
+//pub fn add(alias_name: &str, alias_path: &str, app: &mut App) {
+//pub fn add<S: Into<String> + Copy>(alias_name: S, alias_path: &str, app: &mut App) {
+
+//pub fn add<S, P>(alias_name: S, alias_path: P, app: &mut App)
+//where
+//S: Into<String>,
+//P: Into<PathBuf>
+
+pub fn add(alias_name: &str, alias_path: &Path, app: &mut App)
+//S: Into<String> + Copy,
+//P: AsRef<PathBuf>
+//P: Into<PathBuf> + Copy
+{
+    //let path = PathBuf::from(alias_path.into());
+    //app.shortpaths.insert(alias_name.into(), path);
+    //let path = alias_path.into();
+    //app.shortpaths.insert(alias_name.into(), path);
+    app.shortpaths.insert(alias_name.into(), alias_path.into());
+    //println!("Saved shortpath {}: {}", alias_name.into(), &path.to_path_buf().display());
+    //println!("Saved shortpath {}: {}", alias_name.into(), &alias_path.into().display());
 }
 
 pub fn remove(current_name: &str, app: &mut App) {
@@ -55,7 +71,9 @@ pub fn autoindex(app: &mut App) {
 }
 
 pub fn export(export_type: &str, output_file: Option<&String>, app: &mut App) {
-    let mut exp = get_exporter(export_type);
+//pub fn export<S: Into<String>>(export_type: S, output_file: Option<&String>, app: &mut App) {
+    //fn new<S: Into<String>>(name: S)
+    let mut exp = get_exporter(export_type.into());
     exp.set_shortpaths(&app.shortpaths);
     
     // Get export path
