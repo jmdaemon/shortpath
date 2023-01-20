@@ -1,24 +1,10 @@
 use shortpaths::config::App;
-//use shortpaths::config::{App, Shortpaths};
 use shortpaths::consts::{
     PROGRAM_NAME,
     VERSION,
     AUTHOR,
     PROGRAM_DESCRIPTION,
 };
-//use shortpaths::shortpaths::{find_matching_path, fold_shortpath};
-//use shortpaths::export::{
-    //get_shell_completions_path,
-    //gen_shell_completions,
-    //export, get_exporter
-//};
-
-//use std::{
-    //fs,
-    //env,
-    //path::{Path, PathBuf},
-    //process::exit,
-//};
 
 use shortpaths::commands::{add,remove,check, autoindex, export,update};
 
@@ -133,5 +119,4 @@ fn main() {
         }
         _ => {}
     }
-
 }

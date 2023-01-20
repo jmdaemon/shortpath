@@ -5,7 +5,6 @@ use crate::shortpaths::{find_matching_path, fold_shortpath};
 
 use std::{
     fs,
-    env,
     path::{Path, PathBuf},
     process::exit,
 };
@@ -61,15 +60,8 @@ pub fn export(export_type: &str, output_file: Option<&String>, app: &mut App) {
     
     // Get export path
     let dest = match output_file {
-        Some(path) => {
-            Path::new(path).to_path_buf()
-        }
-        None => {
-            PathBuf::from(exp.get_completions_path())
-            //PathBuf::from(get_shell_completions_path(export_type))
-            //let p = env::current_dir().unwrap();
-            //p.join(get_shell_completions_path(export_type))
-        }
+        Some(path)  => Path::new(path).to_path_buf(),
+        None        => PathBuf::from(exp.get_completions_path())
     };
 
     // Make the directories if needed
@@ -77,7 +69,6 @@ pub fn export(export_type: &str, output_file: Option<&String>, app: &mut App) {
         .expect("Could not create shell completions directory");
 
     // Serialize
-    //let output = gen_shell_completions(export_type, &app.shortpaths);
     let output = exp.gen_completions();
 
     E::export(&dest, output);
