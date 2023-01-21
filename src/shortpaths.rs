@@ -5,10 +5,12 @@ use crate::consts::{
     CONFIG_FILE_PATH,
 };
 
+//use core::slice::SlicePattern;
 use std::{
     fs,
     path::{Path, PathBuf, Component},
     collections::HashMap,
+    ffi::OsStr, fmt::format,
 };
 
 use bimap::BiHashMap;
@@ -105,11 +107,7 @@ impl Config {
         self.config_files.insert(key, self.format_config_path(file));
     }
 }
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ShortpathsConfig {
-    pub shortpaths: Shortpaths,
-}
+// End of config
 
 /// Determines if two paths share the same name
 pub fn has_equal_fname(e: &DirEntry, p: &Path) -> bool {
@@ -135,22 +133,154 @@ pub fn parse_alias_from_comp(c: &Component) -> Option<String> {
     }
 }
 
+pub fn get_alias_name(path: &[char]) -> Option<String> {
+    match path {
+        ['$', alias_name @ ..] => { Some(alias_name.iter().collect()) }
+        _ => { None }
+    }
+}
+
 /// Expands nested shortpaths, environment variables
 pub fn expand_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
-    let mut output: String = String::from(path.to_str().unwrap());
-    for comp in path.components() {
-        let shortpath_name = parse_alias_from_comp(&comp);
-        let compstr = comp.as_os_str().to_str().unwrap();
-        trace!("component: {}", compstr);
+    /* We have some collection of paths like
+     *      test = '/home/user/test'
+     *      mypath = '$test/mypath'
+     *      another = '/home/user/another'
+     * We want to expand them like
+     *      test = '/home/user/test'
+     *      mypath = '/home/user/test/mypath'
+     *      another = '/home/user/another'
+     */
+    /* If we pattern match a path that has an alias
+     */
+    //let shortpath = path.to_str().unwrap();
 
-        if let Some(stripped) = &shortpath_name {
-            //let expanded_path = spaths.get_by_right(&PathBuf::from(stripped)).unwrap();
-            //let expanded_path = spaths.get(stripped).unwrap().to_str().unwrap(); // Lookup the actual path
-            let expanded_path = spaths.get_by_left(stripped).unwrap();
-            output = output.replace(compstr, expanded_path.to_str().unwrap());
+    //let mut output = String::from(path.to_str().unwrap());
+    let mut output = path.to_str().unwrap().to_string();
+    trace!("Attempting to expand path: {}", output);
+    //trace!("Path: {}", output);
+    //for component in path.components() {
+    let iter = path.components().peekable();
+    //let mut piter = iter.clone();
+    for component in iter {
+        trace!("Path Component: {}", component.as_os_str().to_str().unwrap());
+        match component {
+            Component::RootDir => {
+                // We have exhausted basically all our matches, so we don't do anything
+            }
+            //Component::CurDir => {
+                //// Ignore
+            //}
+            Component::Normal(path_component) => {
+                let spath = path_component.to_str().unwrap().to_string();
+                //let chars = path.chars().collect();
+
+                //let chars_vec: Vec<char> = path.chars().collect();
+                //let chars: [&char, chars_vec.len()] = chars_vec.try_into();
+
+                //path.bytes();
+                //let alias_name = get_alias_name(chars);
+                //path.into_bytes()
+                //let char_array: [char] = path.bytes();
+                //let chars: &[char] = path.into_bytes().as_slice();
+                //let chars: &[char] = path.chars().collect::<&[char]>();
+                //let chars: [char] = path.chars().collect::<[char]>();
+
+                let chars: Vec<char> = spath.chars().collect();
+                //chars.as_slice();
+                let alias_name = get_alias_name(chars.as_slice());
+
+                trace!("Alias Name: {:?}", alias_name);
+                match alias_name {
+                    Some(alias) => {
+                        /* Converts:
+                         * path = '/home/user/path'
+                         * alias = '$path/alias' 
+                         * To
+                         * path = '/home/user/path'
+                         * alias = '/home/user/path/alias' 
+                         */
+                        let nested_path = spaths.get_by_left(&alias).unwrap();
+                        //let rest = PathBuf::from(spath);
+                        //let full_path = nested_path.join(rest);
+
+                        //piter.peek();
+                        //let alias_path = piter.peek();
+                        
+                        //let full_path = match alias_path {
+                            //Some(rest) => {
+                                //// Transform them into paths
+                                //let rest = PathBuf::from(&rest);
+                                //nested_path.join(rest)
+                            //}
+                            //None => {
+                                //nested_path.to_owned()
+                            //}
+                        //};
+                        
+                        //output = output.replace(&output, full_path.to_str().to_owned().unwrap());
+                        //output = output.replace(&output, nested_path.to_str().to_owned().unwrap());
+                        //output = output.replace(&nested_path.to_str().to_owned().unwrap(), &alias);
+                        // Expands '$aaaa/path' -> '/home/user/aaaa/path'
+                        let this = format!("${}", &alias);
+                        let with = nested_path.to_str().to_owned().unwrap();
+                        output = output.replace(&this, with);
+                        trace!("Expanded shortpath to: {}", output);
+
+                        //let full_path = path.components().next().
+                        //let full_path = spaths.get_by_left(&alias).unwrap();
+                        //output = output.replace(&output, full_path.to_str().to_owned().unwrap());
+
+                        //let expanded_path = spaths.get_by_left(&alias).unwrap();
+                        //output = output.replace(compstr, expanded_path.to_str().unwrap());
+                    }
+                    None => {}
+                }
+
+                //let alias_name = get_alias_name(chars);
+
+                //let path = path_component.to_str().unwrap();
+                //let path = 
+                    //OsStr::new("") => {}
+                //path.chars();
+
+                //match path.chars() {
+                    //"$", alias_name @ ..] => {}
+                    //_ => {}
+                //}
+                
+                //match path {
+                    //["$", alias_name @ ..] => {}
+                    //_ => {}
+                //}
+
+            }
+            _ => {
+                // Ignore all other cases
+            }
+
         }
-        trace!("output: {}", output);
     }
+    //trace!("Expanded Shortpath: {}", output);
+    //trace!("Expanded Shortpath: {}", expanded.display());
+    //trace!("Output: {}", output);
+    
+    // We have a path like '$test/mypath' and '/home/user/test' and '/home/user/another_path'
+    // We want to do have: '$test/mypath' and '/home/user/test' and '/home/user/another_path'
+    //let mut output: String = String::from(path.to_str().unwrap());
+    //for comp in path.components() {
+        //let shortpath_name = parse_alias_from_comp(&comp);
+        //let compstr = comp.as_os_str().to_str().unwrap();
+        //trace!("component: {}", compstr);
+
+        //if let Some(stripped) = &shortpath_name {
+            ////let expanded_path = spaths.get_by_right(&PathBuf::from(stripped)).unwrap();
+            ////let expanded_path = spaths.get(stripped).unwrap().to_str().unwrap(); // Lookup the actual path
+            //let expanded_path = spaths.get_by_left(stripped).unwrap();
+            //output = output.replace(compstr, expanded_path.to_str().unwrap());
+        //}
+        //trace!("output: {}", output);
+    //}
     PathBuf::from(output)
 }
 
@@ -199,7 +329,7 @@ pub fn fold_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
 pub fn find_matching_path(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
     // Expand nested shortpaths
     let expanded = expand_shortpath(shortpath, spaths);
-    trace!("Expanded shortpath: {}", expanded.display());
+    //trace!("Expanded shortpath: {}", expanded.display());
 
     let mut next = expanded.as_path();
 
