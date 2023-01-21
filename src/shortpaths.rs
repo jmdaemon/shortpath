@@ -8,10 +8,11 @@ use std::{
 use log::{debug, trace};
 use serde::{Serialize, Deserialize};
 use walkdir::{DirEntry, WalkDir};
+use bimap::BiHashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ShortpathsConfig {
-    pub shortpaths: HashMap<String, PathBuf>,
+    pub shortpaths: BiHashMap<String, PathBuf>,
 }
 
 /// Determines if two paths share the same name
