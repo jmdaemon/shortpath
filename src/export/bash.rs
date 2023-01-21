@@ -1,4 +1,5 @@
-use crate::consts::PROGRAM_NAME;
+use crate::shortpaths::fold_shortpath;
+use crate::{consts::PROGRAM_NAME, shortpaths::expand_shortpath};
 use crate::config::Shortpaths;
 use crate::export::Export;
 
@@ -7,8 +8,50 @@ use crate::export::Export;
 
 use std::{
     path::{Path, PathBuf},
+    collections::HashMap,
 };
+
+use std::cmp::*;
+
 use bimap::BiHashMap;
+
+//fn compare_len_reverse_alpha(a: &String, b: &String) -> Ordering {
+    //// Sort by length from short to long first.
+    //let length_test = a.len().cmp(&b.len());
+    //if length_test == Ordering::Equal {
+        //// If same length, sort in reverse alphabetical order.
+        //return b.cmp(&a);
+    //}
+    //return length_test;
+//}
+
+//fn sort_by_string_length(vector: Vec<String>) {
+    //let mut s = String::new();
+    //for elem in vector {
+        //peek
+    //}
+    //String temp = s[i];
+
+    //// Insert s[j] at its correct position
+    //int j = i - 1;
+    //while (j >= 0 && temp.length() < s[j].length())
+    //{
+        //s[j+1] = s[j];
+        //j--;
+    //}
+    //s[j+1] = temp;
+//}
+//}
+
+//pub fn insertion_sort<T: Ord>(arr: &mut [T]) {
+    //for i in 1..arr.len() {
+        //let mut j = i;
+        //while j > 0 && arr[j] < arr[j - 1] {
+            //arr.swap(j, j - 1);
+            //j = j - 1;
+        //}
+    //}
+//}
 
 pub struct BashExporter {
     spaths: Shortpaths,
@@ -31,11 +74,42 @@ impl BashExporter {
         output += "#!/bin/bash\n\n";
 
         let sp = &self.spaths;
-        //for (name, path) in &mut self.spaths.into_iter() {
-        for (name, path) in sp.into_iter() {
+        //let m = Vec::from_iter(sp.into_iter().map(|(k,v)| expand_shortpath(v, sp)));
+        //let m: HashMap<&String, PathBuf> = HashMap::from_iter(sp.into_iter().map(|(k,v)| (k, expand_shortpath(v, sp))));
+
+        //for (k,v) in m {
+        //}
+        let mut m = Vec::from_iter(sp.into_iter().map(|(k,v)| expand_shortpath(v, sp)));
+        //m.sort_by(|p:PathBuf| if p.capacity())
+        //let mut max = 0;
+        //m.sort_by(|k,v| compare_len_reverse_alpha(k, v.to_str().unwrap().to_owned()));
+        //m.sort_by(|k,v| compare_len_reverse_alpha(k, v.to_str().unwrap().to_owned()));
+        m.sort_by(|a, b| {
+            let (sa, sb) = (a.to_str().unwrap(), b.to_str().unwrap());
+            let (la, lb) = (sa.len(), sb.len());
+            if la < lb {
+                Ordering::Less
+            } else if la == lb {
+                Ordering::Equal
+            } else {
+                Ordering::Greater
+            }
+        });
+
+        //let iter = sp.into_iter().chain(m);
+        for p in m {
+            let path = fold_shortpath(&p, &sp);
+            let name = sp.get_by_right(&path).unwrap();
             //output += &fmt_bash_alias(name.to_string(), &path);
             output += &fmt_bash_alias(name.to_string(), &path);
         }
+
+
+        //for (name, path) in &mut self.spaths.into_iter() {
+        //for (name, path) in sp.into_iter() {
+            ////output += &fmt_bash_alias(name.to_string(), &path);
+            //output += &fmt_bash_alias(name.to_string(), &path);
+        //}
         output
     }
 }
