@@ -1,4 +1,4 @@
-use shortpaths::config::App;
+use shortpaths::shortpaths::App;
 use shortpaths::consts::{
     PROGRAM_NAME,
     VERSION,

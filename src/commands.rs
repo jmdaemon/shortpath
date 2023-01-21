@@ -1,4 +1,4 @@
-use crate::config::{App, Shortpaths};
+use crate::shortpaths::{App, Shortpaths};
 use crate::export as E;
 use crate::export::get_exporter;
 use crate::shortpaths::{find_matching_path, fold_shortpath};

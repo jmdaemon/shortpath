@@ -1,6 +1,5 @@
-use crate::shortpaths::fold_shortpath;
+use crate::shortpaths::{Shortpaths, fold_shortpath};
 use crate::{consts::PROGRAM_NAME, shortpaths::expand_shortpath};
-use crate::config::Shortpaths;
 use crate::export::Export;
 
 // Idea: Think about creating a proper completions file for bash instead of just

@@ -1,7 +1,7 @@
 pub mod bash;
 // TODO: Implement the powershell shell completions module
 
-use crate::config::Shortpaths;
+use crate::shortpaths::Shortpaths;
 use crate::export::bash::BashExporter;
 
 use std::{
