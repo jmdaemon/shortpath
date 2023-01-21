@@ -77,7 +77,6 @@ fn main() {
     }
 
     // Setup initial configs
-    //let mut app = App::default();
     let mut app = App::new();
     info!("Current App Shortpaths:\n{}", toml::to_string_pretty(&app).expect("Could not serialize"));
 
