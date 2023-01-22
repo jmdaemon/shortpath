@@ -4,6 +4,7 @@ use crate::consts::{
     APPLICATION,
     CONFIG_FILE_PATH,
 };
+use crate::export::get_exporter;
 
 use std::{
     fs,
@@ -16,7 +17,6 @@ use bimap::{BiHashMap, Overwritten};
 use serde::{Serialize, Deserialize};
 use derivative::Derivative;
 use directories::ProjectDirs;
-
 use log::{debug, trace, info};
 use walkdir::{DirEntry, WalkDir};
 
@@ -111,6 +111,68 @@ impl App {
             shortpaths.insert(alias_name.clone(), shortpath);
         }
         shortpaths
+    }
+
+    /** Serialize shortpaths to other formats for use in other applications */
+    pub fn export(&self, export_type: &str, output_file: Option<&String>) {
+        let mut exp = get_exporter(export_type.into());
+        exp.set_shortpaths(&self.shortpaths);
+        
+        let dest = match output_file {
+            Some(path)  => Path::new(path).to_path_buf(),
+            None        => PathBuf::from(exp.get_completions_path())
+        };
+
+        fs::create_dir_all(dest.parent().expect("Could not get parent directory"))
+            .expect("Could not create shell completions directory");
+
+        // Serialize
+        let output = exp.gen_completions();
+        fs::write(&dest, &output).expect("Unable to write to disk");
+    }
+
+    /** Update a single shortpath's alias name or path
+      * Changes the name or path if given and are unique */
+    pub fn update(&mut self, current_name: &str, alias_name: Option<&String>, alias_path: Option<&String>) {
+
+        
+        //let is_given = |s: Option<String>| {
+            //match 
+        //};
+        //let is_modified_and_given = |s: String| {
+
+        //}
+
+        if let Some(new_path) = alias_path {
+            let path = PathBuf::from(new_path);
+            if &path != self.shortpaths.get_by_left(current_name).unwrap() {
+                self.shortpaths.insert(current_name.to_owned(), PathBuf::from(new_path));
+            }
+        } else if let Some(new_name) = alias_name {
+            if current_name != new_name {
+                let path = self.shortpaths.remove_by_left(current_name).unwrap().1;
+                self.shortpaths.insert(new_name.to_owned(), path);
+            }
+        } 
+
+        //self.shortpaths.insert(new_name.to_owned(), path);
+        //match (alias_name, alias_path) {
+            //(Some(new_name),_) => {
+                //let path = self.shortpaths.remove_by_left(current_name).unwrap().1;
+                //self.shortpaths.insert(new_name.to_owned(), path);
+            //}
+            //(_, Some(new_path)) => {
+                //self.shortpaths.insert(current_name.to_owned(), PathBuf::from(new_path));
+            //}
+            //_ => {} // Don't update anything
+        //}
+        // 
+        //if let Some(new_path) = alias_path {
+            //self.shortpaths.insert(current_name.to_owned(), PathBuf::from(new_path));
+        //} else if let Some(new_name) = alias_name {
+            //let path = self.shortpaths.remove_by_left(current_name).unwrap().1;
+        //} 
+        //self.shortpaths.insert(new_name.to_owned(), path);
     }
 }
 
