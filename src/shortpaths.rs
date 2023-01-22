@@ -223,20 +223,34 @@ pub fn find_matching_path(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
 
     let mut new_path = PathBuf::new();
     while next.parent().unwrap() != expanded {
-        // Check if the next directory contains any files that match our old path filename
-        debug!("Getting list of files of directory {}", next.display());
+        debug!("In Directory {}", next.display());
         let parent_files = WalkDir::new(next).max_depth(1);
         
-        // Check if any of these files match our given file name
-        debug!("Searching for matching file names");
-        let mut files: Vec<DirEntry> = vec![];
-        for file in parent_files {
-            if let Ok(e) = file {
-                if has_equal_fname(&e, expanded.as_path()) {
-                    files.push(e);
-                }
-            }
-        }
+        debug!("Looking for matching name");
+        let files: Vec<DirEntry> = parent_files.into_iter()
+            .filter_map(Result::ok)
+            .collect::<Vec<DirEntry>>().into_iter()
+            .filter(|file| has_equal_fname(&file, expanded.as_path())).collect();
+                //if let Ok(f) = file {
+                //}
+                //false
+
+        //let files: Vec<DirEntry> = parent_files.into_iter()
+            //.filter_map(|file| {
+                //if let Ok(f) = file {
+                    //if has_equal_fname(&f, expanded.as_path()) { return Some(f) }
+                //}
+                //None
+            //}).collect();
+
+        //let mut files: Vec<DirEntry> = vec![];
+        //for file in parent_files {
+            //if let Ok(e) = file {
+                //if has_equal_fname(&e, expanded.as_path()) {
+                    //files.push(e);
+                //}
+            //}
+        //}
 
         // Get first matching result
         let first = files.first();
