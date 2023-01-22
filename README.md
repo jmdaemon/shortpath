@@ -129,26 +129,16 @@ mv target/completions/shortpath.ps1 $profile/shortpath.ps1
 ## Todo
 
 ### Priority
-- Clarify module names, move functions closer to the data structures they work on.
-- Export better API
-    - Separate print statements & side effects from API
-    - Put in shortpaths module
-- Create better `Shortpath` data structure.
+- Rename `autoindex` to something less verbose.
+- Create better `Shortpath` data structure. Currently there is no proper dependency graph/tree generated
+    for the shortpaths (meaning that serializing them in the correct order is difficult).
     - Option\<Alias\> component that references another Shortpath.
-    - Function to construct a dependency graph
-- Optimize function parameters (use &str, &path, etc)
-    - Use Into\<String\>, Into\<PathBuf\> constraints
-        in specific "hot" functions.
-- Prefer FP style whenever possible
-    - Use itertools, combinators crates if needed.
+    - Function to construct a dependency graph?
 - Profile program to make it as lightweight as possible
     - Use benches crate?
 - Write a few unit tests to assert functionality
-- Rename `autoindex` to something less verbose.
-- Replace some functions with methods on Shortpaths
 
 - Replace hacks in `bash.rs` with real solution
-- Clean up `find_matching_path()` and export as part of the API.
 
 ## Considered
 - Look into `tracing` library.
