@@ -95,7 +95,7 @@ impl App {
 
     /** Finds unreachable paths and tries to resolve them
       * Expands/folds nested shortpaths */
-    pub fn autoindex(&self) -> Shortpaths {
+    pub fn autoindex(&self, on_update: Option<fn(&String, &Path, &Path) -> ()>) -> Shortpaths {
         info!("Finding unreachable shortpaths");
         let mut shortpaths: Shortpaths = BiHashMap::new();
         for (alias_name, alias_path) in &self.shortpaths {
@@ -108,6 +108,9 @@ impl App {
                     fold_shortpath(&matching, &self.shortpaths)
                 }
             };
+            if let Some(on_update) = on_update {
+                on_update(alias_name, shortpath.as_path(), alias_path);
+            }
             shortpaths.insert(alias_name.clone(), shortpath);
         }
         shortpaths

@@ -6,9 +6,12 @@ use shortpaths::consts::{
     PROGRAM_DESCRIPTION,
 };
 
-use std::path::Path;
+use std::{
+    path::Path,
+    process::exit,
+} ;
 
-use shortpaths::commands::{add,remove,check, autoindex, export,update};
+//use shortpaths::commands::{add,remove,check, autoindex, export,update};
 
 use clap::{arg, ArgAction, Command};
 use log::{debug, error, trace, info, warn, LevelFilter};
@@ -86,24 +89,59 @@ fn main() {
                 sub_matches.get_one::<String>("ALIAS_NAME").unwrap().to_owned(),
                 sub_matches.get_one::<String>("ALIAS_PATH").unwrap(),
                 );
-            add(&alias_name, &Path::new(&alias_path), &mut app);
+            app.add(&alias_name, &Path::new(&alias_path));
             println!("Saved shortpath {}: {}", alias_name, alias_path);
             app.save_to_disk();
         }
         Some(("remove", sub_matches)) => {
             let current_name = sub_matches.get_one::<String>("ALIAS_NAME").unwrap();
-            let path = remove(&current_name, &mut app);
+            let path = app.remove(&current_name);
             println!("Removed {}: {}", current_name.to_owned(), path.display());
             app.save_to_disk();
         }
         Some(("check", _)) => {
-            check(app);
+            let unreachable = app.check();
+            unreachable.iter().for_each(|(alias_name, alias_path)|
+                println!("{} shortpath is unreachable: {}", alias_name, alias_path.display()));
             println!("Check Complete");
         }
         Some(("autoindex", _)) => {
             println!("Updating shortpaths");
             info!("Finding unreachable shortpaths");
-            autoindex(&mut app);
+
+            let on_update = |alias_name: &String, updated_path: &Path, alias_path: &Path| {
+                let is_changed = |p1: &Path, p2: &Path| {p1 != p2};
+                if is_changed(updated_path, alias_path) {
+                    println!("Updating shortpath {} from {} to {}", alias_name, alias_path.display(), updated_path.display());
+                } else {
+                    println!("Keeping shortpath {}: {}", alias_name, alias_path.display());
+                }
+            };
+            app.autoindex(Some(on_update));
+
+            //let unreachable = app.autoindex();
+            //let is_changed = |p1: &Path, p2: &Path| {p1 != p2};
+            //let shortpaths = app.shortpaths;
+
+            //let paths1 = unreachable.
+            
+            //use std::iter::Chain;
+
+            //let iter = unreachable.iter().chain(shortpaths.iter());
+
+            //iter.for_each(|(i1, i2)| {
+
+                //});
+
+            //unreachable.iter().foreach(
+
+                //);
+            //let is_changed = |p1: &Path, p2: &Path| {p1 != p2};
+                //if is_changed(&updated_path, &alias_path){
+                    //println!("Updating shortpath {} from {} to {}", alias_name, alias_path.display(), path.display());
+                //} else {
+                    //println!("Keeping shortpath {}: {}", alias_name, alias_path.display());
+                //}
             app.save_to_disk();
         }
         Some(("export", sub_matches)) => {
@@ -111,7 +149,8 @@ fn main() {
                 sub_matches.get_one::<String>("EXPORT_TYPE").unwrap(),
                 sub_matches.get_one::<String>("OUTPUT_FILE"),
             );
-            export(export_type, output_file, &app);
+            //export(export_type, output_file, &app);
+            app.export(export_type, output_file);
             println!("Exported shell completions to {}", &output_file.unwrap());
             app.save_to_disk();
         }
@@ -121,7 +160,13 @@ fn main() {
                 sub_matches.get_one::<String>("ALIAS_NAME"),
                 sub_matches.get_one::<String>("ALIAS_PATH"),
                 );
-            update(current_name, alias_name, alias_path, &mut app);
+
+            if alias_name.is_none() && alias_path.is_none() {
+                println!("Shortpath name or path must be provided");
+                exit(1);
+            }
+            //update(current_name, alias_name, alias_path, &mut app);
+            app.update(current_name, alias_name, alias_path);
             app.save_to_disk();
         }
         _ => {}
