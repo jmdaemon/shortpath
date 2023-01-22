@@ -106,7 +106,6 @@ impl Config {
         self.config_files.insert(key, self.format_config_path(file));
     }
 }
-// End of config
 
 /** Destructures and returns an alias name if there is one */
 pub fn get_alias_name(path: &[char]) -> Option<String> {
@@ -118,21 +117,12 @@ pub fn get_alias_name(path: &[char]) -> Option<String> {
 
 /** Expands nested shortpaths definitions
   *
-  * If you have the following config:
-  *     test = '/home/user/test'
-  *     mypath = '$test/mypath'
-  * 
-  * The shortpaths will be expanded to:
-  *     test = '/home/user/test'
-  *     mypath = '/home/user/test/mypath'
-  *
+  * Expands the following shortpath '$test/mypath' -> '/home/user/test/mypath'
   * NOTE that this function only expands one alias at a time i.e
   *     test = '/home/user/test'
   *     a = '$test/a'
   *     b = '$a/b'
-  *     c = '$a/c'
-  * Will expand b to '$test/a' and not '/home/user/test/a/b'
-  *
+  * Will expand b to '$test/a' and not all the way to '/home/user/test/a/b'
   * This could be fixed by generating a proper trie dependency tree upon
   * first reading and parsing the config, and using that as well in expand/fold shortpaths
   * to iterate.
@@ -164,33 +154,25 @@ pub fn expand_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
     PathBuf::from(output)
 }
 
-/// Folds nested shortpaths, environment variables
-pub fn fold_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
-    let mut output = String::from(path.to_str().unwrap());
-    let current_key = path.file_name().unwrap().to_str().to_owned().unwrap().to_owned();
-    trace!("current_key: {}", current_key);
+/** Folds nested shortpaths */
+pub fn fold_shortpath(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
+    let mut output = shortpath.to_str().unwrap().to_string();
+    
+    let search_term = shortpath.file_name().unwrap().to_str().unwrap();
+    trace!("Attempting to fold path: {}", output);
 
-    // Get the shortpath alias associated with this path
-    for (k, v) in spaths.into_iter() {
-        let key = spaths.get_by_right(path);
-        trace!("Key: {:?}", key);
-        if output.contains(&v.to_str().unwrap()) {
-            if k != &current_key {
-                let nested_alias_name = format!("${}", k);
-                trace!("nested_alias_name: {}", nested_alias_name);
-
-                let nested_alias_path = String::from(v.to_str().unwrap());
-                trace!("nested_alias_path: {}", nested_alias_path);
-
-                let alias_path = String::from(path.to_str().unwrap());
-
-                let (_, alias_subdir) = alias_path.split_once(&nested_alias_path).unwrap();
-                trace!("alias_subdir: {}", alias_subdir);
-
-                let replace_with = format!("{}{}", nested_alias_name, alias_subdir);
-                output = output.replace(&output, &replace_with);
-                trace!("output: {}", output);
-            }
+    for (alias_name, alias_path) in spaths {
+        trace!("Alias Name: {}", alias_name);
+        if alias_name == search_term {
+            break; // Don't fold an already folded path. In the future this could change but right now it just complicates things
+        }
+        let nested_path = alias_path.to_str().unwrap();
+        if output.contains(nested_path) {
+            // Shortens '/home/user/aaaa/path' -> '$aaaa/path'
+            let this = nested_path;
+            let with = format!("${}", &alias_name);
+            output = output.replace(&this, &with);
+            trace!("Folded shortpath to: {}", output);
         }
     }
     PathBuf::from(output)
@@ -198,13 +180,10 @@ pub fn fold_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
 
 /** Searches for matching file names
   * 
-  * Lets say we have the following path on our system:
-  *     test = '/home/user/Workspace/test'
-  * Now we move our directory to '/home/user/test' without updating the shortpath.
-  *
-  * `find_matching_path` attempts to look in the parent directory for a matching name
-  * In this case the name to search will be 'test'
-  *
+  * If we have:
+  *     test = '/home/user/Workspace/test',
+  * and we change the directory on disk but forget to update the shortpath then
+  * find_matching_path tries to find it in the parent directory by comparing the file name (e.g 'test')
   * If a match cannot be found, the path is unset.
   *
   * TODO Implement searching by nearest neighbours/parents
@@ -230,34 +209,7 @@ pub fn find_matching_path(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
         debug!("Looking for matching name");
         let files: Vec<DirEntry> = parent_files.into_iter()
             .filter_map(Result::ok)
-            //.filter_map(|file| {
-                //match file {
-                    //Ok(f) => { trace!("File: {}", f.file_name().to_str().unwrap()); Some(f) }
-                    //_ => { None }
-                //}
-            //}).collect::<Vec<DirEntry>>().into_iter()
             .collect::<Vec<DirEntry>>().into_iter()
-                //if let Ok(f) = file {
-                    //trace!("File: {}", f.file_name().to_str().unwrap());
-                    //Some(f)
-                //} else { None }
-
-                //Result::Ok()
-                //if let Ok(f) = file {
-                    //Some(f)
-                //} else {
-                    //None
-                //}
-
-            //.filter_map(|file|
-                //if let Ok(f) = file {
-                    //trace!("File: {}", f.file_name().to_str().unwrap());
-                    //Some(f)
-                //} else {
-                    //None
-                //}
-
-                //)
             .map(|f| {
                 trace!("File: {}", f.file_name().to_str().unwrap());
                 f
