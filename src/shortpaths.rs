@@ -134,15 +134,6 @@ impl App {
     /** Update a single shortpath's alias name or path
       * Changes the name or path if given and are unique */
     pub fn update(&mut self, current_name: &str, alias_name: Option<&String>, alias_path: Option<&String>) {
-
-        
-        //let is_given = |s: Option<String>| {
-            //match 
-        //};
-        //let is_modified_and_given = |s: String| {
-
-        //}
-
         if let Some(new_path) = alias_path {
             let path = PathBuf::from(new_path);
             if &path != self.shortpaths.get_by_left(current_name).unwrap() {
@@ -154,25 +145,6 @@ impl App {
                 self.shortpaths.insert(new_name.to_owned(), path);
             }
         } 
-
-        //self.shortpaths.insert(new_name.to_owned(), path);
-        //match (alias_name, alias_path) {
-            //(Some(new_name),_) => {
-                //let path = self.shortpaths.remove_by_left(current_name).unwrap().1;
-                //self.shortpaths.insert(new_name.to_owned(), path);
-            //}
-            //(_, Some(new_path)) => {
-                //self.shortpaths.insert(current_name.to_owned(), PathBuf::from(new_path));
-            //}
-            //_ => {} // Don't update anything
-        //}
-        // 
-        //if let Some(new_path) = alias_path {
-            //self.shortpaths.insert(current_name.to_owned(), PathBuf::from(new_path));
-        //} else if let Some(new_name) = alias_name {
-            //let path = self.shortpaths.remove_by_left(current_name).unwrap().1;
-        //} 
-        //self.shortpaths.insert(new_name.to_owned(), path);
     }
 }
 
