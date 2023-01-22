@@ -204,70 +204,49 @@ pub fn fold_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
     PathBuf::from(output)
 }
 
-/**
-  * Searches for matching file paths
+/** Searches for matching file names
   * 
-  * Note that the file name of the original shortpath is used to find
-  * the file and return its new updated path. If the file/folder is renamed/deleted
-  * then it will not be possible to automatically find the 'new' path.
+  * Lets say we have the following path on our system:
+  *     test = '/home/user/Workspace/test'
+  * Now we move our directory to '/home/user/test' without updating the shortpath.
   *
-  * Whenever we rename files, we add a hook to call the `shortpaths update` command, and
-  * when we delete files, we add a hook to rm  to call `shortpaths remove`
+  * `find_matching_path` attempts to look in the parent directory for a matching name
+  * In this case the name to search will be 'test'
+  *
+  * If a match cannot be found, the path is unset.
+  *
+  * TODO Implement searching by nearest neighbours/parents
+  *     - First check nearest neighbours up to 2 sub directories
+  *     - If not found, then go up one parent directory
+  * TODO Implement fast alternative prolog exhaustive search to find matching
+  *     directories. Alternatively, use locate-style finding.
+  * TODO Add directories to exclude from search space
+  * 
+  * NOTE This function isn't used often since we have the shell hooks to update/remove shortpaths
   */
 pub fn find_matching_path(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
-    // Expand nested shortpaths
     let expanded = expand_shortpath(shortpath, spaths);
-    //trace!("Expanded shortpath: {}", expanded.display());
 
-    let mut next = expanded.as_path();
-
+    let mut next = expanded.as_path().parent();
     let mut new_path = PathBuf::new();
-    while next.parent().unwrap() != expanded {
-        debug!("In Directory {}", next.display());
-        let parent_files = WalkDir::new(next).max_depth(1);
-        
+
+    while let Some(dir) = next {
+        debug!("In Directory {}", dir.display());
+        let parent_files = WalkDir::new(dir).max_depth(1);
+
         debug!("Looking for matching name");
         let files: Vec<DirEntry> = parent_files.into_iter()
             .filter_map(Result::ok)
             .collect::<Vec<DirEntry>>().into_iter()
             .filter(|file| has_equal_fname(&file, expanded.as_path())).collect();
-                //if let Ok(f) = file {
-                //}
-                //false
 
-        //let files: Vec<DirEntry> = parent_files.into_iter()
-            //.filter_map(|file| {
-                //if let Ok(f) = file {
-                    //if has_equal_fname(&f, expanded.as_path()) { return Some(f) }
-                //}
-                //None
-            //}).collect();
-
-        //let mut files: Vec<DirEntry> = vec![];
-        //for file in parent_files {
-            //if let Ok(e) = file {
-                //if has_equal_fname(&e, expanded.as_path()) {
-                    //files.push(e);
-                //}
-            //}
-        //}
-
-        // Get first matching result
-        let first = files.first();
-        
-        // Return the shortpath if it exists
-        match first {
-            Some(path) => {
-                new_path = path.path().to_path_buf();
-                new_path = fold_shortpath(&new_path, spaths); // Fold shortpaths into aliases
-                debug!("Match Found: {}", new_path.display());
-                break;
-            }
-            None => {
-                // Continue searching
-                next = next.parent().unwrap();
-            }
+        // Return the matching path if it exists
+        if let Some(path) = files.first(){
+            new_path = fold_shortpath(&path.path().to_path_buf(), spaths);
+            debug!("Match Found: {}", new_path.display());
+            break;
         }
+        next = dir.parent(); // Continue searching
     }
 
     if let None = new_path.to_str() {
