@@ -4,10 +4,7 @@ use crate::{
     shortpaths::{Shortpaths, fold_shortpath, expand_shortpath},
 };
 
-use std::{
-    path::PathBuf,
-    cmp::Ordering,
-};
+use std::path::PathBuf;
 
 use bimap::BiHashMap;
 
@@ -20,7 +17,7 @@ pub struct BashExporter {
 }
 
 pub fn fmt_bash_alias(name: &str, path: &PathBuf) -> String {
-    format!("alias {}=\"{}\"\n", name, path.display())
+    format!("export {}=\"{}\"\n", name, path.display())
 }
 
 impl BashExporter {
@@ -38,18 +35,12 @@ impl BashExporter {
 
         let sp = &self.spaths;
 
+        // Sort length of String
         let mut m = Vec::from_iter(sp.into_iter().map(|(_,v)| expand_shortpath(v, sp)));
-
+        let get_length = |p: &PathBuf| { p.to_str().unwrap().len() };
         m.sort_by(|a, b| {
-            let (sa, sb) = (a.to_str().unwrap(), b.to_str().unwrap());
-            let (la, lb) = (sa.len(), sb.len());
-            if la < lb {
-                Ordering::Less
-            } else if la == lb {
-                Ordering::Equal
-            } else {
-                Ordering::Greater
-            }
+            let (la, lb) = (get_length(a), get_length(b));
+            la.cmp(&lb)
         });
 
         for p in m {

@@ -120,8 +120,8 @@ fn main() {
                 sub_matches.get_one::<String>("EXPORT_TYPE").unwrap(),
                 sub_matches.get_one::<String>("OUTPUT_FILE"),
             );
-            app.export(export_type, output_file);
-            println!("Exported shell completions to {}", &output_file.unwrap());
+            let dest = app.export(export_type, output_file);
+            println!("Exported shell completions to {}", dest);
         }
         Some(("update", sub_matches)) => {
             let (current_name, alias_name, alias_path) = (

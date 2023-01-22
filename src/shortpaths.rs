@@ -117,7 +117,7 @@ impl App {
     }
 
     /** Serialize shortpaths to other formats for use in other applications */
-    pub fn export(&self, export_type: &str, output_file: Option<&String>) {
+    pub fn export(&self, export_type: &str, output_file: Option<&String>) -> String {
         let mut exp = get_exporter(export_type.into());
         exp.set_shortpaths(&self.shortpaths);
         
@@ -132,6 +132,7 @@ impl App {
         // Serialize
         let output = exp.gen_completions();
         fs::write(&dest, &output).expect("Unable to write to disk");
+        dest.to_str().unwrap().to_owned()
     }
 
     /** Update a single shortpath's alias name or path
