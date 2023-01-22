@@ -1,63 +1,28 @@
-use crate::shortpaths::{Shortpaths, fold_shortpath};
-use crate::{consts::PROGRAM_NAME, shortpaths::expand_shortpath};
-use crate::export::Export;
-
-// Idea: Think about creating a proper completions file for bash instead of just
-// creating bash aliases
-
-use std::{
-    path::{Path, PathBuf},
+use crate::{
+    consts::PROGRAM_NAME,
+    export::Export,
+    shortpaths::{Shortpaths, fold_shortpath, expand_shortpath},
 };
 
-use std::cmp::*;
+use std::{
+    path::PathBuf,
+    cmp::Ordering,
+};
 
 use bimap::BiHashMap;
 
-//fn compare_len_reverse_alpha(a: &String, b: &String) -> Ordering {
-    //// Sort by length from short to long first.
-    //let length_test = a.len().cmp(&b.len());
-    //if length_test == Ordering::Equal {
-        //// If same length, sort in reverse alphabetical order.
-        //return b.cmp(&a);
-    //}
-    //return length_test;
-//}
-
-//fn sort_by_string_length(vector: Vec<String>) {
-    //let mut s = String::new();
-    //for elem in vector {
-        //peek
-    //}
-    //String temp = s[i];
-
-    //// Insert s[j] at its correct position
-    //int j = i - 1;
-    //while (j >= 0 && temp.length() < s[j].length())
-    //{
-        //s[j+1] = s[j];
-        //j--;
-    //}
-    //s[j+1] = temp;
-//}
-//}
-
-//pub fn insertion_sort<T: Ord>(arr: &mut [T]) {
-    //for i in 1..arr.len() {
-        //let mut j = i;
-        //while j > 0 && arr[j] < arr[j - 1] {
-            //arr.swap(j, j - 1);
-            //j = j - 1;
-        //}
-    //}
-//}
-
+/* NOTE
+ * It may be a good idea in the future to generate a proper bash completions
+ * file instead of just generating the aliases script.
+ */
 pub struct BashExporter {
     spaths: Shortpaths,
 }
 
-pub fn fmt_bash_alias(name: String, path: &PathBuf) -> String {
-    format!("{}=\"{}\"\n", name, path.display())
+pub fn fmt_bash_alias(name: &str, path: &PathBuf) -> String {
+    format!("alias {}=\"{}\"\n", name, path.display())
 }
+
 impl BashExporter {
     pub fn new(spaths: Shortpaths) -> BashExporter {
         BashExporter { spaths }
@@ -72,17 +37,9 @@ impl BashExporter {
         output += "#!/bin/bash\n\n";
 
         let sp = &self.spaths;
-        //let m = Vec::from_iter(sp.into_iter().map(|(k,v)| expand_shortpath(v, sp)));
-        //let m: HashMap<&String, PathBuf> = HashMap::from_iter(sp.into_iter().map(|(k,v)| (k, expand_shortpath(v, sp))));
 
-        //for (k,v) in m {
-        //}
-        //let mut m = Vec::from_iter(sp.into_iter().map(|(k,v)| expand_shortpath(v, sp)));
         let mut m = Vec::from_iter(sp.into_iter().map(|(_,v)| expand_shortpath(v, sp)));
-        //m.sort_by(|p:PathBuf| if p.capacity())
-        //let mut max = 0;
-        //m.sort_by(|k,v| compare_len_reverse_alpha(k, v.to_str().unwrap().to_owned()));
-        //m.sort_by(|k,v| compare_len_reverse_alpha(k, v.to_str().unwrap().to_owned()));
+
         m.sort_by(|a, b| {
             let (sa, sb) = (a.to_str().unwrap(), b.to_str().unwrap());
             let (la, lb) = (sa.len(), sb.len());
@@ -95,20 +52,11 @@ impl BashExporter {
             }
         });
 
-        //let iter = sp.into_iter().chain(m);
         for p in m {
             let path = fold_shortpath(&p, &sp);
             let name = sp.get_by_right(&path).unwrap();
-            //output += &fmt_bash_alias(name.to_string(), &path);
-            output += &fmt_bash_alias(name.to_string(), &path);
+            output += &fmt_bash_alias(name, &path);
         }
-
-
-        //for (name, path) in &mut self.spaths.into_iter() {
-        //for (name, path) in sp.into_iter() {
-            ////output += &fmt_bash_alias(name.to_string(), &path);
-            //output += &fmt_bash_alias(name.to_string(), &path);
-        //}
         output
     }
 }
@@ -143,8 +91,11 @@ impl Export for BashExporter {
 // Unit Tests
 #[test]
 fn test_serialize_bash() {
+    use std:: path::Path;
+
     let mut bexp = BashExporter::new(BiHashMap::new());
     bexp.spaths.insert(String::from("aaaa"), Path::new("/test").to_path_buf());
+
     //let mut spaths: Shortpaths = BiHashMap::new();
     //spaths.insert(String::from("aaaa"), Path::new("/test").to_path_buf());
     //let actual = serialize_bash(&spaths);
