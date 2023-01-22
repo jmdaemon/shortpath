@@ -11,10 +11,8 @@ use std::{
     process::exit,
 } ;
 
-//use shortpaths::commands::{add,remove,check, autoindex, export,update};
-
-use clap::{arg, ArgAction, Command};
-use log::{debug, error, trace, info, warn, LevelFilter};
+use clap::{arg, ArgAction, Command, ArgMatches};
+use log::{info, LevelFilter};
 use pretty_env_logger::formatted_timed_builder;
 
 /// Creates the command line interface
@@ -67,17 +65,17 @@ pub fn build_cli() -> Command {
     cli
 }
 
-// TODO: Make a custom expand function when you check for the existence of a path
-// We'll need to deal with nested shortpaths soon in order to provide more resilient paths.
-
-fn main() {
-    let matches = build_cli().get_matches();
-
-    // Enable logging with `-v --verbose` flags
+// Enable logging with `-v --verbose` flags
+pub fn toggle_logging(matches: &ArgMatches) {
     let verbose: &bool = matches.get_one("verbose").unwrap();
     if *verbose == true {
         formatted_timed_builder().filter_level(LevelFilter::Trace).init();
     }
+}
+
+fn main() {
+    let matches = build_cli().get_matches();
+    toggle_logging(&matches);
 
     // Setup initial configs
     let mut app = App::new();
@@ -91,13 +89,11 @@ fn main() {
                 );
             app.add(&alias_name, &Path::new(&alias_path));
             println!("Saved shortpath {}: {}", alias_name, alias_path);
-            app.save_to_disk();
         }
         Some(("remove", sub_matches)) => {
             let current_name = sub_matches.get_one::<String>("ALIAS_NAME").unwrap();
             let path = app.remove(&current_name);
             println!("Removed {}: {}", current_name.to_owned(), path.display());
-            app.save_to_disk();
         }
         Some(("check", _)) => {
             let unreachable = app.check();
@@ -118,41 +114,14 @@ fn main() {
                 }
             };
             app.autoindex(Some(on_update));
-
-            //let unreachable = app.autoindex();
-            //let is_changed = |p1: &Path, p2: &Path| {p1 != p2};
-            //let shortpaths = app.shortpaths;
-
-            //let paths1 = unreachable.
-            
-            //use std::iter::Chain;
-
-            //let iter = unreachable.iter().chain(shortpaths.iter());
-
-            //iter.for_each(|(i1, i2)| {
-
-                //});
-
-            //unreachable.iter().foreach(
-
-                //);
-            //let is_changed = |p1: &Path, p2: &Path| {p1 != p2};
-                //if is_changed(&updated_path, &alias_path){
-                    //println!("Updating shortpath {} from {} to {}", alias_name, alias_path.display(), path.display());
-                //} else {
-                    //println!("Keeping shortpath {}: {}", alias_name, alias_path.display());
-                //}
-            app.save_to_disk();
         }
         Some(("export", sub_matches)) => {
             let (export_type, output_file) = (
                 sub_matches.get_one::<String>("EXPORT_TYPE").unwrap(),
                 sub_matches.get_one::<String>("OUTPUT_FILE"),
             );
-            //export(export_type, output_file, &app);
             app.export(export_type, output_file);
             println!("Exported shell completions to {}", &output_file.unwrap());
-            app.save_to_disk();
         }
         Some(("update", sub_matches)) => {
             let (current_name, alias_name, alias_path) = (
@@ -165,10 +134,9 @@ fn main() {
                 println!("Shortpath name or path must be provided");
                 exit(1);
             }
-            //update(current_name, alias_name, alias_path, &mut app);
             app.update(current_name, alias_name, alias_path);
-            app.save_to_disk();
         }
         _ => {}
     }
+    app.save_to_disk();
 }
