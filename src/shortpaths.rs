@@ -12,12 +12,12 @@ use std::{
     ffi::OsStr,
 };
 
-use bimap::BiHashMap;
+use bimap::{BiHashMap, Overwritten};
 use serde::{Serialize, Deserialize};
 use derivative::Derivative;
 use directories::ProjectDirs;
 
-use log::{debug, trace};
+use log::{debug, trace, info};
 use walkdir::{DirEntry, WalkDir};
 
 pub type Shortpaths = BiHashMap<String, PathBuf>;
@@ -71,6 +71,60 @@ impl App {
                 eprintln!("Could not save shortpaths to disk.\n{}", e);
             }
         }
+    }
+
+    /// Add a new shortpath
+    pub fn add(&mut self,  alias_name: &str, alias_path: &Path) -> Overwritten<String, PathBuf> {
+        self.shortpaths.insert(alias_name.into(), alias_path.into())
+    }
+
+    /// Remove a shortpath
+    pub fn remove(&mut self, current_name: &str) -> PathBuf {
+        self.shortpaths.remove_by_left(current_name).unwrap().1
+    }
+
+    /// Find unreachable shortpaths
+    pub fn check(&self) -> HashMap<&String, &PathBuf> {
+       let unreachable: HashMap<&String, &PathBuf> = self.shortpaths
+           .iter()
+           .filter(|(_, v)| if !v.exists() || v.to_str().is_none() { true } else { false }
+               )
+           .collect::<HashMap<&String, &PathBuf>>();
+        unreachable
+    }
+
+    /** Finds unreachable paths and tries to resolve them
+      * Expands/folds nested shortpaths */
+    pub fn autoindex(&self) -> Shortpaths {
+        info!("Finding unreachable shortpaths");
+
+        //let is_changed = |p1: &Path, p2: &Path| {p1 != p2};
+                //if is_changed(&updated_path, &alias_path){
+                    //println!("Updating shortpath {} from {} to {}", alias_name, alias_path.display(), path.display());
+                //} else {
+                    //println!("Keeping shortpath {}: {}", alias_name, alias_path.display());
+                //}
+
+
+        let sp = self.shortpaths.clone();
+        let shortpaths: Shortpaths = sp
+            .into_iter()
+            .map(|(alias_name, alias_path)| {
+                let alias_path = alias_path.as_path();
+                let shortpath = match alias_path.exists() {
+                    true => {
+                        fold_shortpath(&alias_path.to_path_buf(), &self.shortpaths)
+                    }
+                    false => {
+                        // If the path is unreachable
+                        let matching = find_matching_path(alias_path, &self.shortpaths);
+                        fold_shortpath(&matching, &self.shortpaths)
+                    }
+                };
+                (alias_name, shortpath)
+            }).collect();
+        //app.shortpaths = shortpaths;
+        shortpaths
     }
 }
 
