@@ -9,7 +9,7 @@ use std::{
     fs,
     path::{Path, PathBuf, Component},
     collections::HashMap,
-    ffi::OsStr, fmt::format,
+    ffi::OsStr,
 };
 
 use bimap::BiHashMap;

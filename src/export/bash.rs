@@ -6,8 +6,7 @@ use crate::export::Export;
 // creating bash aliases
 
 use std::{
-    path::{Path, PathBuf},
-    collections::HashMap,
+    path::PathBuf,
 };
 
 use std::cmp::*;
@@ -78,7 +77,8 @@ impl BashExporter {
 
         //for (k,v) in m {
         //}
-        let mut m = Vec::from_iter(sp.into_iter().map(|(k,v)| expand_shortpath(v, sp)));
+        //let mut m = Vec::from_iter(sp.into_iter().map(|(k,v)| expand_shortpath(v, sp)));
+        let mut m = Vec::from_iter(sp.into_iter().map(|(_,v)| expand_shortpath(v, sp)));
         //m.sort_by(|p:PathBuf| if p.capacity())
         //let mut max = 0;
         //m.sort_by(|k,v| compare_len_reverse_alpha(k, v.to_str().unwrap().to_owned()));

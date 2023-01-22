@@ -6,7 +6,7 @@ use shortpaths::consts::{
     PROGRAM_DESCRIPTION,
 };
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use shortpaths::commands::{add,remove,check, autoindex, export,update};
 
