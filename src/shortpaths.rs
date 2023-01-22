@@ -108,14 +108,6 @@ impl Config {
 }
 // End of config
 
-/// Determines if two paths share the same name
-pub fn has_equal_fname(e: &DirEntry, p: &Path) -> bool {
-    let entry_fname = e.path().file_name().unwrap();
-    let search_fname = p.file_name().unwrap();
-    trace!("Entry File Name : {}", entry_fname.clone().to_str().unwrap());
-    if entry_fname == search_fname { true } else { false }
-}
-
 /** Destructures and returns an alias name if there is one */
 pub fn get_alias_name(path: &[char]) -> Option<String> {
     match path {
@@ -226,6 +218,7 @@ pub fn fold_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
   */
 pub fn find_matching_path(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
     let expanded = expand_shortpath(shortpath, spaths);
+    let search_term: &OsStr = expanded.file_name().unwrap();
 
     let mut next = expanded.as_path().parent();
     let mut new_path = PathBuf::new();
@@ -237,8 +230,39 @@ pub fn find_matching_path(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
         debug!("Looking for matching name");
         let files: Vec<DirEntry> = parent_files.into_iter()
             .filter_map(Result::ok)
+            //.filter_map(|file| {
+                //match file {
+                    //Ok(f) => { trace!("File: {}", f.file_name().to_str().unwrap()); Some(f) }
+                    //_ => { None }
+                //}
+            //}).collect::<Vec<DirEntry>>().into_iter()
             .collect::<Vec<DirEntry>>().into_iter()
-            .filter(|file| has_equal_fname(&file, expanded.as_path())).collect();
+                //if let Ok(f) = file {
+                    //trace!("File: {}", f.file_name().to_str().unwrap());
+                    //Some(f)
+                //} else { None }
+
+                //Result::Ok()
+                //if let Ok(f) = file {
+                    //Some(f)
+                //} else {
+                    //None
+                //}
+
+            //.filter_map(|file|
+                //if let Ok(f) = file {
+                    //trace!("File: {}", f.file_name().to_str().unwrap());
+                    //Some(f)
+                //} else {
+                    //None
+                //}
+
+                //)
+            .map(|f| {
+                trace!("File: {}", f.file_name().to_str().unwrap());
+                f
+            })
+            .filter(|file| file.file_name() == search_term).collect();
 
         // Return the matching path if it exists
         if let Some(path) = files.first(){
