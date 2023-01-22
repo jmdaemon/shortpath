@@ -5,7 +5,6 @@ use crate::consts::{
     CONFIG_FILE_PATH,
 };
 
-//use core::slice::SlicePattern;
 use std::{
     fs,
     path::{Path, PathBuf, Component},
@@ -141,6 +140,10 @@ pub fn get_alias_name(path: &[char]) -> Option<String> {
   *     b = '$a/b'
   *     c = '$a/c'
   * Will expand b to '$test/a' and not '/home/user/test/a/b'
+  *
+  * This could be fixed by generating a proper trie dependency tree upon
+  * first reading and parsing the config, and using that as well in expand/fold shortpaths
+  * to iterate.
   */
 pub fn expand_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
     let mut output = path.to_str().unwrap().to_string();
@@ -155,17 +158,14 @@ pub fn expand_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
             let alias_name = get_alias_name(chars.as_slice());
 
             trace!("Alias Name: {:?}", alias_name);
-            match alias_name {
-                Some(alias) => {
-                    let nested_path = spaths.get_by_left(&alias).unwrap();
+            if let Some(alias) = alias_name {
+                let nested_path = spaths.get_by_left(&alias).unwrap();
 
-                    // Expands '$aaaa/path' -> '/home/user/aaaa/path'
-                    let this = format!("${}", &alias);
-                    let with = nested_path.to_str().to_owned().unwrap();
-                    output = output.replace(&this, with);
-                    trace!("Expanded shortpath to: {}", output);
-                }
-                None => {}
+                // Expands '$aaaa/path' -> '/home/user/aaaa/path'
+                let this = format!("${}", &alias);
+                let with = nested_path.to_str().to_owned().unwrap();
+                output = output.replace(&this, with);
+                trace!("Expanded shortpath to: {}", output);
             }
         }
     }
