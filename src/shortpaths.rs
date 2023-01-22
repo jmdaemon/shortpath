@@ -236,11 +236,21 @@ pub fn expand_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
 pub fn fold_shortpath(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
     let mut output = shortpath.to_str().unwrap().to_string();
     
+    //let search_term = match shortpath.file_name() {
+        ////Some(path) => { shortpath.file_name().unwrap().to_str().unwrap()}
+        //Some(path) => { path.to_str().unwrap() }
+        //None => { spaths.get_by_right(&shortpath.to_path_buf()).unwrap() }
+    //};
+    //let current_name = spaths.get_by_right(alias_path).unwrap();
     let search_term = shortpath.file_name().unwrap().to_str().unwrap();
     trace!("Attempting to fold path: {}", output);
 
     for (alias_name, alias_path) in spaths {
+        //let current_name = spaths.get_by_right(alias_path).unwrap();
         trace!("Alias Name: {}", alias_name);
+        //if alias_name == current_name {
+        // TODO: Note that this doesn't quite work, we don't have enough information
+        // to be able to make this decision here. 
         if alias_name == search_term {
             break; // Don't fold an already folded path. In the future this could change but right now it just complicates things
         }
