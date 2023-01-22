@@ -1,5 +1,4 @@
 use crate::shortpaths::{App, Shortpaths};
-use crate::export as E;
 use crate::export::get_exporter;
 use crate::shortpaths::{find_matching_path, fold_shortpath};
 
@@ -9,7 +8,8 @@ use std::{
     process::exit,
 };
 
-use log::{debug, error, trace, info, warn};
+use log::info;
+use bimap::Overwritten;
 
 //pub fn add<S, P>(alias_name: S, alias_path: P, app: &mut App)
 //where
@@ -17,7 +17,7 @@ use log::{debug, error, trace, info, warn};
 //P: Into<PathBuf>
 
 /// Adds a new shortpath to the list of shortpaths
-pub fn add(alias_name: &str, alias_path: &Path, app: &mut App) -> bimap::Overwritten<String, PathBuf> {
+pub fn add(alias_name: &str, alias_path: &Path, app: &mut App) -> Overwritten<String, PathBuf> {
     app.shortpaths.insert(alias_name.into(), alias_path.into())
 }
 
@@ -60,7 +60,8 @@ pub fn autoindex(app: &mut App) {
     app.shortpaths = shortpaths;
 }
 
-pub fn export(export_type: &str, output_file: Option<&String>, app: &mut App) {
+/** Serialize shortpaths to other formats for use in other applications */
+pub fn export(export_type: &str, output_file: Option<&String>, app: &App) {
     let mut exp = get_exporter(export_type.into());
     exp.set_shortpaths(&app.shortpaths);
     
@@ -76,9 +77,7 @@ pub fn export(export_type: &str, output_file: Option<&String>, app: &mut App) {
 
     // Serialize
     let output = exp.gen_completions();
-
-    E::export(&dest, output);
-    println!("Exported shell completions to {}", &dest.display());
+    fs::write(&dest, &output).expect("Unable to write to disk");
 }
 
 pub fn update(current_name: &str, alias_name: Option<&String>, alias_path: Option<&String>, app: &mut App) {

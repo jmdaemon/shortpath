@@ -4,11 +4,6 @@ pub mod bash;
 use crate::shortpaths::Shortpaths;
 use crate::export::bash::BashExporter;
 
-use std::{
-    fs,
-    path::PathBuf
-};
-
 /*
  * Completion Paths
  * Bash        : ./completions/shortpaths.bash
@@ -27,10 +22,4 @@ pub fn get_exporter(shell_type: &str) -> Box<dyn Export> {
         "bash" => Box::new(BashExporter::default()),
         _ => Box::new(BashExporter::default())
     }
-}
-
-/** Writes outputs to disk
-  * If this function fails, execution stops */
-pub fn export(dest: &PathBuf, output: String) {
-    fs::write(dest, output).expect("Could not export file");
 }

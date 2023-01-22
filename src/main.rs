@@ -111,7 +111,8 @@ fn main() {
                 sub_matches.get_one::<String>("EXPORT_TYPE").unwrap(),
                 sub_matches.get_one::<String>("OUTPUT_FILE"),
             );
-            export(export_type, output_file, &mut app);
+            export(export_type, output_file, &app);
+            println!("Exported shell completions to {}", &output_file.unwrap());
             app.save_to_disk();
         }
         Some(("update", sub_matches)) => {

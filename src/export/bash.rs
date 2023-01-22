@@ -6,7 +6,7 @@ use crate::export::Export;
 // creating bash aliases
 
 use std::{
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use std::cmp::*;
@@ -139,6 +139,7 @@ impl Export for BashExporter {
         self.spaths = spaths.clone();
     }
 }
+
 // Unit Tests
 #[test]
 fn test_serialize_bash() {
