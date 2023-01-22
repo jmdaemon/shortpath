@@ -97,33 +97,19 @@ impl App {
       * Expands/folds nested shortpaths */
     pub fn autoindex(&self) -> Shortpaths {
         info!("Finding unreachable shortpaths");
-
-        //let is_changed = |p1: &Path, p2: &Path| {p1 != p2};
-                //if is_changed(&updated_path, &alias_path){
-                    //println!("Updating shortpath {} from {} to {}", alias_name, alias_path.display(), path.display());
-                //} else {
-                    //println!("Keeping shortpath {}: {}", alias_name, alias_path.display());
-                //}
-
-
-        let sp = self.shortpaths.clone();
-        let shortpaths: Shortpaths = sp
-            .into_iter()
-            .map(|(alias_name, alias_path)| {
-                let alias_path = alias_path.as_path();
-                let shortpath = match alias_path.exists() {
-                    true => {
-                        fold_shortpath(&alias_path.to_path_buf(), &self.shortpaths)
-                    }
-                    false => {
-                        // If the path is unreachable
-                        let matching = find_matching_path(alias_path, &self.shortpaths);
-                        fold_shortpath(&matching, &self.shortpaths)
-                    }
-                };
-                (alias_name, shortpath)
-            }).collect();
-        //app.shortpaths = shortpaths;
+        let mut shortpaths: Shortpaths = BiHashMap::new();
+        for (alias_name, alias_path) in &self.shortpaths {
+            let alias_path = alias_path.as_path();
+            let shortpath = match alias_path.exists() {
+                true => fold_shortpath(&alias_path.to_path_buf(), &self.shortpaths),
+                false => {
+                    // If the path is unreachable
+                    let matching = find_matching_path(alias_path, &self.shortpaths);
+                    fold_shortpath(&matching, &self.shortpaths)
+                }
+            };
+            shortpaths.insert(alias_name.clone(), shortpath);
+        }
         shortpaths
     }
 }
