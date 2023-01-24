@@ -104,12 +104,17 @@ impl App {
                 true => fold_shortpath(&alias_path.to_path_buf(), &self.shortpaths),
                 false => {
                     // If the path is unreachable
-                    let matching = find_matching_path(alias_path, &self.shortpaths);
-                    fold_shortpath(&matching, &self.shortpaths)
+                    let expanded = expand_shortpath(alias_path, &self.shortpaths);
+                    //let matching = find_matching_path(&expanded, &self.shortpaths);
+                    let matching = find_matching_path(&expanded);
+                    let folded = fold_shortpath(&matching, &self.shortpaths);
+                    //fold_shortpath(&matching, &self.shortpaths)
+                    folded
                 }
             };
             if let Some(on_update) = on_update {
-                on_update(alias_name, shortpath.as_path(), alias_path);
+                //on_update(alias_name, shortpath.as_path(), alias_path);
+                on_update(alias_name, alias_path, shortpath.as_path());
             }
             shortpaths.insert(alias_name.clone(), shortpath);
         }
@@ -283,11 +288,14 @@ pub fn fold_shortpath(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
   * 
   * NOTE This function isn't used often since we have the shell hooks to update/remove shortpaths
   */
-pub fn find_matching_path(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
-    let expanded = expand_shortpath(shortpath, spaths);
-    let search_term: &OsStr = expanded.file_name().unwrap();
+//pub fn find_matching_path(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
+pub fn find_matching_path(shortpath: &Path) -> PathBuf {
+    //let expanded = expand_shortpath(shortpath, spaths);
+    let search_term: &OsStr = shortpath.file_name().unwrap();
 
-    let mut next = expanded.as_path().parent();
+    //let mut next = expanded.as_path().parent();
+    //let mut next = shortpath.as_path().parent();
+    let mut next = shortpath.parent();
     let mut new_path = PathBuf::new();
 
     while let Some(dir) = next {
@@ -306,7 +314,8 @@ pub fn find_matching_path(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
 
         // Return the matching path if it exists
         if let Some(path) = files.first(){
-            new_path = fold_shortpath(&path.path().to_path_buf(), spaths);
+            //new_path = fold_shortpath(&path.path().to_path_buf(), spaths);
+            new_path = path.path().to_path_buf();
             debug!("Match Found: {}", new_path.display());
             break;
         }

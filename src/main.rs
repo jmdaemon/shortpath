@@ -105,7 +105,7 @@ fn main() {
             println!("Updating shortpaths");
             info!("Finding unreachable shortpaths");
 
-            let on_update = |alias_name: &String, updated_path: &Path, alias_path: &Path| {
+            let on_update = |alias_name: &String, alias_path: &Path, updated_path: &Path| {
                 let is_changed = |p1: &Path, p2: &Path| {p1 != p2};
                 if is_changed(updated_path, alias_path) {
                     println!("Updating shortpath {} from {} to {}", alias_name, alias_path.display(), updated_path.display());
