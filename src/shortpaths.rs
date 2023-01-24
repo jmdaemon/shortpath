@@ -97,6 +97,13 @@ impl App {
       * Expands/folds nested shortpaths */
     pub fn autoindex(&self, on_update: Option<fn(&String, &Path, &Path) -> ()>) -> Shortpaths {
         info!("Finding unreachable shortpaths");
+        let on_none = |result: &PathBuf, shortpath: &Path| {
+            if let None = result.to_str() {
+                eprintln!("Could not find directory: {}", shortpath.to_str().unwrap());
+                //eprintln!("Unsetting shortpath");
+                //eprintln!("Unsetting shortpath");
+            }
+        };
         let mut shortpaths: Shortpaths = BiHashMap::new();
         for (alias_name, alias_path) in &self.shortpaths {
             let alias_path = alias_path.as_path();
@@ -105,15 +112,23 @@ impl App {
                 false => {
                     // If the path is unreachable
                     let expanded = expand_shortpath(alias_path, &self.shortpaths);
-                    //let matching = find_matching_path(&expanded, &self.shortpaths);
                     let matching = find_matching_path(&expanded);
-                    let folded = fold_shortpath(&matching, &self.shortpaths);
-                    //fold_shortpath(&matching, &self.shortpaths)
-                    folded
+
+                    match matching {
+                        Some(path) => {
+                            let folded = fold_shortpath(&path, &self.shortpaths);
+                            folded
+                        }
+                        None => {
+                            //let empty_path = PathBuf::new();
+                            on_none(&expanded, &alias_path);
+                            //empty_path
+                            alias_path.to_path_buf() // Don't change it
+                        }
+                    }
                 }
             };
             if let Some(on_update) = on_update {
-                //on_update(alias_name, shortpath.as_path(), alias_path);
                 on_update(alias_name, alias_path, shortpath.as_path());
             }
             shortpaths.insert(alias_name.clone(), shortpath);
@@ -240,20 +255,12 @@ pub fn expand_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
 /** Folds nested shortpaths */
 pub fn fold_shortpath(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
     let mut output = shortpath.to_str().unwrap().to_string();
-    
-    //let search_term = match shortpath.file_name() {
-        ////Some(path) => { shortpath.file_name().unwrap().to_str().unwrap()}
-        //Some(path) => { path.to_str().unwrap() }
-        //None => { spaths.get_by_right(&shortpath.to_path_buf()).unwrap() }
-    //};
-    //let current_name = spaths.get_by_right(alias_path).unwrap();
+
     let search_term = shortpath.file_name().unwrap().to_str().unwrap();
     trace!("Attempting to fold path: {}", output);
 
     for (alias_name, alias_path) in spaths {
-        //let current_name = spaths.get_by_right(alias_path).unwrap();
         trace!("Alias Name: {}", alias_name);
-        //if alias_name == current_name {
         // TODO: Note that this doesn't quite work, we don't have enough information
         // to be able to make this decision here. 
         if alias_name == search_term {
@@ -288,15 +295,9 @@ pub fn fold_shortpath(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
   * 
   * NOTE This function isn't used often since we have the shell hooks to update/remove shortpaths
   */
-//pub fn find_matching_path(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
-pub fn find_matching_path(shortpath: &Path) -> PathBuf {
-    //let expanded = expand_shortpath(shortpath, spaths);
-    let search_term: &OsStr = shortpath.file_name().unwrap();
-
-    //let mut next = expanded.as_path().parent();
-    //let mut next = shortpath.as_path().parent();
+pub fn find_matching_path(shortpath: &Path) -> Option<PathBuf> {
+    let search_term = shortpath.file_name().unwrap();
     let mut next = shortpath.parent();
-    let mut new_path = PathBuf::new();
 
     while let Some(dir) = next {
         debug!("In Directory {}", dir.display());
@@ -313,18 +314,12 @@ pub fn find_matching_path(shortpath: &Path) -> PathBuf {
             .filter(|file| file.file_name() == search_term).collect();
 
         // Return the matching path if it exists
-        if let Some(path) = files.first(){
-            //new_path = fold_shortpath(&path.path().to_path_buf(), spaths);
-            new_path = path.path().to_path_buf();
+        if let Some(path) = files.first() {
+            let new_path = path.path().to_path_buf();
             debug!("Match Found: {}", new_path.display());
-            break;
+            return Some(new_path);
         }
         next = dir.parent(); // Continue searching
     }
-
-    if let None = new_path.to_str() {
-        eprintln!("Could not find directory: {}", shortpath.to_str().unwrap());
-        eprintln!("Unsetting shortpath");
-    }
-    new_path
+    None
 }
