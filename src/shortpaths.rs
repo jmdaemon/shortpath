@@ -106,13 +106,13 @@ impl App {
             let shortpath = match alias_path.exists() {
                 true => fold_shortpath(alias_path, &self.shortpaths),
                 false => {
+                    // FIXME Too many layers of indentation
                     let expanded_maybe = expand_shortpath(alias_path, &self.shortpaths);
                     if let Some(expanded) = expanded_maybe {
                         let matching = find_matching_path(&expanded);
                         let return_path = match matching {
                             Some(path) => fold_shortpath(&path, &self.shortpaths),
                             None => {
-                                //on_none(&expanded, &alias_path);
                                 on_none(&alias_path, &alias_path);
                                 alias_path.to_path_buf() // Don't change it
                             }
@@ -123,39 +123,6 @@ impl App {
                     }
                 }
             };
-            //let shortpath = match expand_shortpath(alias_path, &self.shortpaths) {
-                //Some(path) => fold_shortpath(alias_path, &self.shortpaths),
-                //None => {
-                    ////let expanded = expand_shortpath(alias_path, &self.shortpaths);
-                    ////let matching = find_matching_path(&expanded);
-                    //let matching = find_matching_path(&alias_path);
-
-                    //match matching {
-                        //Some(path) => fold_shortpath(&path, &self.shortpaths),
-                        //None => {
-                            ////on_none(&expanded, &alias_path);
-                            //on_none(&alias_path, &alias_path);
-                            //alias_path.to_path_buf() // Don't change it
-                        //}
-                    //}
-                //}
-            //};
-            //let shortpath = match alias_path.exists() {
-                //true => fold_shortpath(alias_path, &self.shortpaths),
-                //false => {
-                    //// If the path is unreachable
-                    //let expanded = expand_shortpath(alias_path, &self.shortpaths);
-                    //let matching = find_matching_path(&expanded);
-
-                    //match matching {
-                        //Some(path) => fold_shortpath(&path, &self.shortpaths),
-                        //None => {
-                            //on_none(&expanded, &alias_path);
-                            //alias_path.to_path_buf() // Don't change it
-                        //}
-                    //}
-                //}
-            //};
             if let Some(on_update) = on_update {
                 on_update(alias_name, alias_path, shortpath.as_path());
             }
