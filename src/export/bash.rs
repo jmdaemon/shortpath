@@ -41,17 +41,86 @@ impl BashExporter {
 
         // Sort length of String
         trace!("Expanding shortpaths");
-        let mut m = Vec::from_iter(sp.into_iter().map(|(_,v)| expand_shortpath(v, sp)));
+        //let mut m = Vec::from_iter(
+        //let mut m = 
+            //sp.into_iter()
+            //.map(|(_,v)| expand_shortpath(v, sp))
+            //.filter_map(Option::Some)
+            //.collect::<Option<PathBuf>>()
+            ////.filter_map(Option::Some)
+            ////.collect::<Vec<&PathBuf>>());
+            ////.collect::<Option<Vec<&PathBuf>>>());
+            //.into_iter()
+            //.collect::<Vec<PathBuf>>();
+
+        let mut m = 
+            sp.into_iter()
+            .map(|(_,v)| expand_shortpath(v, sp).unwrap_or(v.to_owned()))
+            //.filter_map(Option::Some)
+            //.collect::<Vec<&PathBuf>>());
+            //.collect::<Option<Vec<&PathBuf>>>());
+            .into_iter()
+            .collect::<Vec<PathBuf>>();
+        //let mut m = 
+            //sp.into_iter()
+            //.map(|(_,v)| expand_shortpath(v, sp))
+            ////.filter_map(Option::Some)
+            ////.collect::<Vec<&PathBuf>>());
+            ////.collect::<Option<Vec<&PathBuf>>>());
+            //.into_iter()
+            //.collect::<Vec<Option<PathBuf>>>();
+
+        //m.iter().for_each(|p| trace!("p: {}", p.display()));
+
         let get_length = |p: &PathBuf| { p.to_str().unwrap().len() };
         m.sort_by(|a, b| {
             let (la, lb) = (get_length(a), get_length(b));
             la.cmp(&lb)
+
+            //match (a,b) {
+                //(Some(a), Some(b)) => {
+                    //let (la, lb) = (get_length(a), get_length(b));
+                    //la.cmp(&lb)
+                //}
+                //_ => {
+                    //std::cmp::Ordering::Less
+                //}
+            //}
         });
 
         trace!("Folding shortpaths");
+        // For expanding:
+        // We have the expanded path, now we have to expand it
+        // We want to default the path to the non expanded version if it does not exist
+        // We have the folded path, now we have to expand it
+        // We want to default the path to the non folded version if it does not exist
+
+        // For folding:
+        // We have the expanded path, now we have to fold it
+        // We want to default the path to the non expanded version if it does not exist
         for p in m {
-            let path = fold_shortpath(&p, sp);
+            // If the path is none 
+            //if let Some(pb) = p {
+
+            //let path = fold_shortpath(p.as_path(), sp).unwrap_or(p);
+            //let path = fold_shortpath(pb.as_path(), sp);
+            let path = fold_shortpath(p.as_path(), sp);
+            //let mut name = sp.get_by_right(&path).unwrap();
             let name = sp.get_by_right(&path).unwrap();
+            
+            //let path = match path {
+                //Some(folded) => fold_shortpath(&p, sp),
+                //None => p
+            //};
+
+            //let path = if !p.exists() {
+            ////let path = fold_shortpath(&p, sp);
+                //fold_shortpath(&p, sp)
+            //} else {
+                //p
+            //};
+            //let name = sp.get_by_right(&path).unwrap();
+
             //let path = fold_shortpath(p.as_path(), sp);
             //let path = p;
             trace!("name: {}", name);
@@ -59,7 +128,8 @@ impl BashExporter {
             let serialized = fmt_bash_alias(&name, &path);
             trace!("serialized: {}", serialized);
             output += &serialized;
-        }
+            }
+        //}
         trace!("output: {}", output);
         output
     }

@@ -10,7 +10,6 @@ use std::{
     fs,
     path::{Path, PathBuf, Component},
     collections::HashMap,
-    ffi::OsStr,
 };
 
 use bimap::{BiHashMap, Overwritten};
@@ -100,34 +99,63 @@ impl App {
         let on_none = |result: &PathBuf, shortpath: &Path| {
             if let None = result.to_str() {
                 eprintln!("Could not find directory: {}", shortpath.to_str().unwrap());
-                //eprintln!("Unsetting shortpath");
-                //eprintln!("Unsetting shortpath");
             }
         };
         let mut shortpaths: Shortpaths = BiHashMap::new();
         for (alias_name, alias_path) in &self.shortpaths {
-            let alias_path = alias_path.as_path();
             let shortpath = match alias_path.exists() {
-                true => fold_shortpath(&alias_path.to_path_buf(), &self.shortpaths),
+                true => fold_shortpath(alias_path, &self.shortpaths),
                 false => {
-                    // If the path is unreachable
-                    let expanded = expand_shortpath(alias_path, &self.shortpaths);
-                    let matching = find_matching_path(&expanded);
-
-                    match matching {
-                        Some(path) => {
-                            let folded = fold_shortpath(&path, &self.shortpaths);
-                            folded
-                        }
-                        None => {
-                            //let empty_path = PathBuf::new();
-                            on_none(&expanded, &alias_path);
-                            //empty_path
-                            alias_path.to_path_buf() // Don't change it
-                        }
+                    let expanded_maybe = expand_shortpath(alias_path, &self.shortpaths);
+                    if let Some(expanded) = expanded_maybe {
+                        let matching = find_matching_path(&expanded);
+                        let return_path = match matching {
+                            Some(path) => fold_shortpath(&path, &self.shortpaths),
+                            None => {
+                                //on_none(&expanded, &alias_path);
+                                on_none(&alias_path, &alias_path);
+                                alias_path.to_path_buf() // Don't change it
+                            }
+                        };
+                        return_path
+                    } else {
+                        alias_path.to_path_buf() // Don't change it
                     }
                 }
             };
+            //let shortpath = match expand_shortpath(alias_path, &self.shortpaths) {
+                //Some(path) => fold_shortpath(alias_path, &self.shortpaths),
+                //None => {
+                    ////let expanded = expand_shortpath(alias_path, &self.shortpaths);
+                    ////let matching = find_matching_path(&expanded);
+                    //let matching = find_matching_path(&alias_path);
+
+                    //match matching {
+                        //Some(path) => fold_shortpath(&path, &self.shortpaths),
+                        //None => {
+                            ////on_none(&expanded, &alias_path);
+                            //on_none(&alias_path, &alias_path);
+                            //alias_path.to_path_buf() // Don't change it
+                        //}
+                    //}
+                //}
+            //};
+            //let shortpath = match alias_path.exists() {
+                //true => fold_shortpath(alias_path, &self.shortpaths),
+                //false => {
+                    //// If the path is unreachable
+                    //let expanded = expand_shortpath(alias_path, &self.shortpaths);
+                    //let matching = find_matching_path(&expanded);
+
+                    //match matching {
+                        //Some(path) => fold_shortpath(&path, &self.shortpaths),
+                        //None => {
+                            //on_none(&expanded, &alias_path);
+                            //alias_path.to_path_buf() // Don't change it
+                        //}
+                    //}
+                //}
+            //};
             if let Some(on_update) = on_update {
                 on_update(alias_name, alias_path, shortpath.as_path());
             }
@@ -225,12 +253,9 @@ pub fn get_alias_name(path: &[char]) -> Option<String> {
   * first reading and parsing the config, and using that as well in expand/fold shortpaths
   * to iterate.
   */
-pub fn expand_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
-    let mut output = path.to_str().unwrap().to_string();
-    trace!("Attempting to expand path: {}", output);
-
-    let iter = path.components().peekable();
-    for component in iter {
+pub fn expand_shortpath(path: &Path, spaths: &Shortpaths) -> Option<PathBuf> {
+    trace!("Attempting to expand path: {}", path.to_str().unwrap());
+    for component in path.components() {
         trace!("Path Component: {}", component.as_os_str().to_str().unwrap());
         if let Component::Normal(path_component) = component {
             let spath = path_component.to_str().unwrap().to_string();
@@ -244,12 +269,13 @@ pub fn expand_shortpath(path: &Path, spaths: &Shortpaths) -> PathBuf {
                 // Expands '$aaaa/path' -> '/home/user/aaaa/path'
                 let this = format!("${}", &alias);
                 let with = nested_path.to_str().to_owned().unwrap();
-                output = output.replace(&this, with);
+                let output = path.to_str().unwrap().to_string().replace(&this, with);
                 trace!("Expanded shortpath to: {}", output);
+                return Some(PathBuf::from(output))
             }
         }
     }
-    PathBuf::from(output)
+    None
 }
 
 /** Folds nested shortpaths */
