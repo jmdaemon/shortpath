@@ -104,14 +104,14 @@ impl App {
         let mut shortpaths: Shortpaths = BiHashMap::new();
         for (alias_name, alias_path) in &self.shortpaths {
             let shortpath = match alias_path.exists() {
-                true => fold_shortpath(alias_path, &self.shortpaths),
+                true => fold_shortpath(alias_name, alias_path, &self.shortpaths),
                 false => {
                     // FIXME Too many layers of indentation
                     let expanded_maybe = expand_shortpath(alias_path, &self.shortpaths);
                     if let Some(expanded) = expanded_maybe {
                         let matching = find_matching_path(&expanded);
                         let return_path = match matching {
-                            Some(path) => fold_shortpath(&path, &self.shortpaths),
+                            Some(path) => fold_shortpath(alias_name, &path, &self.shortpaths),
                             None => {
                                 on_none(&alias_path, &alias_path);
                                 alias_path.to_path_buf() // Don't change it
@@ -246,7 +246,7 @@ pub fn expand_shortpath(path: &Path, spaths: &Shortpaths) -> Option<PathBuf> {
 }
 
 /** Folds nested shortpaths */
-pub fn fold_shortpath(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
+pub fn fold_shortpath(alias: &String, shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
     let mut output = shortpath.to_str().unwrap().to_string();
 
     let search_term = shortpath.file_name().unwrap().to_str().unwrap();
@@ -256,7 +256,8 @@ pub fn fold_shortpath(shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
         trace!("Alias Name: {}", alias_name);
         // TODO: Note that this doesn't quite work, we don't have enough information
         // to be able to make this decision here. 
-        if alias_name == search_term {
+        //if alias_name == search_term {
+        if alias_name == alias {
             break; // Don't fold an already folded path. In the future this could change but right now it just complicates things
         }
         let nested_path = alias_path.to_str().unwrap();

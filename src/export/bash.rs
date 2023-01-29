@@ -5,6 +5,7 @@ use crate::{
 };
 
 use std::path::PathBuf;
+use std::collections::HashMap;
 
 use log::trace;
 use bimap::BiHashMap;
@@ -37,22 +38,35 @@ impl BashExporter {
         // Sort length of String
         trace!("Expanding shortpaths");
 
-        let mut m = 
+        let m =
             sp.into_iter()
-            .map(|(_,v)| expand_shortpath(v, sp).unwrap_or(v.to_owned()))
+            .map(|(k,v)| {
+                (k.to_owned(), expand_shortpath(v, sp).unwrap_or(v.to_owned()))
+            })
             .into_iter()
+            .collect::<BiHashMap<String, PathBuf>>();
+
+        let mut v = 
+            //sp.into_iter()
+            //m.into_iter()
+            m.iter()
+            .map(|(_,v)| v.to_owned())
             .collect::<Vec<PathBuf>>();
 
         let get_length = |p: &PathBuf| { p.to_str().unwrap().len() };
-        m.sort_by(|a, b| {
+        //m.sort_by(|a, b| {
+        v.sort_by(|a, b| {
             let (la, lb) = (get_length(a), get_length(b));
             la.cmp(&lb)
        });
 
         trace!("Folding shortpaths");
-        for p in m {
-            let path = fold_shortpath(p.as_path(), sp);
-            let name = sp.get_by_right(&path).unwrap();
+        //for p in m {
+        for p in v {
+            dbg!(p.display());
+            let name = m.get_by_right(&p).unwrap();
+            let path = fold_shortpath(name, p.as_path(), sp);
+            //let name = sp.get_by_right(&path).unwrap();
 
             trace!("name: {}", name);
             trace!("path: {}", path.display());
@@ -99,6 +113,7 @@ fn test_serialize_bash() {
     use log::LevelFilter;
     use pretty_env_logger::formatted_timed_builder;
 
+    // Enable debug statements
     formatted_timed_builder().filter_level(LevelFilter::Trace).init();
 
     let mut bexp = BashExporter::new(BiHashMap::new());
