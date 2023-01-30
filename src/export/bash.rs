@@ -1,7 +1,7 @@
 use crate::{
     consts::PROGRAM_NAME,
     export::Export,
-    shortpaths::{Shortpaths, fold_shortpath, expand_shortpath},
+    shortpaths::{Shortpaths, fold_shortpath, expand_shortpath, expand_tilde},
 };
 
 use std::path::PathBuf;
@@ -66,6 +66,9 @@ impl BashExporter {
             dbg!(p.display());
             let name = m.get_by_right(&p).unwrap();
             let path = fold_shortpath(name, p.as_path(), sp);
+
+            // Expand all environment variables
+            let path = expand_tilde(path).unwrap();
             //let name = sp.get_by_right(&path).unwrap();
 
             trace!("name: {}", name);
