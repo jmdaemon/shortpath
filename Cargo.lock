@@ -383,6 +383,7 @@ dependencies = [
  "derivative",
  "directories",
  "dirs",
+ "indexmap",
  "log",
  "pretty_env_logger",
  "serde",
