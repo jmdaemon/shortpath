@@ -268,18 +268,11 @@ pub fn expand_shortpath(path: &Path, spaths: &Shortpaths) -> Option<PathBuf> {
 /** Folds nested shortpaths */
 pub fn fold_shortpath(alias: &String, shortpath: &Path, spaths: &Shortpaths) -> PathBuf {
     let mut output = shortpath.to_str().unwrap().to_string();
-
-    let search_term = shortpath.file_name().unwrap().to_str().unwrap();
     trace!("Attempting to fold path: {}", output);
 
     for (alias_name, alias_path) in spaths {
         trace!("Alias Name: {}", alias_name);
-        // TODO: Note that this doesn't quite work, we don't have enough information
-        // to be able to make this decision here. 
-        //if alias_name == search_term {
-        if alias_name == alias {
-            break; // Don't fold an already folded path. In the future this could change but right now it just complicates things
-        }
+        if alias_name == alias { break; } // Don't fold the shortpath with itself
         let nested_path = alias_path.to_str().unwrap();
         if output.contains(nested_path) {
             // Shortens '/home/user/aaaa/path' -> '$aaaa/path'

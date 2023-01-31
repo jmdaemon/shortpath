@@ -9,7 +9,7 @@ use shortpaths::consts::{
 use std::{
     path::Path,
     process::exit,
-} ;
+};
 
 use clap::{arg, ArgAction, Command, ArgMatches};
 use log::{info, LevelFilter};
