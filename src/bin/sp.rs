@@ -22,7 +22,6 @@ pub struct Shortpath {
 struct Shortpaths {
     paths: IndexMap<String, Shortpath>,
     path_deps: IndexMap<String, ShortpathDependency>
-
 }
 
 pub trait FindKeyIndexMapExt<'a, K,V: Eq> {
@@ -46,6 +45,26 @@ where V: Eq
         self.iter().find_map(|(key, val)| if val == value { Some(key) } else { None })
     }
 
+}
+
+type SP = IndexMap<String, Shortpath>;
+
+// These functions are used for prettifying the file during export phase
+
+/// Find the longest possible keyname in the hashmap
+pub fn find_longest_keyname(map: &SP) -> String {
+    let mut max = String::new();
+    map.into_iter().for_each(|(k,_)| {
+        if k.len() > max.len() {
+            max = k.to_owned()
+        }
+    });
+    max
+}
+
+pub fn get_padding_len(map: &SP) -> usize {
+    let max = find_longest_keyname(map);
+    max.len()
 }
 
 /* What do we want?
