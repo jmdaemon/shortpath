@@ -1,6 +1,11 @@
-use std::{path::PathBuf, collections::HashMap};
+use std::path::PathBuf;
 
 use indexmap::{IndexMap, indexmap};
+
+/* IndexMap
+ * - Remembers order chronologically
+ * - Allows for custom sorting
+ */
 
 enum ShortpathDependency {
     Shortpath(Shortpath),
@@ -15,26 +20,19 @@ pub struct Shortpath {
 }
 
 struct Shortpaths {
-    //paths: HashMap<String, Shortpath>,
-    //path_deps: HashMap<String, ShortpathDependency>
     paths: IndexMap<String, Shortpath>,
     path_deps: IndexMap<String, ShortpathDependency>
 
 }
 
-//pub trait FindKeyIndexMapExt {
 pub trait FindKeyIndexMapExt<'a, K,V: Eq> {
-    //fn find_keys_for_value<'a, K, V: Eq>(map: &'a IndexMap<K, &V>, value: &V) -> Vec<&'a K>;
-    //fn find_keys_for_value<'a, K, V: Eq>(&self, value: &V) -> Vec<&'a K>;
+    /// Get keys from value of IndexMap
     fn find_keys_for_value(&'a self, value: &V) -> Vec<&'a K>;
+
+    /// Get key from value of IndexMap
+    fn find_key_for_value(&'a self, value: &V) -> Option<&'a K>;
 }
 
-//impl<A,B> FindKeyIndexMapExt for IndexMap<A,B> {
-    //fn find_keys_for_value<'a, K, V: Eq>(map: &'a IndexMap<K, &V>, value: &V) -> Vec<&'a K> {
-        //map.iter()
-            //.filter_map(|(key, &val)| if val == value { Some(key) } else { None })
-            //.collect()
-    //}
 impl<'a, K, V> FindKeyIndexMapExt<'a, K,V> for IndexMap<K,V>
 where V: Eq
 {
@@ -43,11 +41,12 @@ where V: Eq
             .filter_map(|(key, val)| if val == value { Some(key) } else { None })
             .collect()
     }
+
+    fn find_key_for_value(&'a self, value: &V) -> Option<&'a K> {
+        self.iter().find_map(|(key, val)| if val == value { Some(key) } else { None })
+    }
+
 }
-
-
-//fn get_by_value(m: IndexMap<String, Shortpath>) {
-//}
 
 /* What do we want?
  * We want a data structure with the following:
