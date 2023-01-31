@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{PathBuf, Component};
 
 use indexmap::{IndexMap, indexmap};
 
@@ -7,21 +7,27 @@ use indexmap::{IndexMap, indexmap};
  * - Allows for custom sorting
  */
 
-enum ShortpathDependency {
-    Shortpath(Shortpath),
-    EnvironmentVar(String),
+#[derive(Debug, PartialEq, Eq)]
+pub enum ShortpathDependency {
+    //Shortpath(Shortpath),
+    //Alias(Option<String>, Option<PathBuf>),
+    Alias(String, PathBuf),
+    EnvironmentVar(String, PathBuf),
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Shortpath {
     full_path: PathBuf,
-    alias_name: Option<String>,
-    alias_path: Option<PathBuf>,
+    deps: Option<Vec<ShortpathDependency>>,
+    //alias_name: Option<String>,
+    //alias_path: Option<PathBuf>,
 }
+// This doesn't make much sense necessarily?
+// Should a shortpath contain multiple aliases?
 
 struct Shortpaths {
     paths: IndexMap<String, Shortpath>,
-    path_deps: IndexMap<String, ShortpathDependency>
+    //path_deps: IndexMap<String, ShortpathDependency>
 }
 
 pub trait FindKeyIndexMapExt<'a, K,V: Eq> {
@@ -67,6 +73,59 @@ pub fn get_padding_len(map: &SP) -> usize {
     max.len()
 }
 
+/// Generate the dependencies the shortpath requires
+/// We assume the deps are empty, and that we must populate the dependency
+pub fn gen_deps_tree(sp: Shortpath, _map: &SP) -> Option<Vec<ShortpathDependency>> {
+    // Return, if already populated
+    if let Some(deps) = sp.deps {
+        return Some(deps)
+    }
+
+    // Else attempt to determine shortpaths
+    // Pattern match two syntaxes, 
+    // ${env:}: EnvironmentVar
+    // $: Shortpaths
+    sp.full_path.components().into_iter().for_each(|p| {
+        if let Component::Normal(ostrpath) = p {
+            // Match and check if the path is equal to something
+            // Use the @ .. syntax
+
+            // If there's a match
+            // Try to do this part in a function that returns the enum variant, then just match on that instead
+            match ostrpath.to_str().unwrap() {
+                "${env:}" => {
+                    // Get the name of the key,
+                    // Get the environment variable path
+                    // Make the dependency
+                    // Collect in deps
+                },
+                "$" => {
+                    // Get the name of the key,
+                    // Get the shortpath variable path
+                    // Make the dependency
+                    // Collect in deps
+                }
+                _ => {} // Skip
+            };
+        }
+
+    });
+
+    //if let Some(deps) = sp.deps {
+        //deps.iter().for_each(|d|
+            //match d {
+                //ShortpathDependency::Alias(name, path) => {
+
+                //},
+                //ShortpathDependency::EnvironmentVar(var) => {}
+            //});
+    //}
+    None
+}
+
+// Now that we have the dependency vector, we're going to loop through and generate the graph for the dep tree
+// We want to be able to then use this tree to order
+
 /* What do we want?
  * We want a data structure with the following:
  * - Constant space-time key indexing
@@ -97,7 +156,9 @@ pub fn get_padding_len(map: &SP) -> usize {
 // How do we add 
 
 fn main() {
-    let sp = Shortpath { full_path: PathBuf::from("aaaa"), alias_name: None, alias_path: None};
+    //let alias = ShortpathDependency::Alias(None, None);
+    let alias = ShortpathDependency::Alias("bbbb".to_owned(), PathBuf::from("bbbb"));
+    let sp = Shortpath { full_path: PathBuf::from("aaaa"), deps: Some(vec![alias]) };
     let im: IndexMap<String, Shortpath> = indexmap! {
         "aaaa".to_owned() => sp,
     };
