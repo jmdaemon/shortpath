@@ -17,3 +17,7 @@ serde = { version = "1.0.152", features = ["derive"] }
 serde_derive = "1.0.152"
 toml = { version = "0.5.10", features = ["preserve_order"] }
 walkdir = "2.3.2"
+
+[build]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+#rustflags = ["-C", "link-arg=--ld-path=/usr/bin/mold"]
