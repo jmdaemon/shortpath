@@ -1,5 +1,6 @@
 use std::path::{PathBuf, Component};
 
+use std::ffi::OsStr;
 use indexmap::{IndexMap, indexmap};
 
 /* IndexMap
@@ -73,6 +74,28 @@ pub fn get_padding_len(map: &SP) -> usize {
     max.len()
 }
 
+//pub fn to_str_slice(s: OsStr) -> &'static [char] {
+pub fn to_str_slice(s: &OsStr) -> Vec<char> {
+    let spath = s.to_str().unwrap().to_string();
+    let chars: Vec<char> = spath.chars().collect();
+    chars
+}
+
+/// Get the type of alias
+pub fn parse_alias(path: &[char]) -> Option<ShortpathDependency> {
+    match path {
+        ['$', alias_name @ ..] => {
+            let (an, ap) = (alias_name.iter().collect(), PathBuf::from(path.iter().collect::<String>()));
+            Some(ShortpathDependency::Alias(an, ap))
+        }
+        [ '{', '$', 'e', 'n', 'v', ':', alias_name @ .., '}'] => {
+            let (an, ap) = (alias_name.iter().collect(), PathBuf::from(path.iter().collect::<String>()));
+            Some(ShortpathDependency::EnvironmentVar(an, ap))
+        }
+        _ => { None }
+    }
+}
+
 /// Generate the dependencies the shortpath requires
 /// We assume the deps are empty, and that we must populate the dependency
 pub fn gen_deps_tree(sp: Shortpath, _map: &SP) -> Option<Vec<ShortpathDependency>> {
@@ -85,31 +108,37 @@ pub fn gen_deps_tree(sp: Shortpath, _map: &SP) -> Option<Vec<ShortpathDependency
     // Pattern match two syntaxes, 
     // ${env:}: EnvironmentVar
     // $: Shortpaths
-    sp.full_path.components().into_iter().for_each(|p| {
+    let deps: Vec<ShortpathDependency> =
+    sp.full_path.components().into_iter().filter_map(|p| {
         if let Component::Normal(ostrpath) = p {
+            //let slice = to_str_slice(ostrpath);
+            //let alias = parse_alias(&slice);
+            let alias = parse_alias(&to_str_slice(ostrpath));
+
             // Match and check if the path is equal to something
             // Use the @ .. syntax
 
             // If there's a match
             // Try to do this part in a function that returns the enum variant, then just match on that instead
-            match ostrpath.to_str().unwrap() {
-                "${env:}" => {
+            //match ostrpath.to_str().unwrap() {
+                //"${env:}" => {
                     // Get the name of the key,
                     // Get the environment variable path
                     // Make the dependency
                     // Collect in deps
-                },
-                "$" => {
+                //},
+                //"$" => {
                     // Get the name of the key,
                     // Get the shortpath variable path
                     // Make the dependency
                     // Collect in deps
-                }
-                _ => {} // Skip
-            };
+                //}
+                //_ => {} // Skip
+            return alias;
         }
-
-    });
+        None
+        }).collect();
+        Some(deps)
 
     //if let Some(deps) = sp.deps {
         //deps.iter().for_each(|d|
@@ -120,7 +149,6 @@ pub fn gen_deps_tree(sp: Shortpath, _map: &SP) -> Option<Vec<ShortpathDependency
                 //ShortpathDependency::EnvironmentVar(var) => {}
             //});
     //}
-    None
 }
 
 // Now that we have the dependency vector, we're going to loop through and generate the graph for the dep tree
