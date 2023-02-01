@@ -83,6 +83,9 @@ pub fn to_str_slice(s: &OsStr) -> Vec<char> {
 
 /// Get the type of alias
 pub fn parse_alias(path: &[char]) -> Option<ShortpathDependency> {
+    // Pattern matches two syntaxes
+    // ${env:}: EnvironmentVar
+    // $: Shortpaths
     match path {
         ['$', alias_name @ ..] => {
             let (an, ap) = (alias_name.iter().collect(), PathBuf::from(path.iter().collect::<String>()));
@@ -104,51 +107,14 @@ pub fn gen_deps_tree(sp: Shortpath, _map: &SP) -> Option<Vec<ShortpathDependency
         return Some(deps)
     }
 
-    // Else attempt to determine shortpaths
-    // Pattern match two syntaxes, 
-    // ${env:}: EnvironmentVar
-    // $: Shortpaths
     let deps: Vec<ShortpathDependency> =
     sp.full_path.components().into_iter().filter_map(|p| {
         if let Component::Normal(ostrpath) = p {
-            //let slice = to_str_slice(ostrpath);
-            //let alias = parse_alias(&slice);
-            let alias = parse_alias(&to_str_slice(ostrpath));
-
-            // Match and check if the path is equal to something
-            // Use the @ .. syntax
-
-            // If there's a match
-            // Try to do this part in a function that returns the enum variant, then just match on that instead
-            //match ostrpath.to_str().unwrap() {
-                //"${env:}" => {
-                    // Get the name of the key,
-                    // Get the environment variable path
-                    // Make the dependency
-                    // Collect in deps
-                //},
-                //"$" => {
-                    // Get the name of the key,
-                    // Get the shortpath variable path
-                    // Make the dependency
-                    // Collect in deps
-                //}
-                //_ => {} // Skip
-            return alias;
+            return parse_alias(&to_str_slice(ostrpath));
         }
         None
-        }).collect();
-        Some(deps)
-
-    //if let Some(deps) = sp.deps {
-        //deps.iter().for_each(|d|
-            //match d {
-                //ShortpathDependency::Alias(name, path) => {
-
-                //},
-                //ShortpathDependency::EnvironmentVar(var) => {}
-            //});
-    //}
+    }).collect();
+    Some(deps)
 }
 
 // Now that we have the dependency vector, we're going to loop through and generate the graph for the dep tree
