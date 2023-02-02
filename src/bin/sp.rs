@@ -1,14 +1,18 @@
 use std::path::{PathBuf, Component};
-
 use std::ffi::OsStr;
+
 use indexmap::{IndexMap, indexmap};
+//use id_tree::*;
+//use trees::{tr,fr};
+
+use petgraph::dot::{Config, Dot};
 
 /* IndexMap
  * - Remembers order chronologically
  * - Allows for custom sorting
  */
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ShortpathDependency {
     //Shortpath(Shortpath),
     //Alias(Option<String>, Option<PathBuf>),
@@ -16,12 +20,10 @@ pub enum ShortpathDependency {
     EnvironmentVar(String, PathBuf),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Shortpath {
     full_path: PathBuf,
     deps: Option<Vec<ShortpathDependency>>,
-    //alias_name: Option<String>,
-    //alias_path: Option<PathBuf>,
 }
 // This doesn't make much sense necessarily?
 // Should a shortpath contain multiple aliases?
@@ -99,15 +101,17 @@ pub fn parse_alias(path: &[char]) -> Option<ShortpathDependency> {
     }
 }
 
+type DEPS = Vec<ShortpathDependency>; 
+
 /// Generate the dependencies the shortpath requires
 /// We assume the deps are empty, and that we must populate the dependency
-pub fn gen_deps_tree(sp: Shortpath, _map: &SP) -> Option<Vec<ShortpathDependency>> {
+pub fn gen_deps_tree(sp: &Shortpath, _map: &SP) -> Option<DEPS> {
     // Return, if already populated
-    if let Some(deps) = sp.deps {
-        return Some(deps)
+    if let Some(deps) = &sp.deps {
+        return Some(deps.to_owned())
     }
 
-    let deps: Vec<ShortpathDependency> =
+    let deps: DEPS =
     sp.full_path.components().into_iter().filter_map(|p| {
         if let Component::Normal(ostrpath) = p {
             return parse_alias(&to_str_slice(ostrpath));
@@ -115,6 +119,92 @@ pub fn gen_deps_tree(sp: Shortpath, _map: &SP) -> Option<Vec<ShortpathDependency
         None
     }).collect();
     Some(deps)
+}
+
+/// Create a dependency graph from the vector of dependencies
+pub fn gen_deps_graph(deps: &DEPS, sp: &SP) {
+    //let tree = id_tree::
+    //let mut fr = fr::<String>();
+    let mut depgraph = petgraph::graph::DiGraph::new();
+    sp.into_iter().for_each(|(name, deps)| {
+        match &deps.deps {
+            Some(sp_deps) => {
+                // For every dependency
+                // Get the name and path
+                // Get the alias to which the damn thing is connected to
+                // Add the node from: name -> alias
+                sp_deps.iter().for_each(|spd| {
+                    match spd {
+                        ShortpathDependency::Alias(to, path) => {
+                            // Create name, to nodes
+                            // Attach name to node
+                            //let tree = tr(name.to_owned()) / tr(to.to_owned()); 
+                            //fr.push_back(tree);
+                            //let src = petgraph::graph::Node::from(name);
+                            let src = depgraph.add_node(name);
+                            let dest = depgraph.add_node(to);
+                            depgraph.add_edge(src, dest, path);
+                            //name
+                        }
+                        ShortpathDependency::EnvironmentVar(to, path) => {}
+                    }
+                });
+            }
+            None => {
+                // Add the node to our graph anyways
+
+            }
+        }
+    });
+    // Once the graph is initialized, we want to be able to traverse it
+    // We will use
+    //let a = fr.to_string();
+    //let b = trees::tree::Tree::from(a);
+    //let mst = trees::Tree::from_tuple(a);
+    
+    //let asf = petgraph::algo::min_spanning_tree(depgraph);
+
+    //let mut space = petgraph::algo::DfsSpace::new(&depgraph);
+    //let sorted = petgraph::algo::toposort(&depgraph, Some(&mut space));
+    //let indices = sorted.unwrap();
+
+    println!("{:?}", Dot::with_config(&depgraph, &[Config::EdgeIndexLabel]));
+    
+    // First add all the nodes to the graph
+    //sp.iter();
+
+    // For every shortpath
+    // Get the name
+    // Create a node
+    // For every dependency
+    // 
+
+    // We ha ve the following paths
+    // /home/jmd/test/appthing
+    // How do we create the graph of dependencies from this?
+    //deps.iter().for_each(|sd| {
+        ////let (alias, path): (String, PathBuf) = sd;
+        //match sd {
+            //ShortpathDependency::Alias(name, path) => {
+                //// Attach to this node
+                ////sp.find_key_for_value(path);
+                //// 
+
+            //}
+            //ShortpathDependency::EnvironmentVar(name, _) => {
+                
+            //}
+        //}
+
+    //});
+
+    // Then determine the edges to which they all connect
+    //let mut p 
+    //deps.iter().for_each(
+        //f
+        //);
+
+    // Once we determine how they're all connectedj
 }
 
 // Now that we have the dependency vector, we're going to loop through and generate the graph for the dep tree
@@ -152,11 +242,16 @@ pub fn gen_deps_tree(sp: Shortpath, _map: &SP) -> Option<Vec<ShortpathDependency
 fn main() {
     //let alias = ShortpathDependency::Alias(None, None);
     let alias = ShortpathDependency::Alias("bbbb".to_owned(), PathBuf::from("bbbb"));
-    let sp = Shortpath { full_path: PathBuf::from("aaaa"), deps: Some(vec![alias]) };
-    let im: IndexMap<String, Shortpath> = indexmap! {
-        "aaaa".to_owned() => sp,
+    let sp = Shortpath { full_path: PathBuf::from("$bbbb/aaaa"), deps: Some(vec![alias]) };
+    let im: SP = indexmap! {
+        "$bbbb/aaaa".to_owned() => sp.clone(),
     };
 
-    let key = im.find_keys_for_value(&im.get("aaaa").unwrap());
+    // Test find_keys
+    let key = im.find_keys_for_value(&im.get("$bbbb/aaaa").unwrap());
     println!("{:?}", key);
+
+    // Test the graph
+    let deps = gen_deps_tree(&sp, &im).unwrap();
+    gen_deps_graph(&deps, &im);
 }
