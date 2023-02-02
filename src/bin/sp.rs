@@ -2,9 +2,6 @@ use std::path::{PathBuf, Component};
 use std::ffi::OsStr;
 
 use indexmap::{IndexMap, indexmap};
-//use id_tree::*;
-//use trees::{tr,fr};
-
 use petgraph::dot::{Config, Dot};
 
 /* IndexMap
@@ -14,8 +11,6 @@ use petgraph::dot::{Config, Dot};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ShortpathDependency {
-    //Shortpath(Shortpath),
-    //Alias(Option<String>, Option<PathBuf>),
     Alias(String, PathBuf),
     EnvironmentVar(String, PathBuf),
 }
@@ -28,11 +23,13 @@ pub struct Shortpath {
 // This doesn't make much sense necessarily?
 // Should a shortpath contain multiple aliases?
 
+type SP = IndexMap<String, Shortpath>;
+
 struct Shortpaths {
-    paths: IndexMap<String, Shortpath>,
-    //path_deps: IndexMap<String, ShortpathDependency>
+    paths: SP,
 }
 
+// Trait Extensions
 pub trait FindKeyIndexMapExt<'a, K,V: Eq> {
     /// Get keys from value of IndexMap
     fn find_keys_for_value(&'a self, value: &V) -> Vec<&'a K>;
@@ -56,8 +53,6 @@ where V: Eq
 
 }
 
-type SP = IndexMap<String, Shortpath>;
-
 // These functions are used for prettifying the file during export phase
 
 /// Find the longest possible keyname in the hashmap
@@ -76,7 +71,6 @@ pub fn get_padding_len(map: &SP) -> usize {
     max.len()
 }
 
-//pub fn to_str_slice(s: OsStr) -> &'static [char] {
 pub fn to_str_slice(s: &OsStr) -> Vec<char> {
     let spath = s.to_str().unwrap().to_string();
     let chars: Vec<char> = spath.chars().collect();
@@ -244,6 +238,7 @@ fn main() {
     let alias = ShortpathDependency::Alias("bbbb".to_owned(), PathBuf::from("bbbb"));
     let sp = Shortpath { full_path: PathBuf::from("$bbbb/aaaa"), deps: Some(vec![alias]) };
     let im: SP = indexmap! {
+        // Path     : Shortpath
         "$bbbb/aaaa".to_owned() => sp.clone(),
     };
 
@@ -252,6 +247,17 @@ fn main() {
     println!("{:?}", key);
 
     // Test the graph
+    //let spds = vec![
+        //ShortpathDependency::Alias("a".to_owned(), PathBuf::from("aaaa")),
+        //ShortpathDependency::Alias("b".to_owned(), PathBuf::from("$a/bbbb")),
+        //ShortpathDependency::Alias("c".to_owned(), PathBuf::from("$a/cccc")),
+        //ShortpathDependency::Alias("d".to_owned(), PathBuf::from("$c/dddd")),
+    //];
+    
+    //let sim: SP = spds.iter().for_each(|spd| {
+        //// Expand path
+
+    //});
     let deps = gen_deps_tree(&sp, &im).unwrap();
     gen_deps_graph(&deps, &im);
 }
