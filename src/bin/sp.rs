@@ -9,48 +9,126 @@ use petgraph::dot::{Config, Dot};
  * - Allows for custom sorting
  */
 
+type SP = IndexMap<String, Shortpath>;
+type DEPS = Vec<ShortpathDependency>; 
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ShortpathDependency {
     Alias(String, PathBuf),
     EnvironmentVar(String, PathBuf),
 }
 
+// This doesn't make sense
+// We won't be able to resolve the full path until runtime
+// Shortpath in and of itself does not store its own alias name & path?
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Shortpath {
-    full_path: PathBuf,
-    deps: Option<Vec<ShortpathDependency>>,
+    //full_path: PathBuf,
+    //entry: ShortpathDependency,
+    name: String,
+    //entry: ShortpathDependency,
+    entry: PathBuf,
+    full_path: Option<PathBuf>,
+    deps: Option<DEPS>,
 }
 // This doesn't make much sense necessarily?
 // Should a shortpath contain multiple aliases?
-
-type SP = IndexMap<String, Shortpath>;
 
 struct Shortpaths {
     paths: SP,
 }
 
-// Trait Extensions
-pub trait FindKeyIndexMapExt<'a, K,V: Eq> {
-    /// Get keys from value of IndexMap
-    fn find_keys_for_value(&'a self, value: &V) -> Vec<&'a K>;
-
-    /// Get key from value of IndexMap
-    fn find_key_for_value(&'a self, value: &V) -> Option<&'a K>;
+// TODO: Shortpath Creation API
+// - We need to be able to create shortpaths easily
+// - It needs to make sense
+// - Should support our current ops
+impl Shortpath {
+    pub fn new<S, P>(name: S, entry: P, full_path: Option<PathBuf>, deps: Option<DEPS>) -> Shortpath
+    where
+        S: Into<String>,
+        P: Into<PathBuf>
+    {
+        Shortpath { name: name.into(), entry: entry.into(), full_path, deps }
+    }
 }
 
+impl Shortpaths {
+    // TODO: Create empty new construct
+    // TODO: Use FromIterator trait extension
+    pub fn new(sps: Vec<Shortpath>) -> SP {
+        let mut im: SP = indexmap::IndexMap::new();
+        //sps.into_iter().map(|sp| {
+        sps.into_iter().for_each(|sp| {
+            //(sp.full_path.clone(), sp)
+            //im.insert(sp.full_path.clone(), sp);
+            //im.insert(sp.full_path.clone(), sp);
+            //let sp = Shortpath::new(spd, None, None);
+            im.insert(sp.name.clone(), sp);
+        });
+        im
+    }
+}
+
+// Trait Extensions
+pub trait FindKeyIndexMapExt<'a, K,V: PartialEq + Eq> {
+    /// Get keys from value of IndexMap
+    fn find_keys_for_value(&'a self, value: V) -> Vec<&'a K>;
+
+    /// Get key from value of IndexMap
+    fn find_key_for_value(&'a self, value: V) -> Option<&'a K>;
+}
+
+//pub trait FindKeyIndexMapStrExt<'a, K> {
+    //fn find_keys_for_value(&'a self, value: &str) -> Vec<&'a K>;
+
+    //fn find_key_for_value(&'a self, value: &str) -> Option<&'a K>;
+//}
+
+// Generic Implementation
 impl<'a, K, V> FindKeyIndexMapExt<'a, K,V> for IndexMap<K,V>
-where V: Eq
+where V: PartialEq + Eq
 {
-    fn find_keys_for_value(&'a self, value: &V) -> Vec<&'a K> {
+    fn find_keys_for_value(&'a self, value: V) -> Vec<&'a K> {
         self.into_iter()
-            .filter_map(|(key, val)| if val == value { Some(key) } else { None })
+            .filter_map(|(key, val)| if *val == value { Some(key) } else { None })
             .collect()
     }
 
-    fn find_key_for_value(&'a self, value: &V) -> Option<&'a K> {
-        self.iter().find_map(|(key, val)| if val == value { Some(key) } else { None })
+    fn find_key_for_value(&'a self, value: V) -> Option<&'a K> {
+        self.iter().find_map(|(key, val)| if *val == value { Some(key) } else { None })
     }
 
+}
+
+// Lookup using just the path part
+//impl<'a, K, V> FindKeyIndexMapExt<'a, K,V> for IndexMap<K,V>
+//where V: Eq
+//{
+    //fn find_keys_for_value(&'a self, value: &V) -> Vec<&'a K> {
+        //self.into_iter()
+            //.filter_map(|(key, val)| if val == value { Some(key) } else { None })
+            //.collect()
+    //}
+
+    //fn find_key_for_value(&'a self, value: &V) -> Option<&'a K> {
+        //self.iter().find_map(|(key, val)| if val == value { Some(key) } else { None })
+    //}
+
+//}
+
+//impl<'a> FindKeyIndexMapStrExt<'a, String> for IndexMap<String,Shortpath>
+impl<'a> FindKeyIndexMapExt<'a, String, &str> for IndexMap<String,Shortpath>
+{
+    fn find_keys_for_value(&'a self, value: &str) -> Vec<&'a String> {
+        self.into_iter()
+            .filter_map(|(key, val)| if val.entry.to_str().unwrap().to_owned() == value { Some(key) } else { None })
+            .collect()
+    }
+
+    fn find_key_for_value(&'a self, value: &str) -> Option<&'a String> {
+        //self.iter().find_map(|(key, val)| if val == value { Some(key) } else { None })
+        self.iter().find_map(|(key, val)| if val.entry.to_str().unwrap().to_owned() == value { Some(key) } else { None })
+    }
 }
 
 // These functions are used for prettifying the file during export phase
@@ -95,8 +173,6 @@ pub fn parse_alias(path: &[char]) -> Option<ShortpathDependency> {
     }
 }
 
-type DEPS = Vec<ShortpathDependency>; 
-
 /// Generate the dependencies the shortpath requires
 /// We assume the deps are empty, and that we must populate the dependency
 pub fn gen_deps_tree(sp: &Shortpath, _map: &SP) -> Option<DEPS> {
@@ -105,14 +181,17 @@ pub fn gen_deps_tree(sp: &Shortpath, _map: &SP) -> Option<DEPS> {
         return Some(deps.to_owned())
     }
 
-    let deps: DEPS =
-    sp.full_path.components().into_iter().filter_map(|p| {
-        if let Component::Normal(ostrpath) = p {
-            return parse_alias(&to_str_slice(ostrpath));
-        }
-        None
-    }).collect();
-    Some(deps)
+    if let Some(full_path) = &sp.full_path {
+        let deps: DEPS =
+        full_path.components().into_iter().filter_map(|p| {
+            if let Component::Normal(ostrpath) = p {
+                return parse_alias(&to_str_slice(ostrpath));
+            }
+            return None
+        }).collect();
+        return Some(deps)
+    }
+    None
 }
 
 /// Create a dependency graph from the vector of dependencies
@@ -234,17 +313,41 @@ pub fn gen_deps_graph(deps: &DEPS, sp: &SP) {
 // How do we add 
 
 fn main() {
+     let sp_a = Shortpath::new("a", "aaaa", None, None);
+     let sp_b = Shortpath::new("b", "$a/bbbb", None, None);
+
+     let sp_paths = vec![sp_a, sp_b.clone()];
+    println!("{:?}", sp_paths);
+
+     let sp_im = Shortpaths::new(sp_paths);
+    println!("{:?}", sp_im);
+
+    //let key = sp_im.find_keys_for_value(sp_im.get("$a/bbbb").unwrap());
+    //let key = sp_im.find_key_for_value(sp_im.get("$a/bbbb").unwrap());
+
+    //let val = sp_im.get("$a/bbbb");
+    //println!("{:?}", val);
+
+    //let key = sp_im.find_key_for_value(&sp_b.clone());
+    //println!("{:?}", key);
+
+    let key = sp_im.find_key_for_value("$a/bbbb");
+    println!("{:?}", key);
+
+     
+    //let sp = Shortpath::new("aaaa", ShortpathDependency::Alias("aaaa", ));
     //let alias = ShortpathDependency::Alias(None, None);
-    let alias = ShortpathDependency::Alias("bbbb".to_owned(), PathBuf::from("bbbb"));
-    let sp = Shortpath { full_path: PathBuf::from("$bbbb/aaaa"), deps: Some(vec![alias]) };
-    let im: SP = indexmap! {
-        // Path     : Shortpath
-        "$bbbb/aaaa".to_owned() => sp.clone(),
-    };
+    //let alias = ShortpathDependency::Alias("bbbb".to_owned(), PathBuf::from("bbbb"));
+    //let sp = Shortpath { full_path: PathBuf::from("$bbbb/aaaa"), deps: Some(vec![alias]) };
+
+    //let im: SP = indexmap! {
+        //// Path     : Shortpath
+        //"$bbbb/aaaa".to_owned() => sp.clone(),
+    //};
 
     // Test find_keys
-    let key = im.find_keys_for_value(&im.get("$bbbb/aaaa").unwrap());
-    println!("{:?}", key);
+    //let key = im.find_keys_for_value(&im.get("$bbbb/aaaa").unwrap());
+    //println!("{:?}", key);
 
     // Test the graph
     //let spds = vec![
@@ -258,6 +361,7 @@ fn main() {
         //// Expand path
 
     //});
-    let deps = gen_deps_tree(&sp, &im).unwrap();
-    gen_deps_graph(&deps, &im);
+
+    //let deps = gen_deps_tree(&sp, &im).unwrap();
+    //gen_deps_graph(&deps, &im);
 }
