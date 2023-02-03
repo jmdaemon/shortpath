@@ -1,5 +1,4 @@
 use std::path::{PathBuf, Component};
-
 use indexmap::IndexMap;
 
 type SP = IndexMap<String, Shortpath>;
@@ -34,8 +33,15 @@ impl ShortpathType {
     pub fn new_alias_path(name: impl Into<String>, alias_path: impl Into<PathBuf>) -> ShortpathType {
         ShortpathType::AliasPath(name.into(), alias_path.into())
     }
-    pub fn new_env_path(name: impl Into<String>, alias_path: impl Into<PathBuf>) -> ShortpathType {
-        ShortpathType::EnvPath(name.into(), alias_path.into())
+    pub fn new_env_path(name: impl Into<String>) -> ShortpathType {
+        // Store environment variable values during creation
+        let name = name.into();
+        let mut alias_path = String::new();
+        match std::env::var(&name) { // Get from environment
+            Ok(val) => alias_path = val,
+            Err(e) => eprintln!("Error in expanding environment variable ${}: ${}", name, e)
+        };
+        ShortpathType::EnvPath(name, alias_path.into())
     }
 }
 
@@ -124,11 +130,6 @@ where
     }
 }
 
-// These functions are used for prettifying the file during export phase
-
-// TODO: Create pure FP functions that return pure values (for testing)
-// TODO: Create impure interface that stores the result in the Shortpath struct
-
 // Pure Functions
 
 // General Purpose
@@ -186,11 +187,24 @@ pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
     Some(deps)
 }
 
-pub fn get_shortpath_name(sp: SPT) -> String {
+pub fn get_shortpath_name(sp: &SPT) -> String {
     match sp {
-        SPT::Path(name, _) | SPT::AliasPath(name, _) | SPT::EnvPath(name, _) => name,
+        SPT::Path(name, _) | SPT::AliasPath(name, _) | SPT::EnvPath(name, _) => name.to_owned(),
     }
 }
+
+pub fn get_shortpath_path(sp: &SPT) -> PathBuf {
+    match &sp {
+        SPT::Path(_, path) | SPT::AliasPath(_, path) | SPT::EnvPath(_, path) => path.to_owned()
+    }
+}
+
+//pub fn get_shortpath_path(sp: SPT) -> String {
+    //match sp {
+        //SPT::Path(_, path) | SPT::AliasPath(_, path) => path,
+        //SPT::EnvPath(name, _) => name,
+    //}
+//}
 
 /// Lookup the shortpath dependency in the shortpaths index map
 pub fn parse_shortpath_dependency(dep: SPT, sp: &SP) -> (String, String) {
@@ -236,6 +250,28 @@ pub fn expand_full_path(entry: String, sp: &Shortpath, unwrap_sp_dp: impl Fn(&SP
 pub fn sp_pop_deps(sp: &mut Shortpath) {
     if sp.deps.is_some() { return; }
     sp.deps = find_deps(&sp.path());
+}
+
+pub fn expand_full_path_better(sp: &Shortpath) -> String {
+    let entry = sp.path().to_str().unwrap().to_owned();
+    //let (name, path) = (sp.name().to_owned(), &entry);
+    let mut output = entry.clone();
+    match &sp.deps {
+        Some(deps) => // Expand entry into full_path
+            deps.iter().for_each(|dep| {
+                //output = fmt_expand(&output, &name, path);
+                // Use the dependency here
+                let (dep_name, dep_path) = (get_shortpath_name(dep), get_shortpath_path(dep));
+                output = fmt_expand(&output, &dep_name, dep_path.to_str().unwrap());
+            }),
+        None => output = entry // Use the entry as the full_path
+    };
+    output
+}
+
+pub fn sp_pop_full_path_better(sp: &mut Shortpath) {
+    let output = expand_full_path_better(sp);
+    sp.full_path = Some(PathBuf::from(output));
 }
 
 /// Populate the full_path field of a shortpath
