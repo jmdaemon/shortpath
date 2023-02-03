@@ -3,10 +3,10 @@ use std::path::{PathBuf, Component};
 use indexmap::IndexMap;
 
 type SP = IndexMap<String, Shortpath>;
-type DEPS = Vec<ShortpathDependency>; 
+type DEPS = Vec<ShortpathType>; 
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ShortpathDependency {
+pub enum ShortpathType {
     Alias(String, PathBuf),
     EnvironmentVar(String, PathBuf),
 }
@@ -95,15 +95,15 @@ pub fn to_str_slice(s: impl Into<String>) -> Vec<char> {
 }
 
 /// Get the type of alias
-pub fn parse_alias(path: &[char]) -> Option<ShortpathDependency> {
+pub fn parse_alias(path: &[char]) -> Option<ShortpathType> {
     match path {
         ['$', alias_name @ ..] => {
             let (an, ap) = (alias_name.iter().collect(), PathBuf::from(path.iter().collect::<String>()));
-            Some(ShortpathDependency::Alias(an, ap))
+            Some(ShortpathType::Alias(an, ap))
         }
         [ '{', '$', 'e', 'n', 'v', ':', alias_name @ .., '}'] => {
             let (an, ap) = (alias_name.iter().collect(), PathBuf::from(path.iter().collect::<String>()));
-            Some(ShortpathDependency::EnvironmentVar(an, ap))
+            Some(ShortpathType::EnvironmentVar(an, ap))
         }
         _ => { None }
     }
@@ -135,18 +135,18 @@ pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
 }
 
 /// Lookup the shortpath dependency in the shortpaths index map
-pub fn parse_shortpath_dependency(dep: ShortpathDependency, sp: &SP) -> (String, String) {
+pub fn parse_shortpath_dependency(dep: ShortpathType, sp: &SP) -> (String, String) {
     let mut key_name = String::new();
     let mut key_path = String::new();
 
     match dep {
-        ShortpathDependency::Alias(name, _) => {
+        ShortpathType::Alias(name, _) => {
             key_path = sp.get(&name)
                 .expect(&format!("Could not get key: {}", name))
                 .entry.to_str().unwrap().to_owned();
             key_name = name;
         }
-        ShortpathDependency::EnvironmentVar(name, _) => {
+        ShortpathType::EnvironmentVar(name, _) => {
             match std::env::var(&name) { // Get from environment
                 Ok(var) => key_path = var,
                 Err(e) => eprintln!("Error in expanding environment variable: ${}", e)
@@ -158,7 +158,7 @@ pub fn parse_shortpath_dependency(dep: ShortpathDependency, sp: &SP) -> (String,
 }
 
 /// Expand the entry path into the full path of the given entry
-pub fn expand_full_path(entry: String, sp: &Shortpath, unwrap_sp_dp: impl Fn(&ShortpathDependency) -> (String, String)) -> String {
+pub fn expand_full_path(entry: String, sp: &Shortpath, unwrap_sp_dp: impl Fn(&ShortpathType) -> (String, String)) -> String {
     let mut output = entry.clone();
     match &sp.deps {
         Some(deps) => // Expand entry into full_path
@@ -183,7 +183,7 @@ pub fn sp_pop_deps(sp: &mut Shortpath) {
 pub fn sp_pop_full_path(sp: &mut Shortpath, shortpaths: &SP) {
     assert!(sp.full_path.is_none());
 
-    let unwrap_sp_dp = move |dep: &ShortpathDependency| {
+    let unwrap_sp_dp = move |dep: &ShortpathType| {
         let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
         (key_name,key_path)
     };
