@@ -174,14 +174,13 @@ pub fn expand_full_path(entry: String, sp: &Shortpath, unwrap_sp_dp: impl Fn(&Sh
 // Impure Shortpath Functions
 
 /// Populate the dependencies of a shortpath
-pub fn sp_pop_deps(sp: &mut Shortpath) -> &Shortpath {
-    if sp.deps.is_some() { return sp; } // Return, if already populated
+pub fn sp_pop_deps(sp: &mut Shortpath) {
+    if sp.deps.is_some() { return; }
     sp.deps = find_deps(&sp.entry);
-    sp
 }
 
 /// Populate the full_path field of a shortpath
-pub fn sp_pop_full_path(sp: &mut Shortpath, shortpaths: &SP) -> Shortpath {
+pub fn sp_pop_full_path(sp: &mut Shortpath, shortpaths: &SP) {
     assert!(sp.full_path.is_none());
 
     let unwrap_sp_dp = move |dep: &ShortpathDependency| {
@@ -192,63 +191,20 @@ pub fn sp_pop_full_path(sp: &mut Shortpath, shortpaths: &SP) -> Shortpath {
     let entry = sp.entry.to_str().unwrap().to_owned();
     let output = expand_full_path(entry, &sp, unwrap_sp_dp);
     sp.full_path = Some(PathBuf::from(output));
-    sp.to_owned()
 }
 
-// This shouldn't  be done like this
-pub fn expand_shortpath(pname: &String, sp_dep: &Option<String>, sp: &SP) -> String {
-    let mut output = String::new();
-    let path = sp.get(pname).unwrap().entry.to_str().unwrap().to_string();
-    match sp_dep {
-        // If there's a dependency
-        Some(dep) => {
-            while let Some(alias_name) = parse_alias(&to_str_slice(dep)) {
-                let mut key_name = String::new();
-                let mut key_path = String::new();
+///// Expand a single shortpath
+//pub fn expand_shortpath(name: String, sp: &SP) -> PathBuf {
+//    let shortpath = sp.get(&name).unwrap().to_owned();
+//    shortpath.full_path.unwrap()
+//}
 
-                // Get the name and path of the dependent shortpath
-                match alias_name {
-                    ShortpathDependency::Alias(name, _) => {
-                        key_name = name;
-                        key_path = sp.get(pname).expect(&format!("Could not get key: {}", pname))
-                            .entry.to_str().unwrap().to_owned();
-                    }
-                    ShortpathDependency::EnvironmentVar(name, _) => {
-                        key_name = name.clone();
-                        match std::env::var(name) { // Get from environment
-                            Ok(var) => key_path = var,
-                            Err(e) => eprintln!("Error in expanding environment variable: ${}", e)
-                        };
-                    }
-                }
-
-                // Expand the variable path
-                let this = format!("${}", key_name);
-                let with = key_path;
-                output = path.replace(&this, &with);
-            }
-        }
-        // Else, just use the path as is directly
-        None => {
-            output = sp.get(pname).unwrap().entry.to_str().unwrap().to_string();
-        }
-    }
-    output
-}
-
-/// Return the order of the shortpaths to serialize
-pub fn expand_shortpaths(dmap: IndexMap<String, Option<String>>, sp: &SP) -> Vec<String> {
-    // We want to try out all the keys, then peform the expansion if it is considered valid
-    // This will allow us to pull out as many aliases as needed
-
-    // TODO:  This should not be done like before
-    // We need to use the indexmap to perform the sort because we will require the key name and expanded path later
-    // In order to serialize to disk
-    let ordpaths: Vec<String> = dmap.iter().map(|(pname, sp_dep)| {
-        expand_shortpath(pname, sp_dep, &sp)
-    }).collect();
-    ordpaths
-}
+///// Expand all shortpaths in the index map
+//pub fn expand_shortpaths(sp: &mut SP) {
+//    sp.into_iter().for_each(|(_key, shortpath)| {
+//        sp_pop_full_path(shortpath, &sp.to_owned());
+//    });
+//}
 
 // Now that we have the dependency vector, we're going to loop through and generate the graph for the dep tree
 // We want to be able to then use this tree to order
