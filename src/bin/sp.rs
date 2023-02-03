@@ -6,6 +6,8 @@ use petgraph::Graph;
 use petgraph::dot::{Config, Dot};
 use petgraph::stable_graph::NodeIndex;
 
+use itertools::Itertools;
+
 /* IndexMap
  * - Remembers order chronologically
  * - Allows for custom sorting
@@ -86,13 +88,23 @@ where
 
 /// Find the longest possible keyname in the hashmap
 pub fn find_longest_keyname(map: &SP) -> String {
-    let mut max = String::new();
-    map.into_iter().for_each(|(k,_)| {
-        if k.len() > max.len() {
-            max = k.to_owned()
-        }
-    });
-    max
+    //let mut max = String::new();
+    //map.sort_by(|k1, _, k2, _| std::cmp::max(k1.len() < k2.len()));
+    //let sorted = map.sorted_by(|k1, _, k2, _| k1.len().cmp(&k2.len())).collect();
+    //map.sorted_by(|k1, _, k2, _| k1.len().cmp(&k2.len()));
+    let sorted = map
+        .into_iter()
+        .sorted_by(|(k1, _), (k2, _)| k1.len().cmp(&k2.len()));
+    map.last().unwrap().0.to_owned()
+        //.sorted_by(|k1, _, k2, _| k1.len().cmp(&k2.len()));
+        //Ord::cmp(&b.1, &a.1)
+    //map.sort_by( { k.len.len() < max.len() });
+    //map.into_iter().for_each(|(k,_)| {
+        //if k.len() > max.len() {
+            //max = k.to_owned()
+        //}
+    //});
+    //max
 }
 
 pub fn get_padding_len(map: &SP) -> usize {
@@ -154,6 +166,9 @@ pub fn gen_deps_graph(sp: &SP) {
                             let src = depgraph.add_node(name);
                             let dest = depgraph.add_node(to);
                             depgraph.add_edge(src, dest, path);
+                            //depgraph.extend_with_edges(&[
+                                //(src, dest),
+                            //]);
                         }
                         ShortpathDependency::EnvironmentVar(to, path) => {
                             let src = depgraph.add_node(name);
@@ -213,10 +228,12 @@ pub fn sort_graph(depgraph: Graph<&String, &PathBuf>) -> Vec<NodeIndex> {
 // How do we add 
 
 fn main() {
-     let sp_a = Shortpath::new("a", "aaaa", None, None);
-     let sp_b = Shortpath::new("b", "$a/bbbb", None, None);
-
-     let sp_paths = vec![sp_a, sp_b.clone()];
+     let sp_paths = vec![
+         Shortpath::new("a", "aaaa", None, None),
+         Shortpath::new("b", "$a/bbbb", None, None),
+         Shortpath::new("c", "$b/cccc", None, None),
+         Shortpath::new("d", "$a/dddd", None, None),
+     ];
      println!("{:?}", sp_paths);
 
      let mut sp_im = Shortpaths::new(sp_paths);
