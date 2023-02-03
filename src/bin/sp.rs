@@ -1,4 +1,4 @@
-use std::{path::{PathBuf, Component}, mem::swap};
+use std::path::{PathBuf, Component};
 
 use indexmap::IndexMap;
 
@@ -109,18 +109,18 @@ pub fn parse_alias(path: &[char]) -> Option<ShortpathDependency> {
     }
 }
 
-/// Expand the newly expanded path
+/// Expand the shortpath
 pub fn fmt_expand(src: &str, key_name: &str, key_path: &str) -> String {
     let this = format!("${}", key_name);
     let with = key_path;
     src.replace(&this, &with)
 }
 
-/// Fold the expanded path
+/// Fold the shortpath
 pub fn fmt_fold(src: &str, key_name: &str, key_path: &str) -> String {
-    let (&mut k, &mut v) = (&mut key_name.to_owned(), &mut key_path.to_owned());
-    swap(&mut k, &mut v);
-    fmt_expand(src, &k, &v)
+    let this = key_path;
+    let with = format!("${}", key_name);
+    src.replace(&this, &with)
 }
 
 /// Find the dependencies for a given shortpath
@@ -163,11 +163,18 @@ pub fn parse_shortpath_dependency(dep: ShortpathDependency, sp: &SP) -> (String,
 pub fn expand_full_path(mut sp: Shortpath, shortpaths: &SP) -> String {
     let entry = sp.entry.to_str().unwrap().to_owned();
     let mut output = entry.clone();
+
+    let unwrap_sp_dp = move |dep: &ShortpathDependency| {
+        let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
+        (key_name,key_path)
+    };
+
     match &sp.deps {
         Some(deps) => { // Expand entry into full_path
             deps.iter().for_each(|dep| {
-                let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
-                output = fmt_expanded(&output, &key_name, &key_path)
+                let (key_name, key_path) = unwrap_sp_dp(dep);
+                //let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
+                output = fmt_expand(&output, &key_name, &key_path)
             });
         }
         None => { // Use the entry as the full_path
@@ -189,7 +196,7 @@ pub fn sp_pop_full_path(mut sp: Shortpath, shortpaths: &SP) -> String {
         Some(deps) => { // Expand entry into full_path
             deps.iter().for_each(|dep| {
                 let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
-                output = fmt_expanded(&entry, &key_name, &key_path)
+                output = fmt_expand(&entry, &key_name, &key_path)
                 
             });
         }
@@ -262,13 +269,6 @@ pub fn expand_shortpaths(dmap: IndexMap<String, Option<String>>, sp: &SP) -> Vec
         expand_shortpath(pname, sp_dep, &sp)
     }).collect();
     ordpaths
-}
-
-pub fn sort_graph(depgraph: Graph<&String, &PathBuf>) -> Vec<NodeIndex> {
-    let mut space = petgraph::algo::DfsSpace::new(&depgraph);
-    let sorted = petgraph::algo::toposort(&depgraph, Some(&mut space));
-    let indices = sorted.unwrap();
-    indices
 }
 
 // Now that we have the dependency vector, we're going to loop through and generate the graph for the dep tree
