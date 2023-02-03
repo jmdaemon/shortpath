@@ -1,12 +1,10 @@
 use std::path::{PathBuf, Component};
 use std::ffi::OsStr;
 
-use indexmap::{IndexMap, indexmap};
+use indexmap::IndexMap;
 use petgraph::Graph;
 use petgraph::dot::{Config, Dot};
 use petgraph::stable_graph::NodeIndex;
-
-use itertools::Itertools;
 
 /* IndexMap
  * - Remembers order chronologically
@@ -93,15 +91,8 @@ pub fn find_longest_keyname(map: &SP) -> String {
        .unwrap().0.to_owned()
 }
 
-pub fn get_padding_len(map: &SP) -> usize {
-    let max = find_longest_keyname(map);
-    max.len()
-}
-
 pub fn to_str_slice(s: &OsStr) -> Vec<char> {
-    let spath = s.to_str().unwrap().to_string();
-    let chars: Vec<char> = spath.chars().collect();
-    chars
+    s.to_string_lossy().chars().collect()
 }
 
 /// Get the type of alias
