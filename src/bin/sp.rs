@@ -1,14 +1,6 @@
-use std::path::{PathBuf, Component};
+use std::{path::{PathBuf, Component}, mem::swap};
 
 use indexmap::IndexMap;
-use petgraph::Graph;
-use petgraph::dot::{Config, Dot};
-use petgraph::stable_graph::NodeIndex;
-
-/* IndexMap
- * - Remembers order chronologically
- * - Allows for custom sorting
- */
 
 type SP = IndexMap<String, Shortpath>;
 type DEPS = Vec<ShortpathDependency>; 
@@ -21,13 +13,15 @@ pub enum ShortpathDependency {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Shortpath {
+    /// Name of the shortpath
     name: String,
+    /// The path to be stored on disk
     entry: PathBuf,
+    /// The full file path
     full_path: Option<PathBuf>,
+    /// Any dependent shortpaths
     deps: Option<DEPS>,
 }
-// This doesn't make much sense necessarily?
-// Should a shortpath contain multiple aliases?
 
 struct Shortpaths {
     paths: SP,
@@ -115,6 +109,20 @@ pub fn parse_alias(path: &[char]) -> Option<ShortpathDependency> {
     }
 }
 
+/// Expand the newly expanded path
+pub fn fmt_expand(src: &str, key_name: &str, key_path: &str) -> String {
+    let this = format!("${}", key_name);
+    let with = key_path;
+    src.replace(&this, &with)
+}
+
+/// Fold the expanded path
+pub fn fmt_fold(src: &str, key_name: &str, key_path: &str) -> String {
+    let (&mut k, &mut v) = (&mut key_name.to_owned(), &mut key_path.to_owned());
+    swap(&mut k, &mut v);
+    fmt_expand(src, &k, &v)
+}
+
 /// Find the dependencies for a given shortpath
 pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
     let deps: DEPS = entry.components().into_iter().filter_map(|path_component| {
@@ -123,9 +131,10 @@ pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
         }
         return None
     }).collect();
-    return Some(deps)
+    Some(deps)
 }
 
+/// Lookup the shortpath dependency in the shortpaths index map
 pub fn parse_shortpath_dependency(dep: ShortpathDependency, sp: &SP) -> (String, String) {
     let mut key_name = String::new();
     let mut key_path = String::new();
@@ -148,12 +157,7 @@ pub fn parse_shortpath_dependency(dep: ShortpathDependency, sp: &SP) -> (String,
     (key_name, key_path)
 }
 
-/// Format the newly expanded path
-pub fn fmt_expanded(src: &str, key_name: &str, key_path: &str) -> String {
-    let this = format!("${}", key_name);
-    let with = key_path;
-    src.replace(&this, &with)
-}
+
 
 /// Expand the entry path into the full path of the given entry
 pub fn expand_full_path(mut sp: Shortpath, shortpaths: &SP) -> String {
@@ -203,54 +207,6 @@ pub fn pop_deps_sp(sp: &mut Shortpath) -> &Shortpath {
     }
     sp.deps = find_deps(&sp.entry);
     sp
-}
-
-/// Create a dependency graph from the vector of dependencies
-pub fn gen_deps_graph(sp: &SP) {
-    // LinkedList
-    // 1. Create a Vec<(String), Option (String)> aliases
-    // 2. For every elem in vec
-    //      if let Some ()
-    let spds: Vec<(String, Option<String>)> = vec![];
-    
-    // Key Name: Optional Key Alias
-    let dmap: IndexMap<String, Option<String>> = spds.into_iter().collect();
-    // We'll need to continually match and expand this in order
-    //let dmap = spds.into_iter().for_each(|(from, to)| {
-        ////if let Some(dest) = to {
-        ////}
-    //});
-    
-    let mut depgraph = petgraph::graph::DiGraph::new();
-    sp.into_iter().for_each(|(name, deps)| {
-        match &deps.deps {
-            Some(sp_deps) => {
-                sp_deps.iter().for_each(|spd| {
-                    match spd {
-                        ShortpathDependency::Alias(to, path) => {
-                            let src = depgraph.add_node(name);
-                            let dest = depgraph.add_node(to);
-                            depgraph.add_edge(src, dest, path.to_owned());
-                            //depgraph.extend_with_edges(&[
-                                //(src, dest),
-                            //]);
-                        }
-                        ShortpathDependency::EnvironmentVar(to, path) => {
-                            let src = depgraph.add_node(name);
-                            let dest = depgraph.add_node(to);
-                            depgraph.add_edge(src, dest, path.to_owned());
-                        }
-                    }
-                });
-            }
-            None => {
-                // Add the node to our graph anyways
-                depgraph.add_node(name);
-            }
-        }
-    });
-
-    println!("{:?}", Dot::with_config(&depgraph, &[Config::EdgeIndexLabel]));
 }
 
 // This shouldn't  be done like this
@@ -373,33 +329,4 @@ fn main() {
      //});
      //gen_deps_graph(&sp_im);
      
-    //let sp = Shortpath::new("aaaa", ShortpathDependency::Alias("aaaa", ));
-    //let alias = ShortpathDependency::Alias(None, None);
-    //let alias = ShortpathDependency::Alias("bbbb".to_owned(), PathBuf::from("bbbb"));
-    //let sp = Shortpath { full_path: PathBuf::from("$bbbb/aaaa"), deps: Some(vec![alias]) };
-
-    //let im: SP = indexmap! {
-        //// Path     : Shortpath
-        //"$bbbb/aaaa".to_owned() => sp.clone(),
-    //};
-
-    // Test find_keys
-    //let key = im.find_keys_for_value(&im.get("$bbbb/aaaa").unwrap());
-    //println!("{:?}", key);
-
-    // Test the graph
-    //let spds = vec![
-        //ShortpathDependency::Alias("a".to_owned(), PathBuf::from("aaaa")),
-        //ShortpathDependency::Alias("b".to_owned(), PathBuf::from("$a/bbbb")),
-        //ShortpathDependency::Alias("c".to_owned(), PathBuf::from("$a/cccc")),
-        //ShortpathDependency::Alias("d".to_owned(), PathBuf::from("$c/dddd")),
-    //];
-    
-    //let sim: SP = spds.iter().for_each(|spd| {
-        //// Expand path
-
-    //});
-
-    //let deps = find_deps(&sp, &im).unwrap();
-    //gen_deps_graph(&deps, &im);
 }
