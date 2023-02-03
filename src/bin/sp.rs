@@ -1,5 +1,4 @@
 use std::path::{PathBuf, Component};
-use std::ffi::OsStr;
 
 use indexmap::IndexMap;
 use petgraph::Graph;
@@ -119,6 +118,31 @@ pub fn parse_alias(path: &[char]) -> Option<ShortpathDependency> {
     }
 }
 
+pub fn parse_shortpath_dependency(dep: ShortpathDependency, sp: &SP) -> (String, String) {
+    let mut key_name = String::new();
+    let mut key_path = String::new();
+
+    match dep {
+        ShortpathDependency::Alias(name, _) => {
+            key_name = name.clone();
+            key_path = sp.get(&name)
+                .expect(&format!("Could not get key: {}", name))
+                .entry.to_str().unwrap().to_owned();
+            //(name, sp.get(pname).expect(&format!("Could not get key: {}", pname))
+                //.entry.to_str().unwrap().to_owned())
+
+        }
+        ShortpathDependency::EnvironmentVar(name, _) => {
+            key_name = name.clone();
+            match std::env::var(name) { // Get from environment
+                Ok(var) => key_path = var,
+                Err(e) => eprintln!("Error in expanding environment variable: ${}", e)
+            };
+        }
+    }
+    (key_name, key_path)
+}
+
 /// Find the dependencies for a given shortpath
 pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
     let deps: DEPS = entry.components().into_iter().filter_map(|path_component| {
@@ -128,6 +152,59 @@ pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
         return None
     }).collect();
     return Some(deps)
+}
+
+/// Expand the entry path into the full path of the given entry
+pub fn expand_full_path(mut sp: Shortpath, shortpaths: &SP) {
+    assert!(sp.full_path.is_none());
+
+    let entry = sp.entry.to_str().unwrap().to_owned();
+    let mut output = String::new();
+    match &sp.deps {
+        Some(deps) => { // Expand entry into full_path
+            deps.iter().map(|dep| {
+
+                // Pattern match for the alias name
+                //while let Some(alias_name) = parse_alias(&to_str_slice(entry)) {
+                //let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
+
+                // Format the path
+                let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
+                let this = format!("${}", key_name);
+                let with = key_path;
+                output = entry.replace(&this, &with);
+                //}
+            });
+        }
+        None => { // Use the entry as the full_path
+            sp.full_path = Some(sp.entry);
+        }
+    };
+
+    //if let Some(asfd) = sp.deps {
+    //}
+    //match sp_dep {
+        //// If there's a dependency
+        //Some(dep) => {
+            //while let Some(alias_name) = parse_alias(&to_str_slice(dep)) {
+                //let mut key_name = String::new();
+                //let mut key_path = String::new();
+
+                //// Get the name and path of the dependent shortpath
+                ////let (key_name, key_path) = 
+
+            //}
+        //}
+        //// Else, just use the path as is directly
+        //None => {
+            //output = sp.get(pname).unwrap().entry.to_str().unwrap().to_string();
+        //}
+    //}
+
+    // Expand the variable path
+    //let this = format!("${}", key_name);
+    //let with = key_path;
+    //output = path.replace(&this, &with);
 }
 
 // Impure Shortpath Functions
