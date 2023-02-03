@@ -146,7 +146,7 @@ pub fn find_longest_keyname(map: &SP) -> String {
        .unwrap().0.to_owned()
 }
 
-/// Get the type of alias
+/** Determines shortpath dependencies from the shortpath entry */
 pub fn parse_alias(path: &[char]) -> Option<SPT> {
     match path {
         ['$', alias_name @ ..] => {
@@ -157,8 +157,6 @@ pub fn parse_alias(path: &[char]) -> Option<SPT> {
             let (an, ap) = (alias_name.iter().collect(), PathBuf::from(path.iter().collect::<String>()));
             Some(SPT::EnvPath(an, ap))
         }
-        // TODO Parse the Path
-        // TODO We can even remove the option wrapping here since we wont have a null value
         _ => { None }
     }
 }
@@ -188,9 +186,9 @@ pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
     Some(deps)
 }
 
-pub fn get_shortpath_key_name(sp: SPT) -> Option<String> {
+pub fn get_shortpath_name(sp: SPT) -> String {
     match sp {
-        SPT::Path(name, _) | SPT::AliasPath(name, _) | SPT::EnvPath(name, _) => Some(name),
+        SPT::Path(name, _) | SPT::AliasPath(name, _) | SPT::EnvPath(name, _) => name,
     }
 }
 
