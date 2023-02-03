@@ -88,23 +88,9 @@ where
 
 /// Find the longest possible keyname in the hashmap
 pub fn find_longest_keyname(map: &SP) -> String {
-    //let mut max = String::new();
-    //map.sort_by(|k1, _, k2, _| std::cmp::max(k1.len() < k2.len()));
-    //let sorted = map.sorted_by(|k1, _, k2, _| k1.len().cmp(&k2.len())).collect();
-    //map.sorted_by(|k1, _, k2, _| k1.len().cmp(&k2.len()));
-    let sorted = map
-        .into_iter()
-        .sorted_by(|(k1, _), (k2, _)| k1.len().cmp(&k2.len()));
-    map.last().unwrap().0.to_owned()
-        //.sorted_by(|k1, _, k2, _| k1.len().cmp(&k2.len()));
-        //Ord::cmp(&b.1, &a.1)
-    //map.sort_by( { k.len.len() < max.len() });
-    //map.into_iter().for_each(|(k,_)| {
-        //if k.len() > max.len() {
-            //max = k.to_owned()
-        //}
-    //});
-    //max
+    map.into_iter()
+       .max_by(|(k1,_), (k2, _)| k1.len().cmp(&k2.len()))
+       .unwrap().0.to_owned()
 }
 
 pub fn get_padding_len(map: &SP) -> usize {
