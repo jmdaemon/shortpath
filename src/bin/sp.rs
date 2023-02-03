@@ -8,14 +8,13 @@ type DEPS = Vec<ShortpathType>;
 /// The type of shortpath it is
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ShortpathType {
-    Path(PathBuf),              // Shortpath Path
+    Path(String, PathBuf),      // Shortpath Name: Shortpath Path
     AliasPath(String, PathBuf), // Shortpath Name: Shortpath Path
     EnvPath(String, PathBuf),   // Env Var Name: Shortpath Path
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Shortpath {
-    name: String,
     path: ShortpathType,
     full_path: Option<PathBuf>,
     deps: Option<DEPS>,
@@ -25,19 +24,38 @@ struct ShortpathsBuilder {
     paths: Option<SP>,
 }
 
+// Implementations
+
+impl ShortpathType {
+    pub fn new_path(name: impl Into<String>, path: impl Into<PathBuf>) -> ShortpathType {
+        ShortpathType::Path(name.into(), path.into())
+    }
+    pub fn new_alias_path(name: impl Into<String>, alias_path: impl Into<PathBuf>) -> ShortpathType {
+        ShortpathType::AliasPath(name.into(), alias_path.into())
+    }
+    pub fn new_env_path(name: impl Into<String>, alias_path: impl Into<PathBuf>) -> ShortpathType {
+        ShortpathType::EnvPath(name.into(), alias_path.into())
+    }
+}
+
 impl Shortpath {
-    pub fn new<S>(name: S, path: ShortpathType, full_path: Option<PathBuf>, deps: Option<DEPS>) -> Shortpath
-    where
-        S: Into<String>,
-    {
-        Shortpath { name: name.into(), path: path.into(), full_path, deps }
+    pub fn new(path: ShortpathType, full_path: Option<PathBuf>, deps: Option<DEPS>) -> Shortpath {
+        Shortpath { path: path.into(), full_path, deps }
     }
 
-    pub fn entry(&self) -> &PathBuf {
+    pub fn path(&self) -> &PathBuf {
         match &self.path {
-            ShortpathType::Path(path) => path,
+            ShortpathType::Path(_, path) => path,
             ShortpathType::AliasPath(_, path) => path,
             ShortpathType::EnvPath(_, path) => path,
+        }
+    }
+
+    pub fn name(&self) -> &String {
+        match &self.path {
+            ShortpathType::Path(name, _) => name,
+            ShortpathType::AliasPath(name, _) => name,
+            ShortpathType::EnvPath(name, _) => name,
         }
     }
 }
@@ -53,7 +71,7 @@ impl ShortpathsBuilder {
     pub fn from_vec(sps: Vec<Shortpath>) -> SP {
         let mut im: SP = indexmap::IndexMap::new();
         sps.into_iter().for_each(|sp| {
-            im.insert(sp.name.clone(), sp);
+            im.insert(sp.name().clone(), sp);
         });
         im
     }
@@ -99,13 +117,13 @@ where
     fn find_keys_for_value(&'a self, value: V) -> Vec<&'a String> {
         let v = value.into();
         self.into_iter()
-            .filter_map(|(key, val)| if val.entry().to_str().unwrap().to_owned() == v { Some(key) } else { None })
+            .filter_map(|(key, val)| if val.path().to_str().unwrap().to_owned() == v { Some(key) } else { None })
             .collect()
     }
 
     fn find_key_for_value(&'a self, value: V) -> Option<&'a String> {
         let v = value.into();
-        self.iter().find_map(|(key, val)| if val.entry().to_str().unwrap().to_owned() == v { Some(key) } else { None })
+        self.iter().find_map(|(key, val)| if val.path().to_str().unwrap().to_owned() == v { Some(key) } else { None })
     }
 }
 
@@ -176,7 +194,7 @@ pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
 //pub fn get_shortpath_key_name(path: ShortpathType, sp: &SP) -> (String, String) {
 pub fn get_shortpath_key_name(sp: ShortpathType, shortpaths: &SP) -> Option<String> {
     match sp {
-        ShortpathType::Path(path) => Some(shortpaths.find_key_for_value(path.to_str().unwrap()).unwrap().to_owned()),
+        ShortpathType::Path(name, _) => Some(name),
         ShortpathType::AliasPath(name, _) => Some(name),
         ShortpathType::EnvPath(name, _) => Some(name),
     }
@@ -191,7 +209,7 @@ pub fn parse_shortpath_dependency(dep: ShortpathType, sp: &SP) -> (String, Strin
         ShortpathType::AliasPath(name, _) => {
             key_path = sp.get(&name)
                 .expect(&format!("Could not get key: {}", name))
-                .entry().to_str().unwrap().to_owned();
+                .path().to_str().unwrap().to_owned();
             key_name = name;
         }
         ShortpathType::EnvPath(name, _) => {
@@ -225,7 +243,7 @@ pub fn expand_full_path(entry: String, sp: &Shortpath, unwrap_sp_dp: impl Fn(&Sh
 /// Populate the dependencies of a shortpath
 pub fn sp_pop_deps(sp: &mut Shortpath) {
     if sp.deps.is_some() { return; }
-    sp.deps = find_deps(&sp.entry());
+    sp.deps = find_deps(&sp.path());
 }
 
 /// Populate the full_path field of a shortpath
@@ -237,7 +255,7 @@ pub fn sp_pop_full_path(sp: &mut Shortpath, shortpaths: &SP) {
         (key_name,key_path)
     };
 
-    let entry = sp.entry().to_str().unwrap().to_owned();
+    let entry = sp.path().to_str().unwrap().to_owned();
     let output = expand_full_path(entry, &sp, unwrap_sp_dp);
     sp.full_path = Some(PathBuf::from(output));
 }
@@ -288,11 +306,13 @@ pub fn sp_pop_full_path(sp: &mut Shortpath, shortpaths: &SP) {
 // How do we add 
 
 fn main() {
+    // TODO Create more ergonomic api for this later
+    // Wrap it together with the builder construct to reduce the noise
      let sp_paths = vec![
-         Shortpath::new("a", ShortpathType::Path(PathBuf::from("aaaa")), None, None),
-         Shortpath::new("b", ShortpathType::Path(PathBuf::from("$a/bbbb")), None, None),
-         Shortpath::new("c", ShortpathType::Path(PathBuf::from("$b/cccc")), None, None),
-         Shortpath::new("d", ShortpathType::Path(PathBuf::from("$a/dddd")), None, None),
+         Shortpath::new(ShortpathType::new_path("a", PathBuf::from("aaaa")), None, None),
+         Shortpath::new(ShortpathType::new_path("b", PathBuf::from("$a/bbbb")), None, None),
+         Shortpath::new(ShortpathType::new_path("c", PathBuf::from("$b/cccc")), None, None),
+         Shortpath::new(ShortpathType::new_path("d", PathBuf::from("$a/dddd")), None, None),
      ];
      println!("{:?}", sp_paths);
 
