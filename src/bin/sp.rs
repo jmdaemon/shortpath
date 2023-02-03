@@ -52,9 +52,7 @@ impl Shortpath {
 
     pub fn name(&self) -> &String {
         match &self.path {
-            SPT::Path(name, _) => name,
-            SPT::AliasPath(name, _) => name,
-            SPT::EnvPath(name, _) => name,
+            SPT::Path(name, _) | SPT::AliasPath(name, _) | SPT::EnvPath(name, _) => name,
         }
     }
 }
@@ -190,12 +188,9 @@ pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
     Some(deps)
 }
 
-//pub fn get_shortpath_key_name(path: SPT, sp: &SP) -> (String, String) {
-pub fn get_shortpath_key_name(sp: SPT, shortpaths: &SP) -> Option<String> {
+pub fn get_shortpath_key_name(sp: SPT) -> Option<String> {
     match sp {
-        SPT::Path(name, _) => Some(name),
-        SPT::AliasPath(name, _) => Some(name),
-        SPT::EnvPath(name, _) => Some(name),
+        SPT::Path(name, _) | SPT::AliasPath(name, _) | SPT::EnvPath(name, _) => Some(name),
     }
 }
 
