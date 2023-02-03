@@ -87,6 +87,8 @@ where
 // TODO: Create pure FP functions that return pure values (for testing)
 // TODO: Create impure interface that stores the result in the Shortpath struct
 
+// Pure Functions
+
 /// Find the longest possible keyname in the hashmap
 pub fn find_longest_keyname(map: &SP) -> String {
     map.into_iter()
@@ -94,7 +96,7 @@ pub fn find_longest_keyname(map: &SP) -> String {
        .unwrap().0.to_owned()
 }
 
-//pub fn to_str_slice(s: &OsStr) -> Vec<char> {
+/// Convert strings into a vector of characters
 pub fn to_str_slice(s: impl Into<String>) -> Vec<char> {
     s.into().chars().collect()
 }
@@ -117,22 +119,26 @@ pub fn parse_alias(path: &[char]) -> Option<ShortpathDependency> {
     }
 }
 
-/// Generate the dependencies the shortpath requires
-/// We assume the deps are empty, and that we must populate the dependency
-pub fn gen_deps_tree(sp: &Shortpath) -> Option<DEPS> {
-    // Return, if already populated
-    if let Some(deps) = &sp.deps {
-        return Some(deps.to_owned())
-    }
-
-    let deps: DEPS =
-    sp.entry.components().into_iter().filter_map(|p| {
-        if let Component::Normal(ostrpath) = p {
-            return parse_alias(&to_str_slice(ostrpath.to_string_lossy()));
+/// Find the dependencies for a given shortpath
+pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
+    let deps: DEPS = entry.components().into_iter().filter_map(|path_component| {
+        if let Component::Normal(osstr_path) = path_component {
+            return parse_alias(&to_str_slice(osstr_path.to_string_lossy()));
         }
         return None
     }).collect();
     return Some(deps)
+}
+
+// Impure Shortpath Functions
+
+/// Populate the dependencies of a shortpath
+pub fn pop_deps(sp: &mut Shortpath) -> &Shortpath {
+    if sp.deps.is_some() {
+        return sp; // Return, if already populated
+    }
+    sp.deps = find_deps(&sp.entry);
+    sp
 }
 
 /// Create a dependency graph from the vector of dependencies
@@ -297,11 +303,11 @@ fn main() {
      println!("{:?}", key);
 
      // Test dependency graph
-     sp_im.iter_mut().for_each(|(_name, sp)| {
-         let deps = gen_deps_tree(sp);
-         sp.deps = deps;
-     });
-     gen_deps_graph(&sp_im);
+     //sp_im.iter_mut().for_each(|(_name, sp)| {
+         //let deps = find_deps(sp);
+         //sp.deps = deps;
+     //});
+     //gen_deps_graph(&sp_im);
      
     //let sp = Shortpath::new("aaaa", ShortpathDependency::Alias("aaaa", ));
     //let alias = ShortpathDependency::Alias(None, None);
@@ -330,6 +336,6 @@ fn main() {
 
     //});
 
-    //let deps = gen_deps_tree(&sp, &im).unwrap();
+    //let deps = find_deps(&sp, &im).unwrap();
     //gen_deps_graph(&deps, &im);
 }
