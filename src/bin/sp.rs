@@ -118,6 +118,17 @@ pub fn parse_alias(path: &[char]) -> Option<ShortpathDependency> {
     }
 }
 
+/// Find the dependencies for a given shortpath
+pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
+    let deps: DEPS = entry.components().into_iter().filter_map(|path_component| {
+        if let Component::Normal(osstr_path) = path_component {
+            return parse_alias(&to_str_slice(osstr_path.to_string_lossy()));
+        }
+        return None
+    }).collect();
+    return Some(deps)
+}
+
 pub fn parse_shortpath_dependency(dep: ShortpathDependency, sp: &SP) -> (String, String) {
     let mut key_name = String::new();
     let mut key_path = String::new();
@@ -143,74 +154,56 @@ pub fn parse_shortpath_dependency(dep: ShortpathDependency, sp: &SP) -> (String,
     (key_name, key_path)
 }
 
-/// Find the dependencies for a given shortpath
-pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
-    let deps: DEPS = entry.components().into_iter().filter_map(|path_component| {
-        if let Component::Normal(osstr_path) = path_component {
-            return parse_alias(&to_str_slice(osstr_path.to_string_lossy()));
-        }
-        return None
-    }).collect();
-    return Some(deps)
+/// Format the newly expanded path
+pub fn fmt_expanded(src: &str, key_name: &str, key_path: &str) -> String {
+    let this = format!("${}", key_name);
+    let with = key_path;
+    src.replace(&this, &with)
 }
 
 /// Expand the entry path into the full path of the given entry
-pub fn expand_full_path(mut sp: Shortpath, shortpaths: &SP) {
-    assert!(sp.full_path.is_none());
-
+pub fn expand_full_path(mut sp: Shortpath, shortpaths: &SP) -> String {
     let entry = sp.entry.to_str().unwrap().to_owned();
-    let mut output = String::new();
+    let mut output = entry.clone();
     match &sp.deps {
         Some(deps) => { // Expand entry into full_path
-            deps.iter().map(|dep| {
-
-                // Pattern match for the alias name
-                //while let Some(alias_name) = parse_alias(&to_str_slice(entry)) {
-                //let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
-
-                // Format the path
+            deps.iter().for_each(|dep| {
                 let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
-                let this = format!("${}", key_name);
-                let with = key_path;
-                output = entry.replace(&this, &with);
-                //}
+                output = fmt_expanded(&output, &key_name, &key_path)
             });
         }
         None => { // Use the entry as the full_path
             sp.full_path = Some(sp.entry);
         }
     };
-
-    //if let Some(asfd) = sp.deps {
-    //}
-    //match sp_dep {
-        //// If there's a dependency
-        //Some(dep) => {
-            //while let Some(alias_name) = parse_alias(&to_str_slice(dep)) {
-                //let mut key_name = String::new();
-                //let mut key_path = String::new();
-
-                //// Get the name and path of the dependent shortpath
-                ////let (key_name, key_path) = 
-
-            //}
-        //}
-        //// Else, just use the path as is directly
-        //None => {
-            //output = sp.get(pname).unwrap().entry.to_str().unwrap().to_string();
-        //}
-    //}
-
-    // Expand the variable path
-    //let this = format!("${}", key_name);
-    //let with = key_path;
-    //output = path.replace(&this, &with);
+    return output;
 }
 
 // Impure Shortpath Functions
 
+/// Expand the entry path into the full path of the given entry
+pub fn sp_pop_full_path(mut sp: Shortpath, shortpaths: &SP) -> String {
+    assert!(sp.full_path.is_none());
+
+    let entry = sp.entry.to_str().unwrap().to_owned();
+    let mut output = String::new();
+    match &sp.deps {
+        Some(deps) => { // Expand entry into full_path
+            deps.iter().for_each(|dep| {
+                let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
+                output = fmt_expanded(&entry, &key_name, &key_path)
+                
+            });
+        }
+        None => { // Use the entry as the full_path
+            sp.full_path = Some(sp.entry);
+        }
+    };
+    return output;
+}
+
 /// Populate the dependencies of a shortpath
-pub fn pop_deps(sp: &mut Shortpath) -> &Shortpath {
+pub fn pop_deps_sp(sp: &mut Shortpath) -> &Shortpath {
     if sp.deps.is_some() {
         return sp; // Return, if already populated
     }
