@@ -84,6 +84,9 @@ where
 
 // These functions are used for prettifying the file during export phase
 
+// TODO: Create pure FP functions that return pure values (for testing)
+// TODO: Create impure interface that stores the result in the Shortpath struct
+
 /// Find the longest possible keyname in the hashmap
 pub fn find_longest_keyname(map: &SP) -> String {
     map.into_iter()
@@ -91,8 +94,9 @@ pub fn find_longest_keyname(map: &SP) -> String {
        .unwrap().0.to_owned()
 }
 
-pub fn to_str_slice(s: &OsStr) -> Vec<char> {
-    s.to_string_lossy().chars().collect()
+//pub fn to_str_slice(s: &OsStr) -> Vec<char> {
+pub fn to_str_slice(s: impl Into<String>) -> Vec<char> {
+    s.into().chars().collect()
 }
 
 /// Get the type of alias
@@ -124,7 +128,7 @@ pub fn gen_deps_tree(sp: &Shortpath) -> Option<DEPS> {
     let deps: DEPS =
     sp.entry.components().into_iter().filter_map(|p| {
         if let Component::Normal(ostrpath) = p {
-            return parse_alias(&to_str_slice(ostrpath));
+            return parse_alias(&to_str_slice(ostrpath.to_string_lossy()));
         }
         return None
     }).collect();
@@ -133,6 +137,20 @@ pub fn gen_deps_tree(sp: &Shortpath) -> Option<DEPS> {
 
 /// Create a dependency graph from the vector of dependencies
 pub fn gen_deps_graph(sp: &SP) {
+    // LinkedList
+    // 1. Create a Vec<(String), Option (String)> aliases
+    // 2. For every elem in vec
+    //      if let Some ()
+    let spds: Vec<(String, Option<String>)> = vec![];
+    
+    // Key Name: Optional Key Alias
+    let dmap: IndexMap<String, Option<String>> = spds.into_iter().collect();
+    // We'll need to continually match and expand this in order
+    //let dmap = spds.into_iter().for_each(|(from, to)| {
+        ////if let Some(dest) = to {
+        ////}
+    //});
+    
     let mut depgraph = petgraph::graph::DiGraph::new();
     sp.into_iter().for_each(|(name, deps)| {
         match &deps.deps {
@@ -142,7 +160,7 @@ pub fn gen_deps_graph(sp: &SP) {
                         ShortpathDependency::Alias(to, path) => {
                             let src = depgraph.add_node(name);
                             let dest = depgraph.add_node(to);
-                            depgraph.add_edge(src, dest, path);
+                            depgraph.add_edge(src, dest, path.to_owned());
                             //depgraph.extend_with_edges(&[
                                 //(src, dest),
                             //]);
@@ -150,7 +168,7 @@ pub fn gen_deps_graph(sp: &SP) {
                         ShortpathDependency::EnvironmentVar(to, path) => {
                             let src = depgraph.add_node(name);
                             let dest = depgraph.add_node(to);
-                            depgraph.add_edge(src, dest, path);
+                            depgraph.add_edge(src, dest, path.to_owned());
                         }
                     }
                 });
@@ -163,6 +181,61 @@ pub fn gen_deps_graph(sp: &SP) {
     });
 
     println!("{:?}", Dot::with_config(&depgraph, &[Config::EdgeIndexLabel]));
+}
+
+// This shouldn't  be done like this
+pub fn expand_shortpath(pname: &String, sp_dep: &Option<String>, sp: &SP) -> String {
+    let mut output = String::new();
+    let path = sp.get(pname).unwrap().entry.to_str().unwrap().to_string();
+    match sp_dep {
+        // If there's a dependency
+        Some(dep) => {
+            while let Some(alias_name) = parse_alias(&to_str_slice(dep)) {
+                let mut key_name = String::new();
+                let mut key_path = String::new();
+
+                // Get the name and path of the dependent shortpath
+                match alias_name {
+                    ShortpathDependency::Alias(name, _) => {
+                        key_name = name;
+                        key_path = sp.get(pname).expect(&format!("Could not get key: {}", pname))
+                            .entry.to_str().unwrap().to_owned();
+                    }
+                    ShortpathDependency::EnvironmentVar(name, _) => {
+                        key_name = name.clone();
+                        match std::env::var(name) { // Get from environment
+                            Ok(var) => key_path = var,
+                            Err(e) => eprintln!("Error in expanding environment variable: ${}", e)
+                        };
+                    }
+                }
+
+                // Expand the variable path
+                let this = format!("${}", key_name);
+                let with = key_path;
+                output = path.replace(&this, &with);
+            }
+        }
+        // Else, just use the path as is directly
+        None => {
+            output = sp.get(pname).unwrap().entry.to_str().unwrap().to_string();
+        }
+    }
+    output
+}
+
+/// Return the order of the shortpaths to serialize
+pub fn expand_shortpaths(dmap: IndexMap<String, Option<String>>, sp: &SP) -> Vec<String> {
+    // We want to try out all the keys, then peform the expansion if it is considered valid
+    // This will allow us to pull out as many aliases as needed
+
+    // TODO:  This should not be done like before
+    // We need to use the indexmap to perform the sort because we will require the key name and expanded path later
+    // In order to serialize to disk
+    let ordpaths: Vec<String> = dmap.iter().map(|(pname, sp_dep)| {
+        expand_shortpath(pname, sp_dep, &sp)
+    }).collect();
+    ordpaths
 }
 
 pub fn sort_graph(depgraph: Graph<&String, &PathBuf>) -> Vec<NodeIndex> {
