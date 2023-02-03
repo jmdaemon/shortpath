@@ -102,9 +102,6 @@ pub fn to_str_slice(s: impl Into<String>) -> Vec<char> {
 
 /// Get the type of alias
 pub fn parse_alias(path: &[char]) -> Option<ShortpathDependency> {
-    // Pattern matches two syntaxes
-    // ${env:}: EnvironmentVar
-    // $: Shortpaths
     match path {
         ['$', alias_name @ ..] => {
             let (an, ap) = (alias_name.iter().collect(), PathBuf::from(path.iter().collect::<String>()));
@@ -135,20 +132,17 @@ pub fn parse_shortpath_dependency(dep: ShortpathDependency, sp: &SP) -> (String,
 
     match dep {
         ShortpathDependency::Alias(name, _) => {
-            key_name = name.clone();
             key_path = sp.get(&name)
                 .expect(&format!("Could not get key: {}", name))
                 .entry.to_str().unwrap().to_owned();
-            //(name, sp.get(pname).expect(&format!("Could not get key: {}", pname))
-                //.entry.to_str().unwrap().to_owned())
-
+            key_name = name;
         }
         ShortpathDependency::EnvironmentVar(name, _) => {
-            key_name = name.clone();
-            match std::env::var(name) { // Get from environment
+            match std::env::var(&name) { // Get from environment
                 Ok(var) => key_path = var,
                 Err(e) => eprintln!("Error in expanding environment variable: ${}", e)
             };
+            key_name = name;
         }
     }
     (key_name, key_path)
