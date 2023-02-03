@@ -173,6 +173,15 @@ pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
     Some(deps)
 }
 
+//pub fn get_shortpath_key_name(path: ShortpathType, sp: &SP) -> (String, String) {
+pub fn get_shortpath_key_name(sp: ShortpathType, shortpaths: &SP) -> Option<String> {
+    match sp {
+        ShortpathType::Path(path) => Some(shortpaths.find_key_for_value(path.to_str().unwrap()).unwrap().to_owned()),
+        ShortpathType::AliasPath(name, _) => Some(name),
+        ShortpathType::EnvPath(name, _) => Some(name),
+    }
+}
+
 /// Lookup the shortpath dependency in the shortpaths index map
 pub fn parse_shortpath_dependency(dep: ShortpathType, sp: &SP) -> (String, String) {
     let mut key_name = String::new();
