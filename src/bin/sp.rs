@@ -160,25 +160,22 @@ pub fn parse_shortpath_dependency(dep: ShortpathDependency, sp: &SP) -> (String,
 
 
 /// Expand the entry path into the full path of the given entry
-pub fn expand_full_path(mut sp: Shortpath, shortpaths: &SP) -> String {
-    let entry = sp.entry.to_str().unwrap().to_owned();
+//pub fn expand_full_path(mut sp: Shortpath, shortpaths: &SP) -> String {
+//pub fn expand_full_path(entry: String, sp: &Shortpath, unwrap_sp_dp: fn(&ShortpathDependency) -> (String, String)) -> String {
+pub fn expand_full_path(entry: String, sp: &Shortpath, unwrap_sp_dp: impl Fn(&ShortpathDependency) -> (String, String)) -> String {
     let mut output = entry.clone();
-
-    let unwrap_sp_dp = move |dep: &ShortpathDependency| {
-        let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
-        (key_name,key_path)
-    };
-
+    //let output = match &sp.deps {
     match &sp.deps {
         Some(deps) => { // Expand entry into full_path
             deps.iter().for_each(|dep| {
                 let (key_name, key_path) = unwrap_sp_dp(dep);
-                //let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
-                output = fmt_expand(&output, &key_name, &key_path)
+                output = fmt_expand(&output, &key_name, &key_path);
+                //fmt_expand(&output, &key_name, &key_path)
             });
         }
         None => { // Use the entry as the full_path
-            sp.full_path = Some(sp.entry);
+            //sp.full_path = Some(sp.entry);
+            output = entry;
         }
     };
     return output;
@@ -190,20 +187,26 @@ pub fn expand_full_path(mut sp: Shortpath, shortpaths: &SP) -> String {
 pub fn sp_pop_full_path(mut sp: Shortpath, shortpaths: &SP) -> String {
     assert!(sp.full_path.is_none());
 
-    let entry = sp.entry.to_str().unwrap().to_owned();
-    let mut output = String::new();
-    match &sp.deps {
-        Some(deps) => { // Expand entry into full_path
-            deps.iter().for_each(|dep| {
-                let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
-                output = fmt_expand(&entry, &key_name, &key_path)
-                
-            });
-        }
-        None => { // Use the entry as the full_path
-            sp.full_path = Some(sp.entry);
-        }
+    let unwrap_sp_dp = move |dep: &ShortpathDependency| {
+        let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
+        (key_name,key_path)
     };
+
+    let entry = sp.entry.to_str().unwrap().to_owned();
+    let output = expand_full_path(entry, &sp, unwrap_sp_dp);
+    //let mut output = String::new();
+    //match &sp.deps {
+        //Some(deps) => { // Expand entry into full_path
+            //deps.iter().for_each(|dep| {
+                //let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
+                //output = fmt_expand(&entry, &key_name, &key_path)
+                
+            //});
+        //}
+        //None => { // Use the entry as the full_path
+            //sp.full_path = Some(sp.entry);
+        //}
+    //};
     return output;
 }
 
