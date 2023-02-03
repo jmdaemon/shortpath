@@ -70,7 +70,7 @@ impl Shortpaths {
 }
 
 // Trait Extensions
-pub trait FindKeyIndexMapExt<'a, K,V: PartialEq + Eq> {
+pub trait FindKeyIndexMapExt<'a, K, V: PartialEq + Eq> {
     /// Get keys from value of IndexMap
     fn find_keys_for_value(&'a self, value: V) -> Vec<&'a K>;
 
@@ -78,56 +78,18 @@ pub trait FindKeyIndexMapExt<'a, K,V: PartialEq + Eq> {
     fn find_key_for_value(&'a self, value: V) -> Option<&'a K>;
 }
 
-//pub trait FindKeyIndexMapStrExt<'a, K> {
-    //fn find_keys_for_value(&'a self, value: &str) -> Vec<&'a K>;
-
-    //fn find_key_for_value(&'a self, value: &str) -> Option<&'a K>;
-//}
-
-// Generic Implementation
-impl<'a, K, V> FindKeyIndexMapExt<'a, K,V> for IndexMap<K,V>
-where V: PartialEq + Eq
+impl<'a, S> FindKeyIndexMapExt<'a, String, S> for IndexMap<String, Shortpath>
+where
+    S: Into<String> + Eq + Clone
 {
-    fn find_keys_for_value(&'a self, value: V) -> Vec<&'a K> {
+    fn find_keys_for_value<>(&'a self, value: S) -> Vec<&'a String> {
         self.into_iter()
-            .filter_map(|(key, val)| if *val == value { Some(key) } else { None })
+            .filter_map(|(key, val)| if val.entry.to_str().unwrap().to_owned() == value.clone().into() { Some(key) } else { None })
             .collect()
     }
 
-    fn find_key_for_value(&'a self, value: V) -> Option<&'a K> {
-        self.iter().find_map(|(key, val)| if *val == value { Some(key) } else { None })
-    }
-
-}
-
-// Lookup using just the path part
-//impl<'a, K, V> FindKeyIndexMapExt<'a, K,V> for IndexMap<K,V>
-//where V: Eq
-//{
-    //fn find_keys_for_value(&'a self, value: &V) -> Vec<&'a K> {
-        //self.into_iter()
-            //.filter_map(|(key, val)| if val == value { Some(key) } else { None })
-            //.collect()
-    //}
-
-    //fn find_key_for_value(&'a self, value: &V) -> Option<&'a K> {
-        //self.iter().find_map(|(key, val)| if val == value { Some(key) } else { None })
-    //}
-
-//}
-
-//impl<'a> FindKeyIndexMapStrExt<'a, String> for IndexMap<String,Shortpath>
-impl<'a> FindKeyIndexMapExt<'a, String, &str> for IndexMap<String,Shortpath>
-{
-    fn find_keys_for_value(&'a self, value: &str) -> Vec<&'a String> {
-        self.into_iter()
-            .filter_map(|(key, val)| if val.entry.to_str().unwrap().to_owned() == value { Some(key) } else { None })
-            .collect()
-    }
-
-    fn find_key_for_value(&'a self, value: &str) -> Option<&'a String> {
-        //self.iter().find_map(|(key, val)| if val == value { Some(key) } else { None })
-        self.iter().find_map(|(key, val)| if val.entry.to_str().unwrap().to_owned() == value { Some(key) } else { None })
+    fn find_key_for_value(&'a self, value: S) -> Option<&'a String> {
+        self.iter().find_map(|(key, val)| if val.entry.to_str().unwrap().to_owned() == value.clone().into() { Some(key) } else { None })
     }
 }
 
@@ -332,6 +294,9 @@ fn main() {
     //println!("{:?}", key);
 
     let key = sp_im.find_key_for_value("$a/bbbb");
+    println!("{:?}", key);
+
+    let key = sp_im.find_key_for_value("$a/bbbb".to_owned());
     println!("{:?}", key);
 
      
