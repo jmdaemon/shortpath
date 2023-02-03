@@ -21,8 +21,8 @@ pub struct Shortpath {
     deps: Option<DEPS>,
 }
 
-struct Shortpaths {
-    paths: SP,
+struct ShortpathsBuilder {
+    paths: Option<SP>,
 }
 
 impl Shortpath {
@@ -42,15 +42,44 @@ impl Shortpath {
     }
 }
 
-impl Shortpaths {
-    // TODO: Create empty new construct
+impl ShortpathsBuilder {
     // TODO: Use FromIterator trait extension
-    pub fn new(sps: Vec<Shortpath>) -> SP {
+    pub fn new(sps: Vec<Shortpath>) -> ShortpathsBuilder  {
+        let im = ShortpathsBuilder::from_vec(sps);
+        let builder = ShortpathsBuilder { paths: Some(im) };
+        builder
+    }
+
+    pub fn from_vec(sps: Vec<Shortpath>) -> SP {
         let mut im: SP = indexmap::IndexMap::new();
         sps.into_iter().for_each(|sp| {
             im.insert(sp.name.clone(), sp);
         });
         im
+    }
+    pub fn build(&mut self) -> Option<SP> {
+        if let Some(shortpaths) = &mut self.paths {
+
+            shortpaths.iter_mut().for_each(|(_, sp)| {
+                // Populate the deps of every shortpath
+                sp_pop_deps(sp);
+            });
+
+            //let spsref = &sps;
+            //sps.into_iter().for_each(|(_, sp)| {
+                //// Populate the deps of every shortpath
+                //sp_pop_deps(sp);
+            //});
+
+            //sps.into_iter().for_each(|(_, sp)| {
+                //// Populate the full_path field of every shortpath
+                //sp_pop_full_path(sp, *spsref);
+            //});
+
+            // Return to the user
+            return Some(shortpaths.to_owned());
+        }
+        None
     }
 }
 
@@ -87,16 +116,19 @@ where
 
 // Pure Functions
 
+// General Purpose
+/// Convert strings into a vector of characters
+pub fn to_str_slice(s: impl Into<String>) -> Vec<char> {
+    s.into().chars().collect()
+}
+
+// Shortpaths Specific
+// TODO: Generalize this
 /// Find the longest possible keyname in the hashmap
 pub fn find_longest_keyname(map: &SP) -> String {
     map.into_iter()
        .max_by(|(k1,_), (k2, _)| k1.len().cmp(&k2.len()))
        .unwrap().0.to_owned()
-}
-
-/// Convert strings into a vector of characters
-pub fn to_str_slice(s: impl Into<String>) -> Vec<char> {
-    s.into().chars().collect()
 }
 
 /// Get the type of alias
@@ -110,6 +142,8 @@ pub fn parse_alias(path: &[char]) -> Option<ShortpathType> {
             let (an, ap) = (alias_name.iter().collect(), PathBuf::from(path.iter().collect::<String>()));
             Some(ShortpathType::EnvPath(an, ap))
         }
+        // TODO Parse the Path
+        // TODO We can even remove the option wrapping here since we wont have a null value
         _ => { None }
     }
 }
@@ -253,7 +287,9 @@ fn main() {
      ];
      println!("{:?}", sp_paths);
 
-     let mut sp_im = Shortpaths::new(sp_paths);
+     let mut sp_builder = ShortpathsBuilder::new(sp_paths);
+
+     let sp_im = sp_builder.build().unwrap();
      println!("{:?}", sp_im);
 
      // Test find_key
@@ -263,11 +299,6 @@ fn main() {
      let key = sp_im.find_key_for_value("$a/bbbb".to_string());
      println!("{:?}", key);
 
-     // Test dependency graph
-     //sp_im.iter_mut().for_each(|(_name, sp)| {
-         //let deps = find_deps(sp);
-         //sp.deps = deps;
-     //});
-     //gen_deps_graph(&sp_im);
-     
+     // Populate
+     // If we make a builder then we can populate the fields here
 }
