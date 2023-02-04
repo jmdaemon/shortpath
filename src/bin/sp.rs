@@ -29,20 +29,13 @@ impl Ord for Shortpath {
     fn cmp(&self, other: &Self) -> Ordering {
         // The order that shortpaths are determined are:
         // 1. Length of dependencies
-        // 2. Length of paths
-        // 3. Lexicographical order
+        // 2. Lexicographical order
         // NOTE:
         // Ideally, we should order shortpaths around their closest matching paths
         // We can add this later with the strsim crate potentially
-
-        //(self.value, &self.name).cmp(&(other.value, &other.name))
-        //&self.deps.unwrap().len()
-        //&self.deps.len().cmp(other.deps.len())
-        //(self.value, &self.name).cmp(&(other.value, &other.name))
         let (len_deps_1, len_deps_2) = (self.deps.as_ref().unwrap().len(), other.deps.as_ref().unwrap().len());
         let (len_name_1, len_name_2) = (get_shortpath_name(&self.path), get_shortpath_name(&other.path));
-        //self.deps.as_ref().unwrap().len().cmp(&other.deps.as_ref().unwrap().len())
-            //.then(other)
+
         len_deps_1.cmp(&len_deps_2)
             .then(len_name_1.cmp(&len_name_2))
     }
@@ -161,12 +154,13 @@ pub fn to_str_slice(s: impl Into<String>) -> Vec<char> {
     s.into().chars().collect()
 }
 
-// Shortpaths Specific
 pub fn find_longest_keyname<T>(map: IndexMap<String, T>) -> String {
     map.into_iter()
        .max_by(|(k1,_), (k2, _)| k1.len().cmp(&k2.len()))
        .unwrap().0.to_owned()
 }
+// Shortpaths Specific
+
 
 pub fn fmt_expand(src: &str, key_name: &str, key_path: &str) -> String {
     let this = format!("${}", key_name);
