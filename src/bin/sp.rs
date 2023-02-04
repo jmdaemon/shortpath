@@ -93,6 +93,7 @@ impl ShortpathsBuilder {
 }
 
 // Trait Extensions
+// NOTE: We may not need these in the future, so they could be potentially removed
 pub trait FindKeyIndexMapExt<'a, K, V> {
     /// Get keys from value of IndexMap
     fn find_keys_for_value(&'a self, value: V) -> Vec<&'a K>;
@@ -127,27 +128,11 @@ pub fn to_str_slice(s: impl Into<String>) -> Vec<char> {
 }
 
 // Shortpaths Specific
-// TODO: Generalize this
 /// Find the longest possible keyname in the hashmap
-pub fn find_longest_keyname(map: &SP) -> String {
+pub fn find_longest_keyname<T>(map: IndexMap<String, T>) -> String {
     map.into_iter()
        .max_by(|(k1,_), (k2, _)| k1.len().cmp(&k2.len()))
        .unwrap().0.to_owned()
-}
-
-/** Determines shortpath dependencies from the shortpath entry */
-pub fn parse_alias(path: &[char]) -> Option<SPT> {
-    match path {
-        ['$', alias_name @ ..] => {
-            let (an, ap) = (alias_name.iter().collect(), PathBuf::from(path.iter().collect::<String>()));
-            Some(SPT::AliasPath(an, ap))
-        }
-        [ '{', '$', 'e', 'n', 'v', ':', alias_name @ .., '}'] => {
-            let (an, ap) = (alias_name.iter().collect(), PathBuf::from(path.iter().collect::<String>()));
-            Some(SPT::EnvPath(an, ap))
-        }
-        _ => { None }
-    }
 }
 
 /// Expand the shortpath
@@ -162,6 +147,22 @@ pub fn fmt_fold(src: &str, key_name: &str, key_path: &str) -> String {
     let this = key_path;
     let with = format!("${}", key_name);
     src.replace(&this, &with)
+}
+
+// Input Parsing
+/** Determines shortpath dependencies from the shortpath entry */
+pub fn parse_alias(path: &[char]) -> Option<SPT> {
+    match path {
+        ['$', alias_name @ ..] => {
+            let (an, ap) = (alias_name.iter().collect(), PathBuf::from(path.iter().collect::<String>()));
+            Some(SPT::AliasPath(an, ap))
+        }
+        [ '{', '$', 'e', 'n', 'v', ':', alias_name @ .., '}'] => {
+            let (an, ap) = (alias_name.iter().collect(), PathBuf::from(path.iter().collect::<String>()));
+            Some(SPT::EnvPath(an, ap))
+        }
+        _ => { None }
+    }
 }
 
 /// Find the dependencies for a given shortpath
@@ -259,10 +260,10 @@ fn main() {
      println!("{:?}", sp_im);
 
      // Test find_key
-     let key = sp_im.find_key_for_value("$a/bbbb");
-     println!("{:?}", key);
+     //let key = sp_im.find_key_for_value("$a/bbbb");
+     //println!("{:?}", key);
 
-     let key = sp_im.find_key_for_value("$a/bbbb".to_string());
-     println!("{:?}", key);
+     //let key = sp_im.find_key_for_value("$a/bbbb".to_string());
+     //println!("{:?}", key);
 
 }
