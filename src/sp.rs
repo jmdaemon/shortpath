@@ -7,6 +7,9 @@ use std::{
 };
 
 use indexmap::IndexMap;
+use itertools::Itertools;
+use log::{debug, trace, info};
+use walkdir::{DirEntry, WalkDir};
 
 pub type SP = IndexMap<String, Shortpath>;
 pub type SPT = ShortpathType;
@@ -309,7 +312,145 @@ pub fn check_shortpaths(shortpaths: &mut SP) {
     println!("Check Complete");
 }
 
+// File search functions
+
+/// Attempt to find the a file in a dir
+pub fn find_by_matching_path(file_name: &str, dir: WalkDir) -> Vec<DirEntry> {
+    let files: Vec<DirEntry> = dir.into_iter()
+        .filter_map(Result::ok)
+        .filter(|file| file.file_name() == file_name)
+        .collect();
+    files.to_owned()
+}
+
 //  TODO: Implement autoindex
+pub fn find_paths(sp: &Shortpath, find_by: impl Fn(&str, WalkDir) -> Vec<DirEntry>) -> Option<Vec<DirEntry>> {
+    let search_term = sp.path().file_name().unwrap();
+    let mut next = sp.path().parent();
+    
+    while let Some(dir) = next {
+        debug!("In Directory {}", dir.display());
+        let parent_files = WalkDir::new(dir).max_depth(1);
+
+        //debug!("Looking for matching name");
+        //let files = find_by_matching_path(search_term.to_str().unwrap(), &parent_files);
+        debug!("Searching for files");
+        let files = find_by(search_term.to_str().unwrap(), parent_files);
+        files.iter().for_each(|f| trace!("File: {}", f.file_name().to_str().unwrap()));
+
+        //let files: Vec<DirEntry> = parent_files.into_iter()
+            //.filter_map(Result::ok)
+            //.collect::<Vec<DirEntry>>().into_iter()
+            //.map(|f| {
+                //trace!("File: {}", f.file_name().to_str().unwrap());
+                //f
+            //})
+            //.filter(|file| file.file_name() == search_term).collect();
+
+        // Return the matching path if it exists
+        if files.len() > 0 {
+            return Some(files);
+        }
+        next = dir.parent(); // Continue searching
+    }
+    None
+        
+        //if let Some(path) = files.first() {
+            //let new_path = path.path().to_path_buf();
+            //debug!("Match Found: {}", new_path.display());
+            //return Some(new_path);
+        //}
+    //}
+    //None
+}
+
+/** Fix unreachable or broken paths
+  * 
+  * There are a few different resolve types to select from:
+  * - Exact Matching Path in Parent directory
+  * - Exact Matching Path in Nearest Neighbours
+  * - Most Similar Names in Parent Directory
+  * - Most Similar Names in Nearest Neighbours
+  * - Find names using locatedb
+  *
+  * In addition there are also a few options:
+  * - Automode: Automatically selects and updates the best candidate shortpath, given the selected resolve_type
+  * - Manual: The user is given the option to: (overwrite, overwrite_all, skip, skipall)
+  * 
+  * TODO: When implementing matching by nearest neighbours, think about how to 
+  * encode the scope as a function parameter
+  * TODO: Add overwrite_all, skip_all flags
+  * TODO: Create a data structure for the flags
+  */
+pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
+    // Closures
+    let find_by = match resolve_type {
+        "matching" => find_by_matching_path,
+        _ => find_by_matching_path,
+    };
+
+    let automode_fn = |sp: &Shortpath, results: Vec<DirEntry>| {
+        // Automode: Make the decision for the user
+        let first = results.first().unwrap();
+        //let (name, path) = (sp.name(), first.path().to_owned());
+        //let (name, path) = (sp.name(), first.path().to_owned());
+        let (name, path) = (sp.name().to_owned(), first.path().to_owned());
+        //let (name, path) = (sp.name(), first.path().to_str().unwrap().to_owned());
+        //update_shortpath(shortpaths, name, None, Some(&path));
+        (name, path)
+    };
+
+    let manualmode_fn = |sp: &Shortpath, _results: Vec<DirEntry>| {
+        // Manual: Provide options at runtime for the user
+        let (name, path) = (sp.name(), sp.path().to_owned());
+        // TODO Wait for the user to make a decision
+        println!("Not yet implemented"); // TODO
+        //unimplemented!("Not yet implemented"); // TODO
+        (name.to_owned(), path)
+    };
+
+    let resolve_fn = match automode {
+        true => automode_fn,
+        false => manualmode_fn, // We don't have a proper implementation yet for the other one
+    };
+
+    let updates: Vec<(String, PathBuf)> = shortpaths.iter()
+        .filter_map(|(_,sp)| {
+            let results = find_paths(sp, find_by);
+            if let Some(results) = results {
+                let (name, path) = resolve_fn(sp, results);
+                Some((name, path))
+            } else {
+                None
+            }
+        }).collect();
+    
+    // Perform the update
+    updates.into_iter().for_each(|(name, path)| {
+        update_shortpath(shortpaths, &name, None, Some(&path.to_str().unwrap().to_owned()));
+    });
+
+    //shortpaths.iter().filter_map(|(_,sp)| {
+        //let results = find_paths(sp, find_by);
+        //if let Some(results) = results {
+            //if automode {
+                //// Automode: Make the decision for the user
+                //let first = results.first().unwrap();
+                //let (name, path) = (sp.name(), first.path().to_owned());
+                ////let (name, path) = (sp.name(), first.path().to_str().unwrap().to_owned());
+                ////update_shortpath(shortpaths, name, None, Some(&path));
+                //(name.to_owned(), path)
+            //} else {
+                //// Manual: Provide options at runtime for the user
+                //let (name, path) = (sp.name(), sp.path().to_owned());
+                //println!("Not yet implemented"); // TODO
+                ////unimplemented!("Not yet implemented"); // TODO
+                //(name.to_owned(), path)
+            //}
+        //}
+    //}).collect();
+    //shortpaths.insert("".to_owned(), Shortpath::new(SPT::Path("".to_owned(), PathBuf::from("")), Some(PathBuf::from("")), None));
+}
 
 /** Serialize shortpaths to other formats for use in other applications */
 pub fn export_shortpaths(shortpaths: &SP, export_type: &str, output_file: Option<&String>) -> String {
@@ -348,19 +489,3 @@ pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<&S
         shortpaths.insert(new_name.to_owned(), path);
     } 
 }
-
-/*
- * Operations on shortpaths
- * - Add, Remove, Update, Check, Export
- * Add:
- *  - Should not reorder the entire file
- *  - Validate the path
- *  - Append to file
- * Remove:
- *  - Should not reorder the entire file
- *  - Validate the path
- *  - Remove the entry from the file
- * Update:
- *  - Validates the existence of a name (l)or a path
- *  - Modify just the name or the path in the file
- */
