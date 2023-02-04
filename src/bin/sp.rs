@@ -1,3 +1,4 @@
+use shortpaths::export::get_exporter;
 use std::{
     path::{PathBuf, Component},
     env::var,
@@ -253,6 +254,65 @@ pub fn sort_shortpaths(shortpaths: SP) -> SP {
         v1.cmp(v2)
     }).collect()
 }
+
+// Commands
+//pub fn add(shortpaths: &mut SP, name: impl Into<String>, path: impl Into<PathBuf>) {
+pub fn add_shortpath(shortpaths: &mut SP, name: String, path: PathBuf) {
+    let spt = match parse_alias(&to_str_slice(path.to_str().unwrap())) {
+        Some(spt) => {spt}
+        None => { SPT::Path(name.clone(), path) }
+    };
+    let shortpath = Shortpath::new(spt, None, None);
+    shortpaths.insert(name, shortpath);
+}
+
+pub fn remove_shortpath(shortpaths: &mut SP, current_name: &str) {
+    shortpaths.remove(current_name);
+}
+
+pub fn find_unreachable(shortpaths: &SP) -> IndexMap<&String, &Shortpath> {
+    let unreachable: IndexMap<&String, &Shortpath> = shortpaths.iter()
+        .filter(|(_, path)| { if !path.path().exists() || path.path().to_str().is_none() { true } else { false }
+        }).collect();
+    unreachable
+}
+
+/// List any broken or unreachable paths
+pub fn check_shortpaths(shortpaths: &mut SP) {
+    let unreachable = find_unreachable(shortpaths);
+    unreachable.iter().for_each(|(alias_name, alias_path)|
+        println!("{} shortpath is unreachable: {}", alias_name, alias_path.path().display()));
+    println!("Check Complete");
+}
+
+//  TODO: Implement autoindex
+
+/* /** Serialize shortpaths to other formats for use in other applications */
+*/
+//pub fn export(shortpaths: &mut SP, export_type: &str, output_file: Option<&String>) -> String {
+    //let mut exp = get_exporter(export_type.into());
+    //exp.set_shortpaths_imap(shortpaths);
+    
+    //let dest = match output_file {
+        //Some(path)  => Path::new(path).to_path_buf(),
+        //None        => PathBuf::from(exp.get_completions_path())
+    //};
+
+    //fs::create_dir_all(dest.parent().expect("Could not get parent directory"))
+        //.expect("Could not create shell completions directory");
+
+    //// Serialize
+    //let output = exp.gen_completions();
+    //fs::write(&dest, &output).expect("Unable to write to disk");
+    //dest.to_str().unwrap().to_owned()
+//}
+
+
+
+//pub fn add(shortpaths: SP, alias_path: &Path) -> Overwritten<String, PathBuf> {
+    //self.shortpaths.insert(alias_name.into(), alias_path.into())
+//}
+
 
 /*
  * Operations on shortpaths
