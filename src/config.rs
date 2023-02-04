@@ -17,30 +17,36 @@ use directories::ProjectDirs;
 #[derivative(Debug, Default)]
 pub struct Config {
     #[derivative(Default(value = "ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).expect(\"Could not initialize config\")"))]
-    proj_dirs: ProjectDirs,
-    pub config_files: HashMap<String, PathBuf>
+    project_dirs: ProjectDirs,
+    pub files: HashMap<String, PathBuf>
 }
 
 impl Config {
     pub fn new() -> Config {
-        let proj_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).expect("Could not initialize config");
-        let config_files = HashMap::new();
+        //let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).expect("Could not initialize config");
+        //let files = HashMap::new();
 
-        let config = Config { proj_dirs, config_files };
-        config.init();
+        //let config = Config { project_dirs, files };
+        //let config = Config { project_dirs: Config::default(), files };
+        //let mut config = Config::default();
+        //config.files = files;
+        //config.init();
+        //config
+        let mut config = Config::default();
+        config.files = HashMap::new();
         config
     }
 
     fn init(&self) {
-        let proj_cfg_dir = self.proj_dirs.config_dir();
+        let proj_cfg_dir = self.project_dirs.config_dir();
         create_dir_all(proj_cfg_dir).expect("Could not create config directory")
     }
 
     pub fn format_config_path(&self, config: &str) -> PathBuf {
-        self.proj_dirs.config_dir().to_path_buf().join(config)
+        self.project_dirs.config_dir().to_path_buf().join(config)
     }
 
     pub fn add_config(&mut self, key: String, file: &str) {
-        self.config_files.insert(key, self.format_config_path(file));
+        self.files.insert(key, self.format_config_path(file));
     }
 }

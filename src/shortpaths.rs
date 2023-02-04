@@ -1,7 +1,6 @@
 use crate::consts::CONFIG_FILE_PATH;
 use crate::config::Config;
 use crate::export::get_exporter;
-use crate::sp::expand_tilde;
 
 use std::{
     fs,
@@ -25,8 +24,8 @@ pub struct App {
 
 /** Reads the shortpaths.toml configuration from disk if it exists */
 pub fn read_shortpaths_from_disk(config: &Config) -> Option<Shortpaths> {
-    let path = &config.config_files;
-    let shortpaths_toml = path.get(CONFIG_FILE_PATH).expect("Unable to retrieve path from config_files");
+    let path = &config.files;
+    let shortpaths_toml = path.get(CONFIG_FILE_PATH).expect("Unable to retrieve path from files");
 
     if shortpaths_toml.exists() {
         let toml_conts = fs::read_to_string(shortpaths_toml)
@@ -45,7 +44,7 @@ impl App {
         config.add_config(CONFIG_FILE_PATH.to_owned(), CONFIG_FILE_PATH);
 
         // Read shortpaths from disk if it exists 
-        let shortpaths_toml = config.config_files.get(CONFIG_FILE_PATH).unwrap();
+        let shortpaths_toml = config.files.get(CONFIG_FILE_PATH).unwrap();
         let shortpaths = match shortpaths_toml.exists() {
             true => read_shortpaths_from_disk(&config).unwrap(),
             false => BiHashMap::new()
@@ -56,7 +55,7 @@ impl App {
 
     /// Writes shortpaths to disk
     pub fn save_to_disk(&self) {
-        let config = &self.config.config_files;
+        let config = &self.config.files;
         let path = config.get(CONFIG_FILE_PATH).unwrap();
         let toml_conts = toml::to_string_pretty(&self).expect("Could not serialize app shortpaths");
         match fs::write(path, toml_conts) {

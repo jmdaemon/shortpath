@@ -9,7 +9,6 @@ use crate::sp::{expand_tilde, SP};
 use std::path::PathBuf;
 //use std::collections::HashMap;
 
-use itertools::Itertools;
 use log::trace;
 use bimap::BiHashMap;
 
