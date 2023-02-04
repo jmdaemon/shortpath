@@ -128,29 +128,38 @@ pub fn to_str_slice(s: impl Into<String>) -> Vec<char> {
 }
 
 // Shortpaths Specific
-/// Find the longest possible keyname in the hashmap
 pub fn find_longest_keyname<T>(map: IndexMap<String, T>) -> String {
     map.into_iter()
        .max_by(|(k1,_), (k2, _)| k1.len().cmp(&k2.len()))
        .unwrap().0.to_owned()
 }
 
-/// Expand the shortpath
 pub fn fmt_expand(src: &str, key_name: &str, key_path: &str) -> String {
     let this = format!("${}", key_name);
     let with = key_path;
     src.replace(&this, &with)
 }
 
-/// Fold the shortpath
 pub fn fmt_fold(src: &str, key_name: &str, key_path: &str) -> String {
     let this = key_path;
     let with = format!("${}", key_name);
     src.replace(&this, &with)
 }
 
+pub fn get_shortpath_name(sp: &SPT) -> String {
+    match sp {
+        SPT::Path(name, _) | SPT::AliasPath(name, _) | SPT::EnvPath(name, _) => name.to_owned(),
+    }
+}
+
+pub fn get_shortpath_path(sp: &SPT) -> PathBuf {
+    match sp {
+        SPT::Path(_, path) | SPT::AliasPath(_, path) | SPT::EnvPath(_, path) => path.to_owned()
+    }
+}
+
 // Input Parsing
-/** Determines shortpath dependencies from the shortpath entry */
+/** Parse a Shortpath entry, and returns any dependencies */
 pub fn parse_alias(path: &[char]) -> Option<SPT> {
     match path {
         ['$', alias_name @ ..] => {
@@ -176,20 +185,6 @@ pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
     Some(deps)
 }
 
-// Owned versions of Shortpath name(), path()
-
-pub fn get_shortpath_name(sp: &SPT) -> String {
-    match sp {
-        SPT::Path(name, _) | SPT::AliasPath(name, _) | SPT::EnvPath(name, _) => name.to_owned(),
-    }
-}
-
-pub fn get_shortpath_path(sp: &SPT) -> PathBuf {
-    match &sp {
-        SPT::Path(_, path) | SPT::AliasPath(_, path) | SPT::EnvPath(_, path) => path.to_owned()
-    }
-}
-
 /**
   * Expand shortpath variants at runtime
   * 
@@ -207,7 +202,7 @@ pub fn expand_shortpath(sp: &Shortpath) -> String {
                 let (dep_name, dep_path) = (get_shortpath_name(dep), get_shortpath_path(dep));
                 output = fmt_expand(&output, &dep_name, dep_path.to_str().unwrap());
             }),
-        None => output = entry // Use the entry as the full_path
+        None => output = entry
     };
     output
 }
@@ -260,10 +255,10 @@ fn main() {
      println!("{:?}", sp_im);
 
      // Test find_key
-     //let key = sp_im.find_key_for_value("$a/bbbb");
-     //println!("{:?}", key);
+     let key = sp_im.find_key_for_value("$a/bbbb");
+     println!("{:?}", key);
 
-     //let key = sp_im.find_key_for_value("$a/bbbb".to_string());
-     //println!("{:?}", key);
+     let key = sp_im.find_key_for_value("$a/bbbb".to_string());
+     println!("{:?}", key);
 
 }
