@@ -11,12 +11,14 @@ clap = "4.1.1"
 derivative = "2.2.0"
 directories = "4.0.1"
 dirs = "4.0.0"
-indexmap = "1.9.2"
+indexmap = { version = "1.9.2", features = ["serde"] }
 itertools = "0.10.5"
 log = "0.4.17"
 petgraph = "0.6.2"
 pretty_env_logger = "0.4.0"
 serde = { version = "1.0.152", features = ["derive"] }
+serde_as = "0.0.1"
 serde_derive = "1.0.152"
-toml = { version = "0.5.10", features = ["preserve_order"] }
+serde_with = "2.2.0"
+toml = { version = "0.5.10", features = ["preserve_order", "indexmap"] }
 walkdir = "2.3.2"

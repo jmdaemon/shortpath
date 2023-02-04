@@ -9,6 +9,7 @@ use std::{
 use indexmap::IndexMap;
 use itertools::Itertools;
 use log::{debug, trace};
+use serde::{Serialize, Serializer, Deserialize};
 use walkdir::{DirEntry, WalkDir};
 
 pub type SP = IndexMap<String, Shortpath>;
@@ -16,19 +17,60 @@ pub type SPT = ShortpathType;
 pub type DEPS = Vec<SPT>; 
 
 /// The type of shortpath it is
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ShortpathType {
     Path(String, PathBuf),      // Shortpath Name   : Shortpath Path
     AliasPath(String, PathBuf), // Shortpath Name   : Shortpath Path
     EnvPath(String, PathBuf),   // Env Var Name     : Shortpath Path
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Shortpath {
     path: SPT,
     full_path: Option<PathBuf>,
     deps: Option<DEPS>,
+    
 }
+//impl Serialize for ShortpathType {
+    //fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    //where
+        //S: Serializer,
+    //{
+        //serializer.serialize_str(&get_shortpath_name(&self))
+
+
+// Implementations
+//impl Serialize for ShortpathType {
+    //fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    //where
+        //S: Serializer,
+    //{
+        //serializer.serialize_str(&get_shortpath_name(&self))
+        //serializer.serialize_str(get_shortpath_path(&self).to_str().unwrap());
+
+        ////let mut map = serializer.serialize_map(Some(self.x.len()))?;
+        ////for (k, v) in &self.x {
+            ////map.serialize_entry(&k.to_string(), &v)?;
+        ////}
+        ////map.end()
+    //}
+//}
+
+//impl Serialize for Shortpath {
+    //fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    //where
+        //S: Serializer,
+    //{
+        //serializer.serialize_str(self.)
+
+        ////let mut map = serializer.serialize_map(Some(self.x.len()))?;
+        ////for (k, v) in &self.x {
+            ////map.serialize_entry(&k.to_string(), &v)?;
+        ////}
+        ////map.end()
+    //}
+//}
+
 
 impl Ord for Shortpath {
     fn cmp(&self, other: &Self) -> Ordering {

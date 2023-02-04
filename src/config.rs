@@ -27,6 +27,9 @@ impl Config {
         let mut config = Config::default();
         config.files = HashMap::new();
         config
+        //let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).expect("Could not initialize config");
+        //let files = HashMap::new();
+        //Config { project_dirs, files }
     }
 
     pub fn make_config_directory(&self) {
@@ -42,8 +45,8 @@ impl Config {
     }
 }
 
-pub fn read_config(config: &Config) -> String {
-    let shortpaths_toml = config.files.get(CONFIG_FILE_PATH).expect("Unable to retrieve path from files");
+pub fn read_config(config: &Config, file: &str) -> String {
+    let shortpaths_toml = config.files.get(file).expect("Unable to retrieve path from files");
     let toml_conts = read_to_string(shortpaths_toml)
         .expect(&format!("Could not read file: {}", shortpaths_toml.display()));
     toml_conts
