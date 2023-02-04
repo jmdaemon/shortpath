@@ -15,7 +15,7 @@ pub enum ShortpathType {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Shortpath {
-    path: ShortpathType,
+    path: SPT,
     full_path: Option<PathBuf>,
     deps: Option<DEPS>,
 }
@@ -27,13 +27,13 @@ struct ShortpathsBuilder {
 // Implementations
 
 impl ShortpathType {
-    pub fn new_path(name: impl Into<String>, path: impl Into<PathBuf>) -> ShortpathType {
-        ShortpathType::Path(name.into(), path.into())
+    pub fn new_path(name: impl Into<String>, path: impl Into<PathBuf>) -> SPT {
+        SPT::Path(name.into(), path.into())
     }
-    pub fn new_alias_path(name: impl Into<String>, alias_path: impl Into<PathBuf>) -> ShortpathType {
-        ShortpathType::AliasPath(name.into(), alias_path.into())
+    pub fn new_alias_path(name: impl Into<String>, alias_path: impl Into<PathBuf>) -> SPT {
+        SPT::AliasPath(name.into(), alias_path.into())
     }
-    pub fn new_env_path(name: impl Into<String>) -> ShortpathType {
+    pub fn new_env_path(name: impl Into<String>) -> SPT {
         // Store environment variable values during creation
         let name = name.into();
         let mut alias_path = String::new();
@@ -41,12 +41,12 @@ impl ShortpathType {
             Ok(val) => alias_path = val,
             Err(e) => eprintln!("Error in expanding environment variable ${}: ${}", name, e)
         };
-        ShortpathType::EnvPath(name, alias_path.into())
+        SPT::EnvPath(name, alias_path.into())
     }
 }
 
 impl Shortpath {
-    pub fn new(path: ShortpathType, full_path: Option<PathBuf>, deps: Option<DEPS>) -> Shortpath {
+    pub fn new(path: SPT, full_path: Option<PathBuf>, deps: Option<DEPS>) -> Shortpath {
         Shortpath { path: path.into(), full_path, deps }
     }
 
@@ -236,8 +236,6 @@ pub fn sp_pop_full_path(sp: &mut Shortpath) {
  *  - Modify just the name or the path in the file
  */
 
-// How do we add 
-
 fn main() {
     // TODO Create more ergonomic api for this later
     // Wrap it together with the builder construct to reduce the noise
@@ -252,7 +250,7 @@ fn main() {
      let mut sp_builder = ShortpathsBuilder::new(sp_paths);
 
      let sp_im = sp_builder.build().unwrap();
-     println!("{:?}", sp_im);
+     sp_im.iter().for_each(|p| println!("{:?}", p));
 
      // Test find_key
      let key = sp_im.find_key_for_value("$a/bbbb");
