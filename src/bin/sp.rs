@@ -8,9 +8,9 @@ type DEPS = Vec<SPT>;
 /// The type of shortpath it is
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ShortpathType {
-    Path(String, PathBuf),      // Shortpath Name: Shortpath Path
-    AliasPath(String, PathBuf), // Shortpath Name: Shortpath Path
-    EnvPath(String, PathBuf),   // Env Var Name: Shortpath Path
+    Path(String, PathBuf),      // Shortpath Name   : Shortpath Path
+    AliasPath(String, PathBuf), // Shortpath Name   : Shortpath Path
+    EnvPath(String, PathBuf),   // Env Var Name     : Shortpath Path
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -82,22 +82,10 @@ impl ShortpathsBuilder {
         if let Some(shortpaths) = &mut self.paths {
 
             shortpaths.iter_mut().for_each(|(_, sp)| {
-                // Populate the deps of every shortpath
                 sp_pop_deps(sp);
+                sp_pop_full_path(sp);
             });
 
-            //let spsref = &sps;
-            //sps.into_iter().for_each(|(_, sp)| {
-                //// Populate the deps of every shortpath
-                //sp_pop_deps(sp);
-            //});
-
-            //sps.into_iter().for_each(|(_, sp)| {
-                //// Populate the full_path field of every shortpath
-                //sp_pop_full_path(sp, *spsref);
-            //});
-
-            // Return to the user
             return Some(shortpaths.to_owned());
         }
         None
@@ -187,6 +175,8 @@ pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
     Some(deps)
 }
 
+// Owned versions of Shortpath name(), path()
+
 pub fn get_shortpath_name(sp: &SPT) -> String {
     match sp {
         SPT::Path(name, _) | SPT::AliasPath(name, _) | SPT::EnvPath(name, _) => name.to_owned(),
@@ -199,68 +189,20 @@ pub fn get_shortpath_path(sp: &SPT) -> PathBuf {
     }
 }
 
-//pub fn get_shortpath_path(sp: SPT) -> String {
-    //match sp {
-        //SPT::Path(_, path) | SPT::AliasPath(_, path) => path,
-        //SPT::EnvPath(name, _) => name,
-    //}
-//}
-
-/// Lookup the shortpath dependency in the shortpaths index map
-pub fn parse_shortpath_dependency(dep: SPT, sp: &SP) -> (String, String) {
-    let mut key_name = String::new();
-    let mut key_path = String::new();
-
-    match dep {
-        SPT::AliasPath(name, _) => {
-            key_path = sp.get(&name)
-                .expect(&format!("Could not get key: {}", name))
-                .path().to_str().unwrap().to_owned();
-            key_name = name;
-        }
-        SPT::EnvPath(name, _) => {
-            match std::env::var(&name) { // Get from environment
-                Ok(var) => key_path = var,
-                Err(e) => eprintln!("Error in expanding environment variable: ${}", e)
-            };
-            key_name = name;
-        }
-        _ => {}
-    }
-    (key_name, key_path)
-}
-
-/// Expand the entry path into the full path of the given entry
-pub fn expand_full_path(entry: String, sp: &Shortpath, unwrap_sp_dp: impl Fn(&SPT) -> (String, String)) -> String {
-    let mut output = entry.clone();
-    match &sp.deps {
-        Some(deps) => // Expand entry into full_path
-            deps.iter().for_each(|dep| {
-                let (key_name, key_path) = unwrap_sp_dp(dep);
-                output = fmt_expand(&output, &key_name, &key_path);
-            }),
-        None => output = entry // Use the entry as the full_path
-    };
-    return output;
-}
-
-// Impure Shortpath Functions
-
-/// Populate the dependencies of a shortpath
-pub fn sp_pop_deps(sp: &mut Shortpath) {
-    if sp.deps.is_some() { return; }
-    sp.deps = find_deps(&sp.path());
-}
-
-pub fn expand_full_path_better(sp: &Shortpath) -> String {
+/**
+  * Expand shortpath variants at runtime
+  * 
+  * The shortpath dependencies must be populated before this is run. When they are
+  * populated, both their name and path values are stored in the enum variant which
+  * is accessed here without the hashmap.
+  */
+pub fn expand_shortpath(sp: &Shortpath) -> String {
     let entry = sp.path().to_str().unwrap().to_owned();
-    //let (name, path) = (sp.name().to_owned(), &entry);
     let mut output = entry.clone();
     match &sp.deps {
         Some(deps) => // Expand entry into full_path
             deps.iter().for_each(|dep| {
-                //output = fmt_expand(&output, &name, path);
-                // Use the dependency here
+                // TODO: Wrap in a while loop later to parse additional paths
                 let (dep_name, dep_path) = (get_shortpath_name(dep), get_shortpath_path(dep));
                 output = fmt_expand(&output, &dep_name, dep_path.to_str().unwrap());
             }),
@@ -269,51 +211,18 @@ pub fn expand_full_path_better(sp: &Shortpath) -> String {
     output
 }
 
-pub fn sp_pop_full_path_better(sp: &mut Shortpath) {
-    let output = expand_full_path_better(sp);
-    sp.full_path = Some(PathBuf::from(output));
+// Impure Shortpath Functions
+/// Populate shortpath dependencies
+pub fn sp_pop_deps(sp: &mut Shortpath) {
+    if sp.deps.is_some() { return; }
+    sp.deps = find_deps(&sp.path());
 }
 
-/// Populate the full_path field of a shortpath
-pub fn sp_pop_full_path(sp: &mut Shortpath, shortpaths: &SP) {
-    assert!(sp.full_path.is_none());
-
-    let unwrap_sp_dp = move |dep: &SPT| {
-        let (key_name, key_path) = parse_shortpath_dependency(dep.to_owned(), shortpaths);
-        (key_name,key_path)
-    };
-
-    let entry = sp.path().to_str().unwrap().to_owned();
-    let output = expand_full_path(entry, &sp, unwrap_sp_dp);
+/// Expand and populate shortpath's full_path field
+pub fn sp_pop_full_path(sp: &mut Shortpath) {
+    let output = expand_shortpath(sp);
     sp.full_path = Some(PathBuf::from(output));
 }
-
-///// Expand a single shortpath
-//pub fn expand_shortpath(name: String, sp: &SP) -> PathBuf {
-//    let shortpath = sp.get(&name).unwrap().to_owned();
-//    shortpath.full_path.unwrap()
-//}
-
-///// Expand all shortpaths in the index map
-//pub fn expand_shortpaths(sp: &mut SP) {
-//    sp.into_iter().for_each(|(_key, shortpath)| {
-//        sp_pop_full_path(shortpath, &sp.to_owned());
-//    });
-//}
-
-// Now that we have the dependency vector, we're going to loop through and generate the graph for the dep tree
-// We want to be able to then use this tree to order
-
-/* What do we want?
- * We want a data structure with the following:
- * - Constant space-time key indexing
- * - Custom ordererings (Sort by group/dependencies first, Chronological (Keep the order they are now)
- * - Least intrusive paths
- * - Serialization with tab alignment
- * - Orderable HashMap with Tree implementation
- * We want to
- *  - Group by dependency
- */
 
 /*
  * Operations on shortpaths
@@ -356,6 +265,4 @@ fn main() {
      let key = sp_im.find_key_for_value("$a/bbbb".to_string());
      println!("{:?}", key);
 
-     // Populate
-     // If we make a builder then we can populate the fields here
 }
