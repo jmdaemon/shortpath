@@ -1,4 +1,9 @@
-use std::path::{PathBuf, Component};
+use std::{
+    path::{PathBuf, Component},
+    env::var,
+    cmp::Ordering,
+};
+
 use indexmap::IndexMap;
 
 type SP = IndexMap<String, Shortpath>;
@@ -20,6 +25,35 @@ pub struct Shortpath {
     deps: Option<DEPS>,
 }
 
+impl Ord for Shortpath {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // The order that shortpaths are determined are:
+        // 1. Length of dependencies
+        // 2. Length of paths
+        // 3. Lexicographical order
+        // NOTE:
+        // Ideally, we should order shortpaths around their closest matching paths
+        // We can add this later with the strsim crate potentially
+
+        //(self.value, &self.name).cmp(&(other.value, &other.name))
+        //&self.deps.unwrap().len()
+        //&self.deps.len().cmp(other.deps.len())
+        //(self.value, &self.name).cmp(&(other.value, &other.name))
+        let (len_deps_1, len_deps_2) = (self.deps.as_ref().unwrap().len(), other.deps.as_ref().unwrap().len());
+        let (len_name_1, len_name_2) = (get_shortpath_name(&self.path), get_shortpath_name(&other.path));
+        //self.deps.as_ref().unwrap().len().cmp(&other.deps.as_ref().unwrap().len())
+            //.then(other)
+        len_deps_1.cmp(&len_deps_2)
+            .then(len_name_1.cmp(&len_name_2))
+    }
+}
+
+impl PartialOrd for Shortpath {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 struct ShortpathsBuilder {
     paths: Option<SP>,
 }
@@ -37,7 +71,7 @@ impl ShortpathType {
         // Store environment variable values during creation
         let name = name.into();
         let mut alias_path = String::new();
-        match std::env::var(&name) { // Get from environment
+        match var(&name) { // Get from environment
             Ok(val) => alias_path = val,
             Err(e) => eprintln!("Error in expanding environment variable ${}: ${}", name, e)
         };
@@ -220,6 +254,15 @@ pub fn sp_pop_full_path(sp: &mut Shortpath) {
     sp.full_path = Some(PathBuf::from(output));
 }
 
+pub fn to_serialize(shortpaths: SP) -> SP {
+    //shortpaths.sort_by(|_, v1, _, v2| {
+        //v1.cmp(v2)
+    //});
+    shortpaths.sorted_by(|_, v1, _, v2| {
+        v1.cmp(v2)
+    }).collect()
+}
+
 /*
  * Operations on shortpaths
  * - Add, Remove, Update, Check, Export
@@ -240,10 +283,10 @@ fn main() {
     // TODO Create more ergonomic api for this later
     // Wrap it together with the builder construct to reduce the noise
      let sp_paths = vec![
-         Shortpath::new(SPT::new_path("a", PathBuf::from("aaaa")), None, None),
-         Shortpath::new(SPT::new_path("b", PathBuf::from("$a/bbbb")), None, None),
-         Shortpath::new(SPT::new_path("c", PathBuf::from("$b/cccc")), None, None),
          Shortpath::new(SPT::new_path("d", PathBuf::from("$a/dddd")), None, None),
+         Shortpath::new(SPT::new_path("c", PathBuf::from("$b/cccc")), None, None),
+         Shortpath::new(SPT::new_path("b", PathBuf::from("$a/bbbb")), None, None),
+         Shortpath::new(SPT::new_path("a", PathBuf::from("aaaa")), None, None),
      ];
      println!("{:?}", sp_paths);
 
@@ -259,4 +302,8 @@ fn main() {
      let key = sp_im.find_key_for_value("$a/bbbb".to_string());
      println!("{:?}", key);
 
+     // Test serialization
+     println!("Sorted list of shortpaths");
+     let sorted = to_serialize(sp_im);
+     sorted.iter().for_each(|p| println!("{:?}", p));
 }
