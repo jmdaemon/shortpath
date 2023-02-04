@@ -3,7 +3,7 @@ use crate::{
     export::Export,
 };
 
-use crate::sp::{expand_tilde, SP};
+use crate::sp::{expand_tilde, SP, sort_shortpaths};
 
 use std::path::PathBuf;
 
@@ -64,7 +64,7 @@ impl Export for BashExporter {
     }
 
     fn set_shortpaths(&mut self, shortpaths: &SP) {
-        self.shortpaths = Some(shortpaths.to_owned());
+        self.shortpaths = Some(sort_shortpaths(shortpaths.to_owned()));
     }
 }
 
@@ -95,6 +95,6 @@ fn test_serialize_bash() {
 
     // Test
     let actual = exp.gen_completions();
-    let expect = "#!/bin/bash\n\nexport aaaa=\"/test\"\n";
+    let expect = "#!/bin/bash\n\nexport a=\"aaaa\"\nexport b=\"$a/bbbb\"\nexport d=\"$a/dddd\"\nexport c=\"$b/cccc\"\n";
     assert_eq!(actual, expect);
 }
