@@ -23,27 +23,17 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Config {
-        //let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).expect("Could not initialize config");
-        //let files = HashMap::new();
-
-        //let config = Config { project_dirs, files };
-        //let config = Config { project_dirs: Config::default(), files };
-        //let mut config = Config::default();
-        //config.files = files;
-        //config.init();
-        //config
         let mut config = Config::default();
         config.files = HashMap::new();
         config
     }
 
-    fn init(&self) {
-        let proj_cfg_dir = self.project_dirs.config_dir();
-        create_dir_all(proj_cfg_dir).expect("Could not create config directory")
+    pub fn make_config_directory(&self) {
+        create_dir_all(self.project_dirs.config_dir()).expect("Could not create config directory")
     }
 
-    pub fn format_config_path(&self, config: &str) -> PathBuf {
-        self.project_dirs.config_dir().to_path_buf().join(config)
+    pub fn format_config_path(&self, config: impl Into<String>) -> PathBuf {
+        self.project_dirs.config_dir().to_path_buf().join(config.into())
     }
 
     pub fn add_config(&mut self, key: String, file: &str) {
