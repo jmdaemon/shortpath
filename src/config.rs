@@ -26,7 +26,6 @@ impl Config {
         let proj_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).expect("Could not initialize config");
         let config_files = HashMap::new();
 
-        // Initialize config
         let config = Config { proj_dirs, config_files };
         config.init();
         config

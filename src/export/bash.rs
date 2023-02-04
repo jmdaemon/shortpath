@@ -1,10 +1,10 @@
 use crate::{
     consts::PROGRAM_NAME,
     export::Export,
-    shortpaths::{Shortpaths, fold_shortpath, expand_shortpath, expand_tilde},
+    shortpaths::{Shortpaths, fold_shortpath, expand_shortpath},
 };
 
-use crate::sp::SP;
+use crate::sp::{expand_tilde, SP};
 
 use std::path::PathBuf;
 //use std::collections::HashMap;
