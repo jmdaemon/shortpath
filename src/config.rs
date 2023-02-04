@@ -2,12 +2,13 @@ use crate::consts::{
     QUALIFIER,
     ORGANIZATION,
     APPLICATION,
+    CONFIG_FILE_PATH,
 };
 
 use std::{
     path::PathBuf,
     collections::HashMap,
-    fs::create_dir_all,
+    fs::{create_dir_all, read_to_string},
 };
 
 use derivative::Derivative;
@@ -39,4 +40,11 @@ impl Config {
     pub fn add_config(&mut self, key: String, file: &str) {
         self.files.insert(key, self.format_config_path(file));
     }
+}
+
+pub fn read_config(config: &Config) -> String {
+    let shortpaths_toml = config.files.get(CONFIG_FILE_PATH).expect("Unable to retrieve path from files");
+    let toml_conts = read_to_string(shortpaths_toml)
+        .expect(&format!("Could not read file: {}", shortpaths_toml.display()));
+    toml_conts
 }

@@ -1,4 +1,4 @@
-use crate::consts::CONFIG_FILE_PATH;
+use crate::{consts::CONFIG_FILE_PATH, config::read_config};
 use crate::config::Config;
 use crate::export::get_exporter;
 
@@ -22,21 +22,6 @@ pub struct App {
     pub shortpaths: Shortpaths,
 }
 
-/** Reads the shortpaths.toml configuration from disk if it exists */
-pub fn read_shortpaths_from_disk(config: &Config) -> Option<Shortpaths> {
-    let path = &config.files;
-    let shortpaths_toml = path.get(CONFIG_FILE_PATH).expect("Unable to retrieve path from files");
-
-    if shortpaths_toml.exists() {
-        let toml_conts = fs::read_to_string(shortpaths_toml)
-            .expect(&format!("Could not read file: {}", shortpaths_toml.display()));
-        let app: App = toml::from_str(&toml_conts).expect("Could not deserialize shortpaths");
-        Some(app.shortpaths)
-    } else {
-        None
-    }
-}
-
 impl App {
     pub fn new() -> App {
         let mut config = Config::new();
@@ -46,7 +31,11 @@ impl App {
         // Read shortpaths from disk if it exists 
         let shortpaths_toml = config.files.get(CONFIG_FILE_PATH).unwrap();
         let shortpaths = match shortpaths_toml.exists() {
-            true => read_shortpaths_from_disk(&config).unwrap(),
+            true => {
+                let app: App = toml::from_str(&read_config(&config))
+                    .expect("Could not deserialize shortpaths");
+                Some(app.shortpaths).unwrap()
+            }
             false => BiHashMap::new()
         };
 
