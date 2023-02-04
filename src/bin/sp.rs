@@ -4,6 +4,7 @@ use shortpaths::sp::{
     ShortpathsBuilder,
     FindKeyIndexMapExt,
     sort_shortpaths,
+    export_shortpaths,
 };
 
 use std::path::PathBuf;
@@ -37,4 +38,7 @@ fn main() {
      sorted.iter().for_each(|p| println!("{:?}", p));
 
      // Test serialization
+     let export_type = "bash";
+     let output_file = None;
+     export_shortpaths(&sorted, export_type, output_file);
 }

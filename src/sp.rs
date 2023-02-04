@@ -1,9 +1,9 @@
-//use crate::export::get_exporter;
-
+use crate::export::get_exporter;
 use std::{
-    path::{PathBuf, Component},
+    path::{Path, PathBuf, Component},
     env::var,
     cmp::Ordering,
+    fs::{create_dir_all, write},
 };
 
 use indexmap::IndexMap;
@@ -288,32 +288,25 @@ pub fn check_shortpaths(shortpaths: &mut SP) {
 
 //  TODO: Implement autoindex
 
-/* /** Serialize shortpaths to other formats for use in other applications */
-*/
-//pub fn export(shortpaths: &mut SP, export_type: &str, output_file: Option<&String>) -> String {
-    //let mut exp = get_exporter(export_type.into());
-    //exp.set_shortpaths_imap(shortpaths);
+/** Serialize shortpaths to other formats for use in other applications */
+pub fn export_shortpaths(shortpaths: &SP, export_type: &str, output_file: Option<&String>) -> String {
+    let mut exp = get_exporter(export_type.into());
+    exp.set_shortpaths_imap(shortpaths);
     
-    //let dest = match output_file {
-        //Some(path)  => Path::new(path).to_path_buf(),
-        //None        => PathBuf::from(exp.get_completions_path())
-    //};
+    let dest = match output_file {
+        Some(path)  => Path::new(path).to_path_buf(),
+        None        => PathBuf::from(exp.get_completions_path())
+    };
 
-    //fs::create_dir_all(dest.parent().expect("Could not get parent directory"))
-        //.expect("Could not create shell completions directory");
+    create_dir_all(dest.parent().expect("Could not get parent directory"))
+        .expect("Could not create shell completions directory");
 
-    //// Serialize
+    // Serialize
     //let output = exp.gen_completions();
-    //fs::write(&dest, &output).expect("Unable to write to disk");
-    //dest.to_str().unwrap().to_owned()
-//}
-
-
-
-//pub fn add(shortpaths: SP, alias_path: &Path) -> Overwritten<String, PathBuf> {
-    //self.shortpaths.insert(alias_name.into(), alias_path.into())
-//}
-
+    let output = exp.gen_completions_imap();
+    write(&dest, &output).expect("Unable to write to disk");
+    dest.to_str().unwrap().to_owned()
+}
 
 /*
  * Operations on shortpaths

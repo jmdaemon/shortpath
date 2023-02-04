@@ -4,9 +4,12 @@ use crate::{
     shortpaths::{Shortpaths, fold_shortpath, expand_shortpath, expand_tilde},
 };
 
-use std::path::PathBuf;
-use std::collections::HashMap;
+use crate::sp::SP;
 
+use std::path::PathBuf;
+//use std::collections::HashMap;
+
+use itertools::Itertools;
 use log::trace;
 use bimap::BiHashMap;
 
@@ -16,6 +19,7 @@ use bimap::BiHashMap;
  */
 pub struct BashExporter {
     spaths: Shortpaths,
+    shortpaths: Option<SP>,
 }
 
 pub fn fmt_bash_alias(name: &str, path: &PathBuf) -> String {
@@ -24,7 +28,7 @@ pub fn fmt_bash_alias(name: &str, path: &PathBuf) -> String {
 
 impl BashExporter {
     pub fn new(spaths: Shortpaths) -> BashExporter {
-        BashExporter { spaths }
+        BashExporter { spaths, shortpaths: None}
     }
 
     pub fn default() -> BashExporter {
@@ -106,6 +110,28 @@ impl Export for BashExporter {
 
     fn set_shortpaths(&mut self, spaths: &Shortpaths) {
         self.spaths = spaths.clone();
+    }
+
+    fn set_shortpaths_imap(&mut self, shortpaths: &SP) {
+        self.shortpaths = Some(shortpaths.to_owned());
+    }
+
+    fn gen_completions_imap(&self) -> String {
+        let mut output = String::from("#!/bin/bash\n\n");
+        if let Some(shortpaths) = &self.shortpaths {
+            let serialized: Vec<String> = shortpaths.iter().map(|(name, sp)| {
+                let path = expand_tilde(sp.path()).unwrap();
+                let shortpath = fmt_bash_alias(&name, &path);
+                shortpath
+            }).collect();
+
+            //let mut output = String::from("#!/bin/bash\n\n");
+            serialized.iter().for_each(|line| {
+                output += line;
+            });
+            println!("output: {}", output);
+        }
+        output
     }
 }
 

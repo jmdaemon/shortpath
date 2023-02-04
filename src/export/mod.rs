@@ -3,6 +3,7 @@ pub mod powershell;
 
 use crate::shortpaths::Shortpaths;
 use crate::export::bash::BashExporter;
+use crate::sp::SP;
 
 /*
  * Completion Paths
@@ -15,6 +16,9 @@ pub trait Export {
     fn set_completions_fileperms(&self) -> String;
     fn gen_completions(&self) -> String;
     fn set_shortpaths(&mut self, spaths: &Shortpaths);
+
+    fn set_shortpaths_imap(&mut self, shortpaths: &SP);
+    fn gen_completions_imap(&self) -> String;
 }
 
 pub fn get_exporter(shell_type: &str) -> Box<dyn Export> {
