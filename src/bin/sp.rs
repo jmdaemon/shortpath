@@ -254,10 +254,7 @@ pub fn sp_pop_full_path(sp: &mut Shortpath) {
     sp.full_path = Some(PathBuf::from(output));
 }
 
-pub fn to_serialize(shortpaths: SP) -> SP {
-    //shortpaths.sort_by(|_, v1, _, v2| {
-        //v1.cmp(v2)
-    //});
+pub fn sort_shortpaths(shortpaths: SP) -> SP {
     shortpaths.sorted_by(|_, v1, _, v2| {
         v1.cmp(v2)
     }).collect()
@@ -304,6 +301,6 @@ fn main() {
 
      // Test serialization
      println!("Sorted list of shortpaths");
-     let sorted = to_serialize(sp_im);
+     let sorted = sort_shortpaths(sp_im);
      sorted.iter().for_each(|p| println!("{:?}", p));
 }
