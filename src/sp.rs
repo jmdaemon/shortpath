@@ -31,14 +31,17 @@ impl Ord for Shortpath {
     fn cmp(&self, other: &Self) -> Ordering {
         // The order that shortpaths are determined are:
         // 1. Length of dependencies
-        // 2. Lexicographical order
+        // 2. Path lexicographical order
+        // 3. Name lexicographical order
         // NOTE:
         // Ideally, we should order shortpaths around their closest matching paths
         // We can add this later with the strsim crate potentially
         let (len_deps_1, len_deps_2) = (self.deps.as_ref().unwrap().len(), other.deps.as_ref().unwrap().len());
+        let (len_path_1, len_path_2) = (get_shortpath_path(&self.path), get_shortpath_path(&other.path));
         let (len_name_1, len_name_2) = (get_shortpath_name(&self.path), get_shortpath_name(&other.path));
 
         len_deps_1.cmp(&len_deps_2)
+            .then(len_path_1.cmp(&len_path_2))
             .then(len_name_1.cmp(&len_name_2))
     }
 }
