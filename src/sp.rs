@@ -164,8 +164,8 @@ pub fn find_longest_keyname<T>(map: IndexMap<String, T>) -> String {
        .max_by(|(k1,_), (k2, _)| k1.len().cmp(&k2.len()))
        .unwrap().0.to_owned()
 }
-// Shortpaths Specific
 
+// Shortpaths Specific
 
 pub fn fmt_expand(src: &str, key_name: &str, key_path: &str) -> String {
     let this = format!("${}", key_name);
@@ -309,6 +309,24 @@ pub fn export_shortpaths(shortpaths: &SP, export_type: &str, output_file: Option
     let output = exp.gen_completions_imap();
     write(&dest, &output).expect("Unable to write to disk");
     dest.to_str().unwrap().to_owned()
+}
+
+/** Update a single shortpath's alias name or path
+  * Changes the name or path if given and are unique */
+pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<&String>, path: Option<&String>) {
+    if let Some(new_path) = path {
+        let path = PathBuf::from(new_path);
+        
+        let spt = match parse_alias(&to_str_slice(path.to_str().unwrap())) {
+            Some(spt) => spt,
+            None => SPT::Path(current_name.to_owned(), path)
+        };
+        let shortpath = Shortpath::new(spt, None, None);
+        shortpaths.insert(current_name.to_owned(), shortpath);
+    } else if let Some(new_name) = name {
+        let path = shortpaths.remove(current_name).unwrap();
+        shortpaths.insert(new_name.to_owned(), path);
+    } 
 }
 
 /*
