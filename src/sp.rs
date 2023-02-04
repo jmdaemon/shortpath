@@ -293,8 +293,8 @@ pub fn add_shortpath(shortpaths: &mut SP, name: String, path: PathBuf) {
     shortpaths.insert(name, shortpath);
 }
 
-pub fn remove_shortpath(shortpaths: &mut SP, current_name: &str) {
-    shortpaths.remove(current_name);
+pub fn remove_shortpath(shortpaths: &mut SP, current_name: &str) -> Option<Shortpath> {
+    return shortpaths.remove(current_name)
 }
 
 pub fn find_unreachable(shortpaths: &SP) -> IndexMap<&String, &Shortpath> {
@@ -414,7 +414,7 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
 /** Serialize shortpaths to other formats for use in other applications */
 pub fn export_shortpaths(shortpaths: &SP, export_type: &str, output_file: Option<&String>) -> String {
     let mut exp = get_exporter(export_type.into());
-    exp.set_shortpaths_imap(shortpaths);
+    exp.set_shortpaths(shortpaths);
     
     let dest = match output_file {
         Some(path)  => Path::new(path).to_path_buf(),
@@ -425,8 +425,7 @@ pub fn export_shortpaths(shortpaths: &SP, export_type: &str, output_file: Option
         .expect("Could not create shell completions directory");
 
     // Serialize
-    //let output = exp.gen_completions();
-    let output = exp.gen_completions_imap();
+    let output = exp.gen_completions();
     write(&dest, &output).expect("Unable to write to disk");
     dest.to_str().unwrap().to_owned()
 }

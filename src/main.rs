@@ -1,13 +1,25 @@
-use shortpaths::shortpaths::App;
+use shortpaths::config::{Config, read_config};
+use shortpaths::sp::{
+    add_shortpath,
+    ShortpathsBuilder,
+    Shortpath,
+    SPT,
+    remove_shortpath,
+    check_shortpaths,
+    resolve,
+    export_shortpaths,
+    update_shortpath,
+};
 use shortpaths::consts::{
     PROGRAM_NAME,
     VERSION,
     AUTHOR,
     PROGRAM_DESCRIPTION,
+    CONFIG_FILE_PATH,
 };
 
 use std::{
-    path::Path,
+    path::PathBuf,
     process::exit,
 };
 
@@ -38,7 +50,7 @@ pub fn build_cli() -> Command {
             .about("Checks all shortpaths")
             )
         .subcommand(
-            Command::new("autoindex")
+            Command::new("resolve")
             .about("Fixes all shortpaths.")
             )
         .subcommand(
@@ -78,49 +90,56 @@ fn main() {
     toggle_logging(&matches);
 
     // Setup initial configs
-    let mut app = App::new();
-    info!("Current App Shortpaths:\n{}", toml::to_string_pretty(&app).expect("Could not serialize"));
+    let mut config = Config::new();
+    let cfg_name = CONFIG_FILE_PATH.to_string();
+    let cfg_path = config.format_config_path(&cfg_name);
+    config.add_config(cfg_name, cfg_path.to_str().unwrap());
+    
+    // Toml String
+    let toml_conts = read_config(&config);
+    info!("Current App Shortpaths:\n{}", toml_conts);
+
+    // TODO: Serde this instead, but for now, pretend its the config
+    let sp_paths = vec![
+        Shortpath::new(SPT::new_path("d", PathBuf::from("$a/dddd")), None, None),
+        Shortpath::new(SPT::new_path("c", PathBuf::from("$b/cccc")), None, None),
+        Shortpath::new(SPT::new_path("b", PathBuf::from("$a/bbbb")), None, None),
+        Shortpath::new(SPT::new_path("a", PathBuf::from("aaaa")), None, None),
+    ];
+    let mut sp_builder = ShortpathsBuilder::new(sp_paths);
+
+    let mut shortpaths = sp_builder.build().unwrap();
 
     match matches.subcommand() {
         Some(("add", sub_matches)) => {
             let (alias_name, alias_path) = (
                 sub_matches.get_one::<String>("ALIAS_NAME").unwrap().to_owned(),
-                sub_matches.get_one::<String>("ALIAS_PATH").unwrap(),
-                );
-            app.add(&alias_name, &Path::new(&alias_path));
+                sub_matches.get_one::<String>("ALIAS_PATH").unwrap()
+            );
+
+            add_shortpath(&mut shortpaths, alias_name.clone(), PathBuf::from(alias_path));
             println!("Saved shortpath {}: {}", alias_name, alias_path);
         }
         Some(("remove", sub_matches)) => {
             let current_name = sub_matches.get_one::<String>("ALIAS_NAME").unwrap();
-            let path = app.remove(&current_name);
-            println!("Removed {}: {}", current_name.to_owned(), path.display());
+            let path = remove_shortpath(&mut shortpaths, current_name);
+            println!("Removed {}: {}", current_name.to_owned(), path.unwrap().path().display());
         }
         Some(("check", _)) => {
-            let unreachable = app.check();
-            unreachable.iter().for_each(|(alias_name, alias_path)|
-                println!("{} shortpath is unreachable: {}", alias_name, alias_path.display()));
-            println!("Check Complete");
+            check_shortpaths(&mut shortpaths);
         }
-        Some(("autoindex", _)) => {
-            println!("Updating shortpaths");
-            info!("Finding unreachable shortpaths");
-
-            let on_update = |alias_name: &String, alias_path: &Path, updated_path: &Path| {
-                let is_changed = |p1: &Path, p2: &Path| {p1 != p2};
-                if is_changed(updated_path, alias_path) {
-                    println!("Updating shortpath {} from {} to {}", alias_name, alias_path.display(), updated_path.display());
-                } else {
-                    println!("Keeping shortpath {}: {}", alias_name, alias_path.display());
-                }
-            };
-            app.autoindex(Some(on_update));
+        Some(("resolve", _)) => {
+            println!("Resolving any unreachable shortpaths");
+            let resolve_type = "matching";
+            let automode = true;
+            resolve(&mut shortpaths, resolve_type, automode);
         }
         Some(("export", sub_matches)) => {
             let (export_type, output_file) = (
                 sub_matches.get_one::<String>("EXPORT_TYPE").unwrap(),
                 sub_matches.get_one::<String>("OUTPUT_FILE"),
             );
-            let dest = app.export(export_type, output_file);
+            let dest = export_shortpaths(&shortpaths, export_type, output_file);
             println!("Exported shell completions to {}", dest);
         }
         Some(("update", sub_matches)) => {
@@ -128,15 +147,16 @@ fn main() {
                 sub_matches.get_one::<String>("CURRENT_NAME").unwrap(),
                 sub_matches.get_one::<String>("ALIAS_NAME"),
                 sub_matches.get_one::<String>("ALIAS_PATH"),
-                );
+            );
 
             if alias_name.is_none() && alias_path.is_none() {
                 println!("Shortpath name or path must be provided");
                 exit(1);
             }
-            app.update(current_name, alias_name, alias_path);
+            update_shortpath(&mut shortpaths, current_name, alias_name, alias_path);
         }
         _ => {}
     }
-    app.save_to_disk();
+    //app.save_to_disk();
+    // TODO: Write the app state to disk
 }
