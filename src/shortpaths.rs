@@ -19,12 +19,17 @@ pub type SP = IndexMap<String, Shortpath>;
 pub type SPT = ShortpathType;
 pub type DEPS = Vec<SPT>; 
 
-/// The type of shortpath it is
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
 pub enum ShortpathType {
     Path(String, PathBuf),      // Shortpath Name   : Shortpath Path
     AliasPath(String, PathBuf), // Shortpath Name   : Shortpath Path
     EnvPath(String, PathBuf),   // Env Var Name     : Shortpath Path
+}
+
+enum ShortpathDependency {
+    None,
+    Shortpath(String),
+    EnvironmentVariable(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -289,13 +294,13 @@ pub fn expand_tilde<P: AsRef<Path>>(path_user_input: P) -> Option<PathBuf> {
 
 // Shortpaths Specific
 
-pub fn fmt_expand(src: &str, key_name: &str, key_path: &str) -> String {
+pub fn expand_path(src: &str, key_name: &str, key_path: &str) -> String {
     let this = format!("${}", key_name);
     let with = key_path;
     src.replace(&this, &with)
 }
 
-pub fn fmt_fold(src: &str, key_name: &str, key_path: &str) -> String {
+pub fn fold_path(src: &str, key_name: &str, key_path: &str) -> String {
     let this = key_path;
     let with = format!("${}", key_name);
     src.replace(&this, &with)
@@ -369,7 +374,7 @@ pub fn expand_shortpath(sp: &Shortpath) -> String {
                 //dbg!(&dep_path);
 
                 // This doesn't really work
-                output = fmt_expand(&output, &dep_name, dep_path.to_str().unwrap());
+                output = expand_path(&output, &dep_name, dep_path.to_str().unwrap());
             }),
         None => {
             //if let Some(alias) = parse_alias(&to_str_slice(entry)) {
