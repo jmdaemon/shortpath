@@ -42,7 +42,4 @@ fn test_shortpaths() {
     let export_type = "bash";
     let output_file = None;
     export_shortpaths(&sorted, export_type, output_file);
-
-    let one = 1;
-    let zero = 0;
 }
