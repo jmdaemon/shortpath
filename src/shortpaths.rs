@@ -15,9 +15,12 @@ use log::{debug, trace};
 use serde::{Serialize, Serializer, Deserialize};
 use walkdir::{DirEntry, WalkDir};
 
+// Data Types
+
 pub type SP = IndexMap<String, Shortpath>;
 pub type SPT = ShortpathType;
-pub type DEPS = Vec<SPT>; 
+pub type SPD = ShortpathDependency;
+pub type DEPS = Vec<SPD>; 
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
 pub enum ShortpathType {
@@ -26,7 +29,8 @@ pub enum ShortpathType {
     EnvPath(String, PathBuf),   // Env Var Name     : Shortpath Path
 }
 
-enum ShortpathDependency {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ShortpathDependency {
     None,
     Shortpath(String),
     EnvironmentVariable(String),
@@ -41,7 +45,13 @@ pub struct Shortpath {
     pub deps: Option<DEPS>,
 }
 
-// Implementations
+pub struct ShortpathsBuilder {
+    paths: Option<SP>,
+}
+
+// Data Type Implementations
+
+// Trait Implementations
 impl Serialize for ShortpathType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -53,99 +63,13 @@ impl Serialize for ShortpathType {
 
 impl Ord for Shortpath {
     fn cmp(&self, other: &Self) -> Ordering {
-        // The order that shortpaths are determined are:
-        // 1. Length of dependencies
-        // 2. Path lexicographical order
-        // 3. Name lexicographical order
-        // NOTE:
-        // Ideally, we should order shortpaths around their closest matching paths
-        // We can add this later with the strsim crate potentially
-        // NOTE:
-        // Another thing to think about is to define a groupings variable to determine groupings?
-
-        //let (set_a, set_b) = (hashset(&self.deps), hashset(&other.deps));
-
-        let mut set_a: HashSet<SPT> = HashSet::new();
-        let mut set_b: HashSet<SPT> = HashSet::new();
-
-        if self.deps.is_some() {
-            set_a = hashset(self.deps.as_ref().unwrap());
-        }
-
-        if other.deps.is_some() {
-            set_b = hashset(other.deps.as_ref().unwrap());
-        }
-
-        // Cases:
-        // 1. Independent Path, Independent Path
-        // 2. Independent Path, Dependent Path
-        // 3. Dependent Path, Dependent Path
-        // 4. Dependent Path, Different Dependent Path
-        
-        let mut ord: Ordering = Ordering::Equal;
-        if !set_a.is_empty() && !set_b.is_empty() {
-            let intersection: HashSet<&SPT> = set_a.intersection(&set_b).collect();
-            ord = match intersection.is_empty() {
-                true => {
-                    // Determined to be independent
-                    Ordering::Less
-                }
-                false => {
-                    // Determine to be dependent
-                    Ordering::Greater
-                }
-            };
-        }
-
-        //let lexicographical_order = |a, b| {
-        //};
-
-        // Setup Data
-        let get_alias_paths = || {
-            let (path_1, path_2) = (get_shortpath_path(&self.path), get_shortpath_path(&other.path));
-            (path_1, path_2)
-        };
-
+        // Sort paths in lexicographical order according to their expanded full_paths
         let get_paths = || {
             let (path_1, path_2) = (self.full_path.clone().unwrap(), other.full_path.clone().unwrap());
-            //info!("{}, {}", path_1.display(), path_2.display());
             (path_1, path_2)
         };
-
-        //path_1.cmp(&path_2)
-        let (mut len_deps_1, mut len_deps_2) = (0, 0);
-
-        let (path_1, path_2) = get_alias_paths();
-        //let (len_path_1, len_path_2) = (get_shortpath_path(&self.path), get_shortpath_path(&other.path));
-        //let (len_name_1, len_name_2) = (get_shortpath_name(&self.path), get_shortpath_name(&other.path));
-
-        //self.deps.as_deref().unwrap_or(&[0; 0]
-        //let len_deps_1 = self.deps.iter().filter_map(f)
-
-        if self.deps.is_some() {
-            len_deps_1 = self.deps.as_ref().unwrap().len();
-        }
-
-        if other.deps.is_some() {
-            len_deps_2 = other.deps.as_ref().unwrap().len();
-        }
-
-        path_1.cmp(&path_2).reverse()
-
-        //ord.then(path_1.cmp(&path_2))
-            //.then(len_deps_1.cmp(&len_deps_2)).reverse()
-
-
-        //path_1.cmp(&path_2)
-            //.then(len_deps_1.cmp(&len_deps_2)).reverse()
-
-        //len_deps_1.cmp(&len_deps_2)
-            //.reverse()
-            //.then(path_1.cmp(&path_2))
-        //len_deps_1.cmp(&len_deps_2)
-            //.then(len_path_1.cmp(&len_path_2))
-            //.then(len_name_1.cmp(&len_name_2))
-            //.reverse()
+        let (path_1, path_2) = get_paths();
+        path_1.cmp(&path_2)
     }
 }
 
@@ -154,12 +78,6 @@ impl PartialOrd for Shortpath {
         Some(self.cmp(other))
     }
 }
-
-pub struct ShortpathsBuilder {
-    paths: Option<SP>,
-}
-
-// Implementations
 
 impl ShortpathType {
     pub fn new_path(name: impl Into<String>, path: impl Into<PathBuf>) -> SPT {
@@ -216,10 +134,41 @@ impl ShortpathsBuilder {
     pub fn build(&mut self) -> Option<SP> {
         if let Some(shortpaths) = &mut self.paths {
 
-            shortpaths.iter_mut().for_each(|(_, sp)| {
-                sp_pop_deps(sp);
-                sp_pop_full_path(sp);
-            });
+            //deps = 
+            //shortpaths.iter().filter_map(|(_, sp)| {
+                //...
+            //}
+            // full_path = 
+            //shortpaths.iter().filter_map(|(_, sp)| {
+                //...
+            //}
+            // updates =
+            //shortpaths.iter().filter_map(|(_, sp)| {
+                //...
+            //}
+
+            // Populate the dependencies
+            let mut shortpaths: SP = shortpaths.into_iter().filter_map(|(k, sp)| {
+                //if sp.deps.is_some() { return; }
+                //sp.deps = find_deps(&sp.path());
+                let deps = find_deps(&sp.path());
+                sp.deps = Some(deps);
+                Some((k.to_owned(), sp.to_owned()))
+                //let path = expand_shortpath(sp, &shortpaths);
+            }).collect();
+
+            let shortpaths_copy = shortpaths.clone();
+            // Expand to full_path
+            let shortpaths: SP = (&mut shortpaths).into_iter().filter_map(|(k, sp)| {
+                let full_path = expand_shortpath(&sp, &shortpaths_copy);
+                sp.full_path = Some(full_path);
+                Some((k.to_owned(), sp.to_owned()))
+            }).collect();
+
+            //shortpaths.iter_mut().for_each(|(_, sp)| {
+                //sp_pop_deps(sp);
+                //sp_pop_full_path(sp);
+            //});
 
             return Some(shortpaths.to_owned());
         }
@@ -312,6 +261,15 @@ pub fn get_shortpath_name(sp: &SPT) -> String {
     }
 }
 
+pub fn get_shortpath_dep_name(sp: &SPD) -> Option<String> {
+    match sp {
+        SPD::Shortpath(name) | SPD::EnvironmentVariable(name) => Some(name.to_owned()),
+        SPD::None => None
+        //SPT::Path(name, _) | SPT::AliasPath(name, _) | SPT::EnvPath(name, _) => name.to_owned(),
+    }
+}
+
+
 pub fn get_shortpath_path(sp: &SPT) -> PathBuf {
     match sp {
         SPT::Path(_, path) | SPT::AliasPath(_, path) | SPT::EnvPath(_, path) => path.to_owned()
@@ -334,6 +292,16 @@ pub fn parse_alias(path: &[char], full_path: PathBuf) -> Option<SPT> {
     }
 }
 
+pub fn get_shortpath_dependency(path: &[char]) -> SPD {
+    let to_string = |slice: &[char]| { slice.iter().collect() };
+    let _env_prefix = to_str_slice("$env:");
+    match path {
+        ['$', alias_name @ ..]                  => SPD::Shortpath(to_string(alias_name)),
+        [ _env_prefix, env_var_name @ .., '}']  => SPD::EnvironmentVariable(to_string(env_var_name)),
+        _                                       => SPD::None
+    }
+}
+
 pub fn get_shortpath_type(name: impl Into<String>, path: &PathBuf) -> SPT {
     let spt = match &path.to_str().unwrap().to_owned().to_lowercase() {
         keyword if keyword.contains("$")        => SPT::AliasPath(name.into(), path.to_owned()),
@@ -344,14 +312,15 @@ pub fn get_shortpath_type(name: impl Into<String>, path: &PathBuf) -> SPT {
 }
 
 /// Find the dependencies for a given shortpath
-pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
+pub fn find_deps(entry: &PathBuf) -> DEPS {
     let deps: DEPS = entry.components().into_iter().filter_map(|path_component| {
         if let Component::Normal(osstr_path) = path_component {
-            return parse_alias(&to_str_slice(osstr_path.to_string_lossy()), entry.to_owned());
+            let dep = get_shortpath_dependency(&to_str_slice(osstr_path.to_string_lossy()));
+            return Some(dep);
         }
         return None
     }).collect();
-    Some(deps)
+    deps
 }
 
 /**
@@ -361,44 +330,47 @@ pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
   * populated, both their name and path values are stored in the enum variant which
   * is accessed here without the hashmap.
   */
-pub fn expand_shortpath(sp: &Shortpath) -> String {
-    let entry = sp.path().to_str().unwrap().to_owned();
-    let mut output = entry.clone();
+pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
+    //let entry = sp.path().to_str().unwrap().to_owned();
+    //let mut output = entry.clone();
+    let mut entry = sp.path().to_owned();
     match &sp.deps {
         Some(deps) => // Expand entry into full_path
             deps.iter().for_each(|dep| {
                 // TODO: Wrap in a while loop later to parse additional paths
-                let (dep_name, dep_path) = (get_shortpath_name(dep), get_shortpath_path(dep));
-                //println!("Debug ");
-                //dbg!(&dep_name);
-                //dbg!(&dep_path);
+                if let Some(name) = get_shortpath_dep_name(dep) {
+                    let dep_shortpath = shortpaths.get(&name).unwrap();
+                    let path = get_shortpath_path(&dep_shortpath.path);
 
-                // This doesn't really work
-                output = expand_path(&output, &dep_name, dep_path.to_str().unwrap());
+                    let output = expand_path(entry.to_str().unwrap(), &name, &path.to_str().unwrap());
+                    entry = PathBuf::from(output);
+                    //output
+                }
             }),
-        None => {
+            None => {}
+        //None => {
             //if let Some(alias) = parse_alias(&to_str_slice(entry)) {
                 //let (dep_name, dep_path) = (alias, get_shortpath_path(dep));
                 //output = fmt_expand(&output, &dep_name, dep_path.to_str().unwrap());
-                output = entry
+                //output = entry
             //}
-        }
+        //}
     };
-    output
+    entry
 }
 
 // Impure Shortpath Functions
-/// Populate shortpath dependencies
-pub fn sp_pop_deps(sp: &mut Shortpath) {
-    if sp.deps.is_some() { return; }
-    sp.deps = find_deps(&sp.path());
-}
+//// Populate shortpath dependencies
+//pub fn sp_pop_deps(sp: &mut Shortpath) {
+    //if sp.deps.is_some() { return; }
+    //sp.deps = find_deps(&sp.path());
+//}
 
-/// Expand and populate shortpath's full_path field
-pub fn sp_pop_full_path(sp: &mut Shortpath) {
-    let output = expand_shortpath(sp);
-    sp.full_path = Some(PathBuf::from(output));
-}
+//// Expand and populate shortpath's full_path field
+//pub fn sp_pop_full_path(sp: &mut Shortpath) {
+    //let output = expand_shortpath(sp);
+    //sp.full_path = Some(PathBuf::from(output));
+//}
 
 pub fn sort_shortpaths(shortpaths: SP) -> SP {
     shortpaths.sorted_by(|_, v1, _, v2| {

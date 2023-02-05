@@ -1,13 +1,14 @@
 use shortpaths::shortpaths::{
     add_shortpath,
-    ShortpathsBuilder,
-    Shortpath,
-    SPT,
+    //ShortpathsBuilder,
+    //Shortpath,
+    //SPT,
     remove_shortpath,
     check_shortpaths,
     resolve,
     export_shortpaths,
-    update_shortpath, sort_shortpaths, sp_pop_deps, sp_pop_full_path,
+    update_shortpath,
+    //sort_shortpaths,
 };
 use shortpaths::app::{build_cli, toggle_logging, Shortpaths};
 
@@ -47,17 +48,17 @@ fn main() {
     //let mut shortpaths = sp_builder.build().unwrap();
     //let mut shortpaths = shortpaths_config.paths;
     let mut shortpaths = shortpaths_config.shortpaths;
-    shortpaths.iter_mut().for_each(|(_, sp)| {
-        sp_pop_deps(sp);
-        sp_pop_full_path(sp);
-    });
+    //shortpaths.iter_mut().for_each(|(_, sp)| {
+        //sp_pop_deps(sp);
+        //sp_pop_full_path(sp);
+    //});
 
-    let sorted = sort_shortpaths(shortpaths);
-    sorted.iter().for_each(|(_, p)| {
-        println!("{:?}", p.deps);
-        println!("{:?}", p.full_path);
-    });
-    std::process::exit(0);
+    //let sorted = sort_shortpaths(shortpaths);
+    //sorted.iter().for_each(|(_, p)| {
+        //println!("{:?}", p.deps);
+        //println!("{:?}", p.full_path);
+    //});
+    //std::process::exit(0);
 
 
     match matches.subcommand() {
