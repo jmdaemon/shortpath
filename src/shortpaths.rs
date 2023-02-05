@@ -96,15 +96,21 @@ impl Ord for Shortpath {
         //};
 
         // Setup Data
-        let get_paths = || {
+        let get_alias_paths = || {
             let (path_1, path_2) = (get_shortpath_path(&self.path), get_shortpath_path(&other.path));
+            (path_1, path_2)
+        };
+
+        let get_paths = || {
+            let (path_1, path_2) = (self.full_path.clone().unwrap(), other.full_path.clone().unwrap());
+            //info!("{}, {}", path_1.display(), path_2.display());
             (path_1, path_2)
         };
 
         //path_1.cmp(&path_2)
         let (mut len_deps_1, mut len_deps_2) = (0, 0);
 
-        let (path_1, path_2) = get_paths();
+        let (path_1, path_2) = get_alias_paths();
         //let (len_path_1, len_path_2) = (get_shortpath_path(&self.path), get_shortpath_path(&other.path));
         //let (len_name_1, len_name_2) = (get_shortpath_name(&self.path), get_shortpath_name(&other.path));
 
@@ -119,8 +125,10 @@ impl Ord for Shortpath {
             len_deps_2 = other.deps.as_ref().unwrap().len();
         }
 
-        ord.then(path_1.cmp(&path_2))
-            .then(len_deps_1.cmp(&len_deps_2)).reverse()
+        path_1.cmp(&path_2).reverse()
+
+        //ord.then(path_1.cmp(&path_2))
+            //.then(len_deps_1.cmp(&len_deps_2)).reverse()
 
 
         //path_1.cmp(&path_2)
