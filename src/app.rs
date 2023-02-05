@@ -7,8 +7,8 @@ use crate::consts::{
     PROGRAM_DESCRIPTION,
     CONFIG_FILE_PATH,
 };
-use crate::config::{Config, read_config};
-use crate::shortpaths::{SP, Shortpath, populate_shortpaths, get_shortpath_type};
+use crate::config::{Config, read_config, write_config};
+use crate::shortpaths::{SP, Shortpath, populate_shortpaths, get_shortpath_type, sort_shortpaths, expand_tilde};
 
 use indexmap::IndexMap;
 use serde::{Serialize, Deserialize};
@@ -20,6 +20,8 @@ use clap::{arg, ArgAction, Command, ArgMatches};
 pub struct Shortpaths {
     #[serde(rename(serialize = "shortpaths", deserialize = "shortpaths"))]
     pub paths: IndexMap<String, PathBuf>,
+    #[serde(skip)]
+    pub cfg: Config,
     #[serde(skip)]
     pub shortpaths: SP,
 }
@@ -45,13 +47,43 @@ impl Default for Shortpaths {
         }).collect();
 
         let shortpaths = populate_shortpaths(&mut shortpaths);
-        Shortpaths { paths, shortpaths }
+        Shortpaths { cfg, paths, shortpaths }
     }
+
 }
 
 impl Shortpaths {
     pub fn new() -> Shortpaths {
         Default::default()
+    }
+
+    pub fn to_disk(&mut self) {
+        let shortpaths = sort_shortpaths(self.shortpaths.to_owned());
+        //self.shortpaths = shortpaths;
+        
+        let mut shortpaths: SP = shortpaths.into_iter().map(|(name, mut sp)| {
+        //let mut shortpaths: SP = self.shortpaths.into_iter().map(|(name, mut sp)| {
+            let path = expand_tilde(sp.path()).unwrap();
+            sp.full_path = Some(path);
+            (name, sp)
+        }).collect();
+        shortpaths.sort_by(|_, v1, _, v2| { v1.cmp(v2) });
+        //self.shortpaths = shortpaths;
+
+        let paths: IndexMap<String, PathBuf> = shortpaths.into_iter().map(|(k, sp)| {
+            (k, sp.path().to_owned())
+        }).collect();
+        
+        self.paths = paths;
+        //let newsps = Shortpaths { shortpaths: shortpaths, ..} = *self;
+
+        //let conts = toml::to_string_pretty(&paths).expect("Could not serialize shortpaths");
+        let conts = toml::to_string_pretty(&self).expect("Could not serialize shortpaths");
+        let result = write_config(&self.cfg, CONFIG_FILE_PATH, &conts);
+        if let Err(e) = result {
+            eprintln!("Failed to write shortpaths config to disk: {}", e);
+        }
+        println!("Wrote shortpaths config to {}", self.cfg.files.get(CONFIG_FILE_PATH).unwrap().display());
     }
 }
 

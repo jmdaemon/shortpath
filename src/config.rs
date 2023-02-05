@@ -7,7 +7,7 @@ use crate::consts::{
 use std::{
     path::PathBuf,
     collections::HashMap,
-    fs::{create_dir_all, read_to_string},
+    fs::{create_dir_all, read_to_string, write},
 };
 
 use derivative::Derivative;
@@ -40,7 +40,12 @@ impl Config {
 }
 
 pub fn read_config(config: &Config, file: &str) -> String {
-    let shortpaths_toml = config.files.get(file).expect("Unable to retrieve path from files");
-    read_to_string(shortpaths_toml)
+    let toml_config = config.files.get(file).expect("Unable to retrieve config path from files");
+    read_to_string(toml_config)
         .expect("Could not read config file.")
+}
+
+pub fn write_config(config: &Config, file: &str, conts: &str) -> std::io::Result<()> {
+    let toml_config = config.files.get(file).expect("Unable to retrieve config path from files");
+    write(toml_config, conts)
 }

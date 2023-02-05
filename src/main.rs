@@ -20,11 +20,11 @@ fn main() {
     toggle_logging(&matches);
 
     // Setup initial configs
-    let shortpaths_config = Shortpaths::new();
+    let mut shortpaths_config = Shortpaths::new();
 
     info!("Current App Shortpaths:\n{}", toml::to_string_pretty(&shortpaths_config).expect("Could not serialize."));
 
-    let mut shortpaths = shortpaths_config.shortpaths;
+    let mut shortpaths = shortpaths_config.shortpaths.clone();
 
     match matches.subcommand() {
         Some(("add", sub_matches)) => {
@@ -73,7 +73,5 @@ fn main() {
         }
         _ => {}
     }
-
-    //app.save_to_disk();
-    // TODO: Write the app state to disk
+    shortpaths_config.to_disk();
 }
