@@ -29,9 +29,11 @@ fn test_shortpaths() {
     // Test find_key
     let key = sp_im.find_key_for_value("$a/bbbb");
     println!("{:?}", key);
+    assert_ne!(None, key, "Can find keys from &str values");
 
     let key = sp_im.find_key_for_value("$a/bbbb".to_string());
     println!("{:?}", key);
+    assert_ne!(None, key, "Can find keys from String values");
 
     // Test sort_shortpaths
     println!("Sorted list of shortpaths");
