@@ -4,12 +4,15 @@ use std::{
     env::var,
     cmp::Ordering,
     fs::{create_dir_all, write},
+    collections::HashSet,
+    iter::FromIterator, hash::Hash,
 };
 
 use indexmap::IndexMap;
+#[allow(unused_imports)]
 use itertools::Itertools;
 use log::{debug, trace};
-use serde::{Serialize, Serializer, Deserialize, Deserializer};
+use serde::{Serialize, Serializer, Deserialize};
 use walkdir::{DirEntry, WalkDir};
 
 pub type SP = IndexMap<String, Shortpath>;
@@ -17,7 +20,7 @@ pub type SPT = ShortpathType;
 pub type DEPS = Vec<SPT>; 
 
 /// The type of shortpath it is
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
 pub enum ShortpathType {
     Path(String, PathBuf),      // Shortpath Name   : Shortpath Path
     AliasPath(String, PathBuf), // Shortpath Name   : Shortpath Path
@@ -54,9 +57,59 @@ impl Ord for Shortpath {
         // We can add this later with the strsim crate potentially
         // NOTE:
         // Another thing to think about is to define a groupings variable to determine groupings?
+
+        //let (set_a, set_b) = (hashset(&self.deps), hashset(&other.deps));
+
+        let mut set_a: HashSet<SPT> = HashSet::new();
+        let mut set_b: HashSet<SPT> = HashSet::new();
+
+        if self.deps.is_some() {
+            set_a = hashset(self.deps.as_ref().unwrap());
+        }
+
+        if other.deps.is_some() {
+            set_b = hashset(other.deps.as_ref().unwrap());
+        }
+
+        // Cases:
+        // 1. Independent Path, Independent Path
+        // 2. Independent Path, Dependent Path
+        // 3. Dependent Path, Dependent Path
+        // 4. Dependent Path, Different Dependent Path
+        
+        let mut ord: Ordering = Ordering::Equal;
+        if !set_a.is_empty() && !set_b.is_empty() {
+            let intersection: HashSet<&SPT> = set_a.intersection(&set_b).collect();
+            ord = match intersection.is_empty() {
+                true => {
+                    // Determined to be independent
+                    Ordering::Less
+                }
+                false => {
+                    // Determine to be dependent
+                    Ordering::Greater
+                }
+            };
+        }
+
+        //let lexicographical_order = |a, b| {
+        //};
+
+        // Setup Data
+        let get_paths = || {
+            let (path_1, path_2) = (get_shortpath_path(&self.path), get_shortpath_path(&other.path));
+            (path_1, path_2)
+        };
+
+        //path_1.cmp(&path_2)
         let (mut len_deps_1, mut len_deps_2) = (0, 0);
-        let (len_path_1, len_path_2) = (get_shortpath_path(&self.path), get_shortpath_path(&other.path));
-        let (len_name_1, len_name_2) = (get_shortpath_name(&self.path), get_shortpath_name(&other.path));
+
+        let (path_1, path_2) = get_paths();
+        //let (len_path_1, len_path_2) = (get_shortpath_path(&self.path), get_shortpath_path(&other.path));
+        //let (len_name_1, len_name_2) = (get_shortpath_name(&self.path), get_shortpath_name(&other.path));
+
+        //self.deps.as_deref().unwrap_or(&[0; 0]
+        //let len_deps_1 = self.deps.iter().filter_map(f)
 
         if self.deps.is_some() {
             len_deps_1 = self.deps.as_ref().unwrap().len();
@@ -66,10 +119,20 @@ impl Ord for Shortpath {
             len_deps_2 = other.deps.as_ref().unwrap().len();
         }
 
-        len_deps_1.cmp(&len_deps_2)
-            .then(len_path_1.cmp(&len_path_2))
-            .then(len_name_1.cmp(&len_name_2))
-            .reverse()
+        ord.then(path_1.cmp(&path_2))
+            .then(len_deps_1.cmp(&len_deps_2)).reverse()
+
+
+        //path_1.cmp(&path_2)
+            //.then(len_deps_1.cmp(&len_deps_2)).reverse()
+
+        //len_deps_1.cmp(&len_deps_2)
+            //.reverse()
+            //.then(path_1.cmp(&path_2))
+        //len_deps_1.cmp(&len_deps_2)
+            //.then(len_path_1.cmp(&len_path_2))
+            //.then(len_name_1.cmp(&len_name_2))
+            //.reverse()
     }
 }
 
@@ -181,6 +244,10 @@ where
 // Pure Functions
 
 // General Purpose
+pub fn hashset<T: Hash + Eq + Clone>(data: &Vec<T>) -> HashSet<T> {
+    HashSet::from_iter(data.iter().cloned())
+}
+
 /// Convert strings into a vector of characters
 pub fn to_str_slice(s: impl Into<String>) -> Vec<char> {
     s.into().chars().collect()
