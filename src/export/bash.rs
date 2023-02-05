@@ -74,11 +74,15 @@ impl Export for BashExporter {
         dest.to_str().unwrap().to_owned()
     }
 
-    //fn set_shortpaths(&mut self, shortpaths: &SP) -> self {
+    //fn set_shortpaths(&mut self, shortpaths: &SP) -> &dyn Export {
+    fn set_shortpaths(&mut self, shortpaths: &SP) -> Box<dyn Export> {
         //self.shortpaths = Some(sort_shortpaths(shortpaths.to_owned()));
-        //&self
-    //}
-    fn set_shortpaths(&mut self, shortpaths: &SP) {
-        self.shortpaths = Some(sort_shortpaths(shortpaths.to_owned()));
+        //Box::new(self)
+        let mut bexp = BashExporter::default();
+        bexp.shortpaths = Some(sort_shortpaths(shortpaths.to_owned()));
+        Box::new(bexp)
     }
+    //fn set_shortpaths(&mut self, shortpaths: &SP) {
+        //self.shortpaths = Some(sort_shortpaths(shortpaths.to_owned()));
+    //}
 }

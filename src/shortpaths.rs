@@ -1,4 +1,4 @@
-use crate::export::get_exporter;
+use crate::export::{Export, get_exporter};
 use std::{
     path::{Path, PathBuf, Component},
     env::var,
@@ -468,11 +468,8 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
 
 /** Serialize shortpaths to other formats for use in other applications */
 pub fn export_shortpaths(shortpaths: &SP, export_type: &str, output_file: Option<&String>) -> String {
-    //let exp = get_exporter(export_type)
-        //.set_shortpaths(shortpaths);
-    //let exp = BashExporter::new(Some(shortpaths.to_owned()));
-    let mut exp = get_exporter(export_type);
-    exp.set_shortpaths(shortpaths);
+    let exp = get_exporter(export_type)
+        .set_shortpaths(shortpaths);
     let dest = exp.gen_completions(output_file);
     dest
 }
