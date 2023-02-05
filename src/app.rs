@@ -8,7 +8,7 @@ use crate::consts::{
     CONFIG_FILE_PATH,
 };
 use crate::config::{Config, read_config};
-use crate::shortpaths::{SP, get_shortpath_type, Shortpath, find_deps, expand_shortpath};
+use crate::shortpaths::{SP, get_shortpath_type, Shortpath, find_deps, expand_shortpath, populate_shortpaths};
 
 use indexmap::IndexMap;
 use serde::{Serialize, Deserialize};
@@ -45,36 +45,16 @@ impl Shortpaths {
     pub fn new() -> Shortpaths {
         let cfg = setup_config(CONFIG_FILE_PATH);
         let toml_conts = read_config(&cfg, CONFIG_FILE_PATH);
-        //dbg!(&toml_conts);
-        //let shortpaths: Shortpaths = toml::from_str(&toml_conts).unwrap();
         let sp: Shortpaths = toml::from_str(&toml_conts).unwrap();
-        //dbg!(&shortpaths);
+
         let paths = sp.paths;
-        //let shortpaths
         let mut spaths: SP = paths.iter().filter_map(|(name, path)| {
             let spt = get_shortpath_type(name, &path);
             let sp = Shortpath::new(spt, None, None);
             Some((name.to_owned(), sp))
         }).collect();
 
-        // Populate the dependencies
-        let mut spaths: SP = (&mut spaths).into_iter().filter_map(|(k, sp)| {
-            //if sp.deps.is_some() { return; }
-            //sp.deps = find_deps(&sp.path());
-            let deps = find_deps(&sp.path());
-            sp.deps = Some(deps);
-            Some((k.to_owned(), sp.to_owned()))
-            //let path = expand_shortpath(sp, &shortpaths);
-        }).collect();
-
-        let spaths_copy = spaths.clone();
-        // Expand to full_path
-        let spaths: SP = (&mut spaths).into_iter().filter_map(|(k, sp)| {
-            let full_path = expand_shortpath(&sp, &spaths_copy);
-            sp.full_path = Some(full_path);
-            Some((k.to_owned(), sp.to_owned()))
-        }).collect();
-
+        let spaths = populate_shortpaths(&mut spaths);
         let shortpaths = Shortpaths { paths, shortpaths: spaths };
         shortpaths
     }

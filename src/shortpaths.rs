@@ -129,23 +129,8 @@ impl ShortpathsBuilder {
     }
     pub fn build(&mut self) -> Option<SP> {
         if let Some(shortpaths) = &mut self.paths {
-
-            // Populate the dependencies
-            let mut shortpaths: SP = shortpaths.into_iter().filter_map(|(k, sp)| {
-                let deps = find_deps(&sp.path());
-                sp.deps = Some(deps);
-                Some((k.to_owned(), sp.to_owned()))
-            }).collect();
-
-            let shortpaths_copy = shortpaths.clone();
-            // Expand to full_path
-            let shortpaths: SP = (&mut shortpaths).into_iter().filter_map(|(k, sp)| {
-                let full_path = expand_shortpath(&sp, &shortpaths_copy);
-                sp.full_path = Some(full_path);
-                Some((k.to_owned(), sp.to_owned()))
-            }).collect();
-
-            return Some(shortpaths.to_owned());
+            let shortpaths = populate_shortpaths(shortpaths);
+            return Some(shortpaths);
         }
         None
     }
@@ -248,6 +233,34 @@ pub fn get_shortpath_path(sp: &SPT) -> PathBuf {
 }
 
 // Input Parsing
+
+// Populate Shortpaths
+pub fn populate_dependencies(shortpaths: &mut SP) -> SP {
+    let shortpaths: SP = shortpaths.into_iter().filter_map(|(k, sp)| {
+        let deps = find_deps(&sp.path());
+        sp.deps = Some(deps);
+        Some((k.to_owned(), sp.to_owned()))
+    }).collect();
+    shortpaths.to_owned()
+}
+
+pub fn populate_expanded_paths(shortpaths: &mut SP) -> SP {
+    let shortpaths_copy = shortpaths.clone();
+    // Expand to full_path
+    let shortpaths: SP = shortpaths.into_iter().filter_map(|(k, sp)| {
+        let full_path = expand_shortpath(&sp, &shortpaths_copy);
+        sp.full_path = Some(full_path);
+        Some((k.to_owned(), sp.to_owned()))
+    }).collect();
+    shortpaths
+}
+
+pub fn populate_shortpaths(shortpaths: &mut SP) -> SP {
+    let mut shortpaths = populate_dependencies(shortpaths);
+    let shortpaths = populate_expanded_paths(&mut shortpaths);
+    shortpaths
+}
+
 /** Parse a Shortpath entry, and returns any dependencies */
 pub fn parse_alias(path: &[char], full_path: PathBuf) -> Option<SPT> {
     match path {
