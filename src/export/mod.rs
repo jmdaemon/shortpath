@@ -2,7 +2,7 @@ pub mod bash;
 pub mod powershell;
 
 use crate::export::bash::BashExporter;
-use crate::sp::SP;
+use crate::shortpaths::SP;
 
 /*
  * Completion Paths

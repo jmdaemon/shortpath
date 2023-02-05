@@ -1,6 +1,6 @@
 #[test]
 fn test_shortpaths() {
-    use shortpaths::sp::{
+    use shortpaths::shortpaths::{
         SPT,
         Shortpath,
         ShortpathsBuilder,

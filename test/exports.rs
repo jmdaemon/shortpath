@@ -1,6 +1,6 @@
 #[test]
 fn test_serialize_bash() {
-    use shortpaths::sp::{Shortpath, SPT, ShortpathsBuilder};
+    use shortpaths::shortpaths::{Shortpath, SPT, ShortpathsBuilder};
     use shortpaths::export::bash::BashExporter;
     use shortpaths::export::Export;
     use std::path::PathBuf;

@@ -8,7 +8,7 @@ use crate::consts::{
     CONFIG_FILE_PATH,
 };
 use crate::config::{Config, read_config};
-use crate::sp::{SP, get_shortpath_type, Shortpath};
+use crate::shortpaths::{SP, get_shortpath_type, Shortpath};
 
 use indexmap::IndexMap;
 use serde::{Serialize, Deserialize};

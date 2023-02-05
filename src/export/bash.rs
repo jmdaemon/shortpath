@@ -3,7 +3,7 @@ use crate::{
     export::Export,
 };
 
-use crate::sp::{expand_tilde, SP, sort_shortpaths};
+use crate::shortpaths::{expand_tilde, SP, sort_shortpaths};
 
 use std::path::PathBuf;
 

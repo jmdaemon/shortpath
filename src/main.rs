@@ -1,4 +1,4 @@
-use shortpaths::sp::{
+use shortpaths::shortpaths::{
     add_shortpath,
     ShortpathsBuilder,
     Shortpath,
