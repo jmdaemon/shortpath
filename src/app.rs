@@ -8,35 +8,25 @@ use crate::consts::{
     CONFIG_FILE_PATH,
 };
 use crate::config::{Config, read_config};
-use crate::shortpaths::{SP, get_shortpath_type, Shortpath, find_deps, expand_shortpath, populate_shortpaths};
+use crate::shortpaths::{SP, Shortpath, populate_shortpaths, get_shortpath_type};
 
 use indexmap::IndexMap;
 use serde::{Serialize, Deserialize};
 use log::LevelFilter;
 use pretty_env_logger::formatted_timed_builder;
 use clap::{arg, ArgAction, Command, ArgMatches};
-//use indexmap::IndexMap;
-//use serde_with::serde_as;
-//use toml;
  
-//#[serde_with::serde_as]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Shortpaths {
     #[serde(rename(serialize = "shortpaths", deserialize = "shortpaths"))]
-    //#[serde_as(as = "IndexMap<_, serde_with::toml::TomlString>")]
-    //pub paths: SP,
     pub paths: IndexMap<String, PathBuf>,
     #[serde(skip)]
     pub shortpaths: SP,
 }
 
-// Write up a custom serialization for Serde
-
 pub fn setup_config(file: &str) -> Config {
     let mut config = Config::new();
     let cfg_name = file.to_string();
-    //let cfg_path = config.format_config_path(&cfg_name);
-    //config.add_config(cfg_name, cfg_path.to_str().unwrap());
     config.add_config(cfg_name, CONFIG_FILE_PATH);
     config
 }
@@ -60,7 +50,7 @@ impl Shortpaths {
     }
 }
 
-// CLI
+// Command Line Interface
 
 /// Enable logging with `-v --verbose` flags
 pub fn toggle_logging(matches: &ArgMatches) {
@@ -69,7 +59,6 @@ pub fn toggle_logging(matches: &ArgMatches) {
         formatted_timed_builder().filter_level(LevelFilter::Trace).init();
     }
 }
-
 
 /// Creates the command line interface
 pub fn build_cli() -> Command {

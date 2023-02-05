@@ -491,7 +491,7 @@ pub fn export_shortpaths(shortpaths: &SP, export_type: &str, output_file: Option
 /** Update a single shortpath's alias name or path
   * Changes the name or path if given and are unique */
 pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<&String>, path: Option<&String>) {
-    if let Some(new_path) = path {
+    let update_name = |new_path: String, shortpaths: &mut SP| {
         let path = PathBuf::from(new_path);
         
         let spt = match parse_alias(&to_str_slice(path.to_str().unwrap()), path.clone()) {
@@ -500,8 +500,15 @@ pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<&S
         };
         let shortpath = Shortpath::new(spt, None, None);
         shortpaths.insert(current_name.to_owned(), shortpath);
-    } else if let Some(new_name) = name {
+    };
+    let update_path = |new_name: String, shortpaths: &mut SP| {
         let path = shortpaths.remove(current_name).unwrap();
         shortpaths.insert(new_name.to_owned(), path);
-    } 
+    };
+
+    match (name, path) {
+        (Some(new_name), _) => { update_name(new_name.to_owned(), shortpaths); }
+        (_, Some(new_path)) => { update_path(new_path.to_owned(), shortpaths); }
+        (_, _)              => { println!("Nothing to do");}
+    }
 }
