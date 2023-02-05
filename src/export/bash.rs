@@ -5,7 +5,10 @@ use crate::{
 
 use crate::shortpaths::{expand_tilde, SP, sort_shortpaths};
 
-use std::path::PathBuf;
+use std::{
+    path::{Path, PathBuf},
+    fs::{create_dir_all, write}
+};
 
 /* NOTE: Consider generating an actual bash completions
    file instead of just generating the aliases script. */
@@ -45,7 +48,15 @@ impl Export for BashExporter {
         //String::from("")
     }
 
-    fn gen_completions(&self) -> String {
+    fn gen_completions(&self, output_file: Option<&String>) -> String {
+        let dest = match output_file {
+            Some(path)  => Path::new(path).to_path_buf(),
+            None        => PathBuf::from(self.get_completions_path())
+        };
+
+        create_dir_all(dest.parent().expect("Could not get parent directory"))
+            .expect("Could not create shell completions directory");
+
         let mut output = String::from("#!/bin/bash\n\n");
         if let Some(shortpaths) = &self.shortpaths {
             let serialized: Vec<String> = shortpaths.iter().map(|(name, sp)| {
@@ -54,15 +65,19 @@ impl Export for BashExporter {
                 shortpath
             }).collect();
 
-            //let mut output = String::from("#!/bin/bash\n\n");
             serialized.iter().for_each(|line| {
                 output += line;
             });
             println!("output: {}", output);
         }
-        output
+        write(&dest, &output).expect("Unable to write to disk");
+        dest.to_str().unwrap().to_owned()
     }
 
+    //fn set_shortpaths(&mut self, shortpaths: &SP) -> self {
+        //self.shortpaths = Some(sort_shortpaths(shortpaths.to_owned()));
+        //&self
+    //}
     fn set_shortpaths(&mut self, shortpaths: &SP) {
         self.shortpaths = Some(sort_shortpaths(shortpaths.to_owned()));
     }

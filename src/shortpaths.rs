@@ -3,9 +3,6 @@ use std::{
     path::{Path, PathBuf, Component},
     env::var,
     cmp::Ordering,
-    fs::{create_dir_all, write},
-    collections::HashSet,
-    iter::FromIterator, hash::Hash,
 };
 
 use indexmap::IndexMap;
@@ -471,21 +468,13 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
 
 /** Serialize shortpaths to other formats for use in other applications */
 pub fn export_shortpaths(shortpaths: &SP, export_type: &str, output_file: Option<&String>) -> String {
-    let mut exp = get_exporter(export_type.into());
+    //let exp = get_exporter(export_type)
+        //.set_shortpaths(shortpaths);
+    //let exp = BashExporter::new(Some(shortpaths.to_owned()));
+    let mut exp = get_exporter(export_type);
     exp.set_shortpaths(shortpaths);
-    
-    let dest = match output_file {
-        Some(path)  => Path::new(path).to_path_buf(),
-        None        => PathBuf::from(exp.get_completions_path())
-    };
-
-    create_dir_all(dest.parent().expect("Could not get parent directory"))
-        .expect("Could not create shell completions directory");
-
-    // Serialize
-    let output = exp.gen_completions();
-    write(&dest, &output).expect("Unable to write to disk");
-    dest.to_str().unwrap().to_owned()
+    let dest = exp.gen_completions(output_file);
+    dest
 }
 
 /** Update a single shortpath's alias name or path
