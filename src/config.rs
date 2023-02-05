@@ -2,7 +2,6 @@ use crate::consts::{
     QUALIFIER,
     ORGANIZATION,
     APPLICATION,
-    CONFIG_FILE_PATH,
 };
 
 use std::{
@@ -27,9 +26,6 @@ impl Config {
         let mut config = Config::default();
         config.files = HashMap::new();
         config
-        //let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).expect("Could not initialize config");
-        //let files = HashMap::new();
-        //Config { project_dirs, files }
     }
 
     pub fn make_config_directory(&self) {
