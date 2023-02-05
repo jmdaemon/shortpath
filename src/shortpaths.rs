@@ -61,14 +61,10 @@ impl Serialize for ShortpathType {
     }
 }
 
+// Sort paths in lexicographical order according to their full on disk paths
 impl Ord for Shortpath {
     fn cmp(&self, other: &Self) -> Ordering {
-        // Sort paths in lexicographical order according to their expanded full_paths
-        let get_paths = || {
-            let (path_1, path_2) = (self.full_path.clone().unwrap(), other.full_path.clone().unwrap());
-            (path_1, path_2)
-        };
-        let (path_1, path_2) = get_paths();
+        let (path_1, path_2) = (self.full_path.clone().unwrap(), other.full_path.clone().unwrap());
         path_1.cmp(&path_2)
     }
 }
@@ -134,27 +130,11 @@ impl ShortpathsBuilder {
     pub fn build(&mut self) -> Option<SP> {
         if let Some(shortpaths) = &mut self.paths {
 
-            //deps = 
-            //shortpaths.iter().filter_map(|(_, sp)| {
-                //...
-            //}
-            // full_path = 
-            //shortpaths.iter().filter_map(|(_, sp)| {
-                //...
-            //}
-            // updates =
-            //shortpaths.iter().filter_map(|(_, sp)| {
-                //...
-            //}
-
             // Populate the dependencies
             let mut shortpaths: SP = shortpaths.into_iter().filter_map(|(k, sp)| {
-                //if sp.deps.is_some() { return; }
-                //sp.deps = find_deps(&sp.path());
                 let deps = find_deps(&sp.path());
                 sp.deps = Some(deps);
                 Some((k.to_owned(), sp.to_owned()))
-                //let path = expand_shortpath(sp, &shortpaths);
             }).collect();
 
             let shortpaths_copy = shortpaths.clone();
@@ -164,11 +144,6 @@ impl ShortpathsBuilder {
                 sp.full_path = Some(full_path);
                 Some((k.to_owned(), sp.to_owned()))
             }).collect();
-
-            //shortpaths.iter_mut().for_each(|(_, sp)| {
-                //sp_pop_deps(sp);
-                //sp_pop_full_path(sp);
-            //});
 
             return Some(shortpaths.to_owned());
         }
@@ -206,10 +181,6 @@ where
 // Pure Functions
 
 // General Purpose
-pub fn hashset<T: Hash + Eq + Clone>(data: &Vec<T>) -> HashSet<T> {
-    HashSet::from_iter(data.iter().cloned())
-}
-
 /// Convert strings into a vector of characters
 pub fn to_str_slice(s: impl Into<String>) -> Vec<char> {
     s.into().chars().collect()
@@ -331,8 +302,6 @@ pub fn find_deps(entry: &PathBuf) -> DEPS {
   * is accessed here without the hashmap.
   */
 pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
-    //let entry = sp.path().to_str().unwrap().to_owned();
-    //let mut output = entry.clone();
     let mut entry = sp.path().to_owned();
     match &sp.deps {
         Some(deps) => // Expand entry into full_path
@@ -344,33 +313,14 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
 
                     let output = expand_path(entry.to_str().unwrap(), &name, &path.to_str().unwrap());
                     entry = PathBuf::from(output);
-                    //output
                 }
             }),
             None => {}
-        //None => {
-            //if let Some(alias) = parse_alias(&to_str_slice(entry)) {
-                //let (dep_name, dep_path) = (alias, get_shortpath_path(dep));
-                //output = fmt_expand(&output, &dep_name, dep_path.to_str().unwrap());
-                //output = entry
-            //}
-        //}
     };
     entry
 }
 
 // Impure Shortpath Functions
-//// Populate shortpath dependencies
-//pub fn sp_pop_deps(sp: &mut Shortpath) {
-    //if sp.deps.is_some() { return; }
-    //sp.deps = find_deps(&sp.path());
-//}
-
-//// Expand and populate shortpath's full_path field
-//pub fn sp_pop_full_path(sp: &mut Shortpath) {
-    //let output = expand_shortpath(sp);
-    //sp.full_path = Some(PathBuf::from(output));
-//}
 
 pub fn sort_shortpaths(shortpaths: SP) -> SP {
     shortpaths.sorted_by(|_, v1, _, v2| {
