@@ -29,7 +29,7 @@ pub enum ShortpathType {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Shortpath {
-    path: SPT,
+    pub path: SPT,
     #[serde(skip)]
     pub full_path: Option<PathBuf>,
     #[serde(skip)]
@@ -315,14 +315,14 @@ pub fn get_shortpath_path(sp: &SPT) -> PathBuf {
 
 // Input Parsing
 /** Parse a Shortpath entry, and returns any dependencies */
-pub fn parse_alias(path: &[char]) -> Option<SPT> {
+pub fn parse_alias(path: &[char], full_path: PathBuf) -> Option<SPT> {
     match path {
         ['$', alias_name @ ..] => {
-            let (an, ap) = (alias_name.iter().collect(), PathBuf::from(path.iter().collect::<String>()));
+            let (an, ap) = (alias_name.iter().collect(), full_path);
             Some(SPT::AliasPath(an, ap))
         }
         [ '{', '$', 'e', 'n', 'v', ':', alias_name @ .., '}'] => {
-            let (an, ap) = (alias_name.iter().collect(), PathBuf::from(path.iter().collect::<String>()));
+            let (an, ap) = (alias_name.iter().collect(), full_path);
             Some(SPT::EnvPath(an, ap))
         }
         _ => { None }
@@ -342,7 +342,7 @@ pub fn get_shortpath_type(name: impl Into<String>, path: &PathBuf) -> SPT {
 pub fn find_deps(entry: &PathBuf) -> Option<DEPS> {
     let deps: DEPS = entry.components().into_iter().filter_map(|path_component| {
         if let Component::Normal(osstr_path) = path_component {
-            return parse_alias(&to_str_slice(osstr_path.to_string_lossy()));
+            return parse_alias(&to_str_slice(osstr_path.to_string_lossy()), entry.to_owned());
         }
         return None
     }).collect();
@@ -364,6 +364,11 @@ pub fn expand_shortpath(sp: &Shortpath) -> String {
             deps.iter().for_each(|dep| {
                 // TODO: Wrap in a while loop later to parse additional paths
                 let (dep_name, dep_path) = (get_shortpath_name(dep), get_shortpath_path(dep));
+                //println!("Debug ");
+                //dbg!(&dep_name);
+                //dbg!(&dep_path);
+
+                // This doesn't really work
                 output = fmt_expand(&output, &dep_name, dep_path.to_str().unwrap());
             }),
         None => {
@@ -398,7 +403,7 @@ pub fn sort_shortpaths(shortpaths: SP) -> SP {
 
 // Commands
 pub fn add_shortpath(shortpaths: &mut SP, name: String, path: PathBuf) {
-    let spt = match parse_alias(&to_str_slice(path.to_str().unwrap())) {
+    let spt = match parse_alias(&to_str_slice(path.to_str().unwrap()), path.clone()) {
         Some(spt) => spt,
         None => SPT::Path(name.clone(), path)
     };
@@ -549,7 +554,7 @@ pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<&S
     if let Some(new_path) = path {
         let path = PathBuf::from(new_path);
         
-        let spt = match parse_alias(&to_str_slice(path.to_str().unwrap())) {
+        let spt = match parse_alias(&to_str_slice(path.to_str().unwrap()), path.clone()) {
             Some(spt) => spt,
             None => SPT::Path(current_name.to_owned(), path)
         };
