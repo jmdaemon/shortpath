@@ -26,7 +26,7 @@ fn test_serialize_bash() {
     exp.set_shortpaths(&shortpaths);
 
     // Test
-    let actual = exp.gen_completions();
+    let actual = exp.gen_completions(None);
     let expect = "#!/bin/bash\n\nexport a=\"aaaa\"\nexport b=\"$a/bbbb\"\nexport d=\"$a/dddd\"\nexport c=\"$b/cccc\"\n";
     assert_eq!(actual, expect);
 }

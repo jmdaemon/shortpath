@@ -1,16 +1,12 @@
+use shortpaths::app::{build_cli, toggle_logging, Shortpaths};
 use shortpaths::shortpaths::{
     add_shortpath,
-    //ShortpathsBuilder,
-    //Shortpath,
-    //SPT,
     remove_shortpath,
     check_shortpaths,
     resolve,
     export_shortpaths,
     update_shortpath,
-    //sort_shortpaths,
 };
-use shortpaths::app::{build_cli, toggle_logging, Shortpaths};
 
 use std::{
     path::PathBuf,
@@ -19,47 +15,16 @@ use std::{
 
 use log::info;
 
-
-
 fn main() {
     let matches = build_cli().get_matches();
     toggle_logging(&matches);
 
     // Setup initial configs
     let shortpaths_config = Shortpaths::new();
-    //let mut config = Config::new();
-    //let cfg_name = CONFIG_FILE_PATH.to_string();
-    //let cfg_path = config.format_config_path(&cfg_name);
-    //config.add_config(cfg_name, cfg_path.to_str().unwrap());
-    
-    // Toml String
-    //let toml_conts = read_config(&config);
+
     info!("Current App Shortpaths:\n{}", toml::to_string_pretty(&shortpaths_config).expect("Could not serialize."));
 
-    // TODO: Serde this instead, but for now, pretend its the config
-    //let sp_paths = vec![
-        //Shortpath::new(SPT::new_path("d", PathBuf::from("$a/dddd")), None, None),
-        //Shortpath::new(SPT::new_path("c", PathBuf::from("$b/cccc")), None, None),
-        //Shortpath::new(SPT::new_path("b", PathBuf::from("$a/bbbb")), None, None),
-        //Shortpath::new(SPT::new_path("a", PathBuf::from("aaaa")), None, None),
-    //];
-    //let mut sp_builder = ShortpathsBuilder::new(sp_paths);
-
-    //let mut shortpaths = sp_builder.build().unwrap();
-    //let mut shortpaths = shortpaths_config.paths;
     let mut shortpaths = shortpaths_config.shortpaths;
-    //shortpaths.iter_mut().for_each(|(_, sp)| {
-        //sp_pop_deps(sp);
-        //sp_pop_full_path(sp);
-    //});
-
-    //let sorted = sort_shortpaths(shortpaths);
-    //sorted.iter().for_each(|(_, p)| {
-        //println!("{:?}", p.deps);
-        //println!("{:?}", p.full_path);
-    //});
-    //std::process::exit(0);
-
 
     match matches.subcommand() {
         Some(("add", sub_matches)) => {

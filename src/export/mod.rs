@@ -17,7 +17,6 @@ pub trait Export {
     fn set_shortpaths(&mut self, shortpaths: &SP) -> Box<dyn Export>;
 }
 
-//pub fn get_exporter(shell_type: &str) -> &'static dyn Export {
 pub fn get_exporter(shell_type: &str) -> impl Export {
     match shell_type {
         "bash" => BashExporter::default(),

@@ -31,22 +31,27 @@ pub fn setup_config(file: &str) -> Config {
     config
 }
 
-impl Shortpaths {
-    pub fn new() -> Shortpaths {
+impl Default for Shortpaths {
+    fn default() -> Self {
         let cfg = setup_config(CONFIG_FILE_PATH);
         let toml_conts = read_config(&cfg, CONFIG_FILE_PATH);
         let sp: Shortpaths = toml::from_str(&toml_conts).unwrap();
 
         let paths = sp.paths;
-        let mut spaths: SP = paths.iter().filter_map(|(name, path)| {
-            let spt = get_shortpath_type(name, &path);
+        let mut shortpaths: SP = paths.iter().filter_map(|(name, path)| {
+            let spt = get_shortpath_type(name, path);
             let sp = Shortpath::new(spt, None, None);
             Some((name.to_owned(), sp))
         }).collect();
 
-        let spaths = populate_shortpaths(&mut spaths);
-        let shortpaths = Shortpaths { paths, shortpaths: spaths };
-        shortpaths
+        let shortpaths = populate_shortpaths(&mut shortpaths);
+        Shortpaths { paths, shortpaths }
+    }
+}
+
+impl Shortpaths {
+    pub fn new() -> Shortpaths {
+        Default::default()
     }
 }
 
@@ -55,7 +60,7 @@ impl Shortpaths {
 /// Enable logging with `-v --verbose` flags
 pub fn toggle_logging(matches: &ArgMatches) {
     let verbose: &bool = matches.get_one("verbose").unwrap();
-    if *verbose == true {
+    if *verbose {
         formatted_timed_builder().filter_level(LevelFilter::Trace).init();
     }
 }

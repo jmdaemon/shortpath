@@ -54,7 +54,7 @@ impl Serialize for ShortpathType {
     where
         S: Serializer,
     {
-        serializer.serialize_str(get_shortpath_path(&self).to_str().unwrap())
+        serializer.serialize_str(get_shortpath_path(self).to_str().unwrap())
     }
 }
 
@@ -93,7 +93,7 @@ impl ShortpathType {
 
 impl Shortpath {
     pub fn new(path: SPT, full_path: Option<PathBuf>, deps: Option<DEPS>) -> Shortpath {
-        Shortpath { path: path.into(), full_path, deps }
+        Shortpath { path, full_path, deps }
     }
 
     pub fn path(&self) -> &PathBuf {
@@ -113,8 +113,7 @@ impl ShortpathsBuilder {
     // TODO: Use FromIterator trait extension
     pub fn new(sps: Vec<Shortpath>) -> ShortpathsBuilder  {
         let im = ShortpathsBuilder::from_vec(sps);
-        let builder = ShortpathsBuilder { paths: Some(im) };
-        builder
+        ShortpathsBuilder { paths: Some(im) }
     }
 
     pub fn from_vec(sps: Vec<Shortpath>) -> SP {
@@ -150,13 +149,13 @@ where
     fn find_keys_for_value(&'a self, value: V) -> Vec<&'a String> {
         let v = value.into();
         self.into_iter()
-            .filter_map(|(key, val)| if val.path().to_str().unwrap().to_owned() == v { Some(key) } else { None })
+            .filter_map(|(key, val)| if *val.path().to_str().unwrap() == v { Some(key) } else { None })
             .collect()
     }
 
     fn find_key_for_value(&'a self, value: V) -> Option<&'a String> {
         let v = value.into();
-        self.iter().find_map(|(key, val)| if val.path().to_str().unwrap().to_owned() == v { Some(key) } else { None })
+        self.iter().find_map(|(key, val)| if *val.path().to_str().unwrap() == v { Some(key) } else { None })
     }
 }
 
@@ -169,7 +168,7 @@ pub fn to_str_slice(s: impl Into<String>) -> Vec<char> {
 }
 
 pub fn find_longest_keyname<T>(map: IndexMap<String, T>) -> String {
-    map.into_iter()
+    map.iter()
        .max_by(|(k1,_), (k2, _)| k1.len().cmp(&k2.len()))
        .unwrap().0.to_owned()
 }
@@ -199,13 +198,13 @@ pub fn expand_tilde<P: AsRef<Path>>(path_user_input: P) -> Option<PathBuf> {
 pub fn expand_path(src: &str, key_name: &str, key_path: &str) -> String {
     let this = format!("${}", key_name);
     let with = key_path;
-    src.replace(&this, &with)
+    src.replace(&this, with)
 }
 
 pub fn fold_path(src: &str, key_name: &str, key_path: &str) -> String {
     let this = key_path;
     let with = format!("${}", key_name);
-    src.replace(&this, &with)
+    src.replace(this, &with)
 }
 
 pub fn get_shortpath_name(sp: &SPT) -> String {
@@ -234,18 +233,18 @@ pub fn get_shortpath_path(sp: &SPT) -> PathBuf {
 // Populate Shortpaths
 pub fn populate_dependencies(shortpaths: &mut SP) -> SP {
     let shortpaths: SP = shortpaths.into_iter().filter_map(|(k, sp)| {
-        let deps = find_deps(&sp.path());
+        let deps = find_deps(sp.path());
         sp.deps = Some(deps);
         Some((k.to_owned(), sp.to_owned()))
     }).collect();
-    shortpaths.to_owned()
+    shortpaths
 }
 
 pub fn populate_expanded_paths(shortpaths: &mut SP) -> SP {
     let shortpaths_copy = shortpaths.clone();
     // Expand to full_path
     let shortpaths: SP = shortpaths.into_iter().filter_map(|(k, sp)| {
-        let full_path = expand_shortpath(&sp, &shortpaths_copy);
+        let full_path = expand_shortpath(sp, &shortpaths_copy);
         sp.full_path = Some(full_path);
         Some((k.to_owned(), sp.to_owned()))
     }).collect();
@@ -254,8 +253,7 @@ pub fn populate_expanded_paths(shortpaths: &mut SP) -> SP {
 
 pub fn populate_shortpaths(shortpaths: &mut SP) -> SP {
     let mut shortpaths = populate_dependencies(shortpaths);
-    let shortpaths = populate_expanded_paths(&mut shortpaths);
-    shortpaths
+    populate_expanded_paths(&mut shortpaths)
 }
 
 /** Parse a Shortpath entry, and returns any dependencies */
@@ -285,7 +283,7 @@ pub fn get_shortpath_dependency(path: &[char]) -> SPD {
 
 pub fn get_shortpath_type(name: impl Into<String>, path: &PathBuf) -> SPT {
     let spt = match &path.to_str().unwrap().to_owned().to_lowercase() {
-        keyword if keyword.contains("$")        => SPT::AliasPath(name.into(), path.to_owned()),
+        keyword if keyword.contains('$')        => SPT::AliasPath(name.into(), path.to_owned()),
         keyword if keyword.contains("${env:")   => SPT::EnvPath(name.into(), path.to_owned()),
         _                                       => SPT::Path(name.into(), path.to_owned())
     };
@@ -293,13 +291,13 @@ pub fn get_shortpath_type(name: impl Into<String>, path: &PathBuf) -> SPT {
 }
 
 /// Find the dependencies for a given shortpath
-pub fn find_deps(entry: &PathBuf) -> DEPS {
+pub fn find_deps(entry: &Path) -> DEPS {
     let deps: DEPS = entry.components().into_iter().filter_map(|path_component| {
         if let Component::Normal(osstr_path) = path_component {
             let dep = get_shortpath_dependency(&to_str_slice(osstr_path.to_string_lossy()));
             return Some(dep);
         }
-        return None
+        None
     }).collect();
     deps
 }
@@ -321,7 +319,7 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                     let dep_shortpath = shortpaths.get(&name).unwrap();
                     let path = get_shortpath_path(&dep_shortpath.path);
 
-                    let output = expand_path(entry.to_str().unwrap(), &name, &path.to_str().unwrap());
+                    let output = expand_path(entry.to_str().unwrap(), &name, path.to_str().unwrap());
                     entry = PathBuf::from(output);
                 }
             }),
@@ -349,13 +347,12 @@ pub fn add_shortpath(shortpaths: &mut SP, name: String, path: PathBuf) {
 }
 
 pub fn remove_shortpath(shortpaths: &mut SP, current_name: &str) -> Option<Shortpath> {
-    return shortpaths.remove(current_name)
+    shortpaths.remove(current_name)
 }
 
 pub fn find_unreachable(shortpaths: &SP) -> IndexMap<&String, &Shortpath> {
     let unreachable: IndexMap<&String, &Shortpath> = shortpaths.iter()
-        .filter(|(_, path)| { if !path.path().exists() || path.path().to_str().is_none() { true } else { false }
-        }).collect();
+        .filter(|(_, path)| { !path.path().exists() || path.path().to_str().is_none() }).collect();
     unreachable
 }
 
@@ -375,7 +372,7 @@ pub fn find_by_matching_path(file_name: &str, dir: WalkDir) -> Vec<DirEntry> {
         .filter_map(Result::ok)
         .filter(|file| file.file_name() == file_name)
         .collect();
-    files.to_owned()
+    files
 }
 
 pub fn find_paths(sp: &Shortpath, find_by: impl Fn(&str, WalkDir) -> Vec<DirEntry>) -> Option<Vec<DirEntry>> {
@@ -390,7 +387,7 @@ pub fn find_paths(sp: &Shortpath, find_by: impl Fn(&str, WalkDir) -> Vec<DirEntr
         let files = find_by(search_term.to_str().unwrap(), parent_files);
         files.iter().for_each(|f| trace!("File: {}", f.file_name().to_str().unwrap()));
 
-        if files.len() > 0 {
+        if files.is_empty() {
             return Some(files);
         }
         next = dir.parent(); // Continue searching
@@ -470,8 +467,7 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
 pub fn export_shortpaths(shortpaths: &SP, export_type: &str, output_file: Option<&String>) -> String {
     let exp = get_exporter(export_type)
         .set_shortpaths(shortpaths);
-    let dest = exp.gen_completions(output_file);
-    dest
+    exp.gen_completions(output_file)
 }
 
 /** Update a single shortpath's alias name or path
@@ -489,7 +485,7 @@ pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<&S
     };
     let update_path = |new_name: String, shortpaths: &mut SP| {
         let path = shortpaths.remove(current_name).unwrap();
-        shortpaths.insert(new_name.to_owned(), path);
+        shortpaths.insert(new_name, path);
     };
 
     match (name, path) {

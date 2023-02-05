@@ -16,17 +16,19 @@ pub struct BashExporter {
     shortpaths: Option<SP>,
 }
 
-pub fn fmt_bash_alias(name: &str, path: &PathBuf) -> String {
+pub fn fmt_bash_alias(name: &str, path: &Path) -> String {
     format!("export {}=\"{}\"\n", name, path.display())
+}
+
+impl Default for BashExporter {
+    fn default() -> Self {
+        BashExporter::new(None)
+    }
 }
 
 impl BashExporter {
     pub fn new(shortpaths: Option<SP>) -> BashExporter {
         BashExporter { shortpaths }
-    }
-
-    pub fn default() -> BashExporter {
-        BashExporter::new(None)
     }
 }
 
@@ -61,8 +63,7 @@ impl Export for BashExporter {
         if let Some(shortpaths) = &self.shortpaths {
             let serialized: Vec<String> = shortpaths.iter().map(|(name, sp)| {
                 let path = expand_tilde(sp.path()).unwrap();
-                let shortpath = fmt_bash_alias(&name, &path);
-                shortpath
+                fmt_bash_alias(name, &path)
             }).collect();
 
             serialized.iter().for_each(|line| {
@@ -74,15 +75,8 @@ impl Export for BashExporter {
         dest.to_str().unwrap().to_owned()
     }
 
-    //fn set_shortpaths(&mut self, shortpaths: &SP) -> &dyn Export {
     fn set_shortpaths(&mut self, shortpaths: &SP) -> Box<dyn Export> {
-        //self.shortpaths = Some(sort_shortpaths(shortpaths.to_owned()));
-        //Box::new(self)
-        let mut bexp = BashExporter::default();
-        bexp.shortpaths = Some(sort_shortpaths(shortpaths.to_owned()));
+        let bexp = BashExporter { shortpaths: Some(sort_shortpaths(shortpaths.to_owned()) ) };
         Box::new(bexp)
     }
-    //fn set_shortpaths(&mut self, shortpaths: &SP) {
-        //self.shortpaths = Some(sort_shortpaths(shortpaths.to_owned()));
-    //}
 }
