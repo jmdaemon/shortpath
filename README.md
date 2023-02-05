@@ -126,19 +126,18 @@ cargo b
 mv target/completions/shortpath.ps1 $profile/shortpath.ps1
 ```
 
-## Todo
+## TODO
 
-### Priority
-- Rename `autoindex` to something less verbose.
-- Create better `Shortpath` data structure. Currently there is no proper dependency graph/tree generated
-    for the shortpaths (meaning that serializing them in the correct order is difficult).
-    - Option\<Alias\> component that references another Shortpath.
-    - Function to construct a dependency graph?
-- Profile program to make it as lightweight as possible
-    - Use benches crate?
+The ordering of the shortpaths in which they are determined is still an issue.
+Similar dependent path groups should be grouped together. That is,
+    - If two path groups contain intersecting dependencies, they should be grouped first.
+        Then the path groups should be determined from alphabetical order.
+    - If one path is dependent on another path, that path should be defined first.
+
+- Order path strings by similarity.
+- Profile/benchmark shortpaths
+    - Benches crate?
 - Write a few unit tests to assert functionality
-
-- Replace hacks in `bash.rs` with real solution
 
 ## Considered
 - Look into `tracing` library.

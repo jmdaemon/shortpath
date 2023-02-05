@@ -7,7 +7,7 @@ use shortpaths::shortpaths::{
     check_shortpaths,
     resolve,
     export_shortpaths,
-    update_shortpath,
+    update_shortpath, sort_shortpaths, sp_pop_deps, sp_pop_full_path,
 };
 use shortpaths::app::{build_cli, toggle_logging, Shortpaths};
 
@@ -47,6 +47,18 @@ fn main() {
     //let mut shortpaths = sp_builder.build().unwrap();
     //let mut shortpaths = shortpaths_config.paths;
     let mut shortpaths = shortpaths_config.shortpaths;
+    shortpaths.iter_mut().for_each(|(_, sp)| {
+        sp_pop_deps(sp);
+        sp_pop_full_path(sp);
+    });
+
+    let sorted = sort_shortpaths(shortpaths);
+    sorted.iter().for_each(|(_, p)| {
+        println!("{:?}", p.deps);
+        println!("{:?}", p.full_path);
+    });
+    std::process::exit(0);
+
 
     match matches.subcommand() {
         Some(("add", sub_matches)) => {
@@ -95,6 +107,7 @@ fn main() {
         }
         _ => {}
     }
+
     //app.save_to_disk();
     // TODO: Write the app state to disk
 }

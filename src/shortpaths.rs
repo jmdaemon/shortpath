@@ -31,9 +31,9 @@ pub enum ShortpathType {
 pub struct Shortpath {
     path: SPT,
     #[serde(skip)]
-    full_path: Option<PathBuf>,
+    pub full_path: Option<PathBuf>,
     #[serde(skip)]
-    deps: Option<DEPS>,
+    pub deps: Option<DEPS>,
 }
 
 // Implementations
@@ -366,7 +366,13 @@ pub fn expand_shortpath(sp: &Shortpath) -> String {
                 let (dep_name, dep_path) = (get_shortpath_name(dep), get_shortpath_path(dep));
                 output = fmt_expand(&output, &dep_name, dep_path.to_str().unwrap());
             }),
-        None => output = entry
+        None => {
+            //if let Some(alias) = parse_alias(&to_str_slice(entry)) {
+                //let (dep_name, dep_path) = (alias, get_shortpath_path(dep));
+                //output = fmt_expand(&output, &dep_name, dep_path.to_str().unwrap());
+                output = entry
+            //}
+        }
     };
     output
 }
