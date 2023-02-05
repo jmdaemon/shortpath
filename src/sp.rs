@@ -17,7 +17,7 @@ pub type SPT = ShortpathType;
 pub type DEPS = Vec<SPT>; 
 
 /// The type of shortpath it is
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum ShortpathType {
     Path(String, PathBuf),      // Shortpath Name   : Shortpath Path
     AliasPath(String, PathBuf), // Shortpath Name   : Shortpath Path
@@ -32,13 +32,6 @@ pub struct Shortpath {
     #[serde(skip)]
     deps: Option<DEPS>,
 }
-//impl Serialize for ShortpathType {
-    //fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    //where
-        //S: Serializer,
-    //{
-        //serializer.serialize_str(&get_shortpath_name(&self))
-
 
 // Implementations
 impl Serialize for ShortpathType {
@@ -50,48 +43,6 @@ impl Serialize for ShortpathType {
     }
 }
 
-impl<'de> Deserialize<'de> for ShortpathType {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s: &str = Deserialize::deserialize(deserializer)?;
-        // do better hex decoding than this
-        //u64::from_str_radix(&s[2..], 16)
-            //.map(Account)
-            //.map_err(D::Error::custom)
-        let path = PathBuf::from(s);
-        // This may cause problems for us later since we may not have the name field available to us here
-        Ok(ShortpathType::Path(String::new(), path))
-    }
-}
-        //serializer.serialize_str(&get_shortpath_name(&self))
-        //serializer.serialize_str(get_shortpath_path(&self).to_str().unwrap());
-
-        ////let mut map = serializer.serialize_map(Some(self.x.len()))?;
-        ////for (k, v) in &self.x {
-            ////map.serialize_entry(&k.to_string(), &v)?;
-        ////}
-        ////map.end()
-    //}
-//}
-
-//impl Serialize for Shortpath {
-    //fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    //where
-        //S: Serializer,
-    //{
-        //serializer.serialize_str(self.)
-
-        ////let mut map = serializer.serialize_map(Some(self.x.len()))?;
-        ////for (k, v) in &self.x {
-            ////map.serialize_entry(&k.to_string(), &v)?;
-        ////}
-        ////map.end()
-    //}
-//}
-
-
 impl Ord for Shortpath {
     fn cmp(&self, other: &Self) -> Ordering {
         // The order that shortpaths are determined are:
@@ -101,6 +52,8 @@ impl Ord for Shortpath {
         // NOTE:
         // Ideally, we should order shortpaths around their closest matching paths
         // We can add this later with the strsim crate potentially
+        // NOTE:
+        // Another thing to think about is to define a groupings variable to determine groupings?
         let (mut len_deps_1, mut len_deps_2) = (0, 0);
         let (len_path_1, len_path_2) = (get_shortpath_path(&self.path), get_shortpath_path(&other.path));
         let (len_name_1, len_name_2) = (get_shortpath_name(&self.path), get_shortpath_name(&other.path));
@@ -112,10 +65,6 @@ impl Ord for Shortpath {
         if other.deps.is_some() {
             len_deps_2 = other.deps.as_ref().unwrap().len();
         }
-
-        //if self.deps.is_some() && other.deps.is_some() {
-            //(len_deps_1, len_deps_2) = (self.deps.as_ref().unwrap().len(), other.deps.as_ref().unwrap().len());
-        //}
 
         len_deps_1.cmp(&len_deps_2)
             .then(len_path_1.cmp(&len_path_2))
@@ -367,7 +316,6 @@ pub fn sort_shortpaths(shortpaths: SP) -> SP {
 }
 
 // Commands
-//pub fn add(shortpaths: &mut SP, name: impl Into<String>, path: impl Into<PathBuf>) {
 pub fn add_shortpath(shortpaths: &mut SP, name: String, path: PathBuf) {
     let spt = match parse_alias(&to_str_slice(path.to_str().unwrap())) {
         Some(spt) => spt,
@@ -530,50 +478,4 @@ pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<&S
         let path = shortpaths.remove(current_name).unwrap();
         shortpaths.insert(new_name.to_owned(), path);
     } 
-}
-
-#[test]
-fn test_shortpaths() {
-    use crate::sp::{
-        SPT,
-        Shortpath,
-        ShortpathsBuilder,
-        FindKeyIndexMapExt,
-        sort_shortpaths,
-        export_shortpaths,
-    };
-
-    use std::path::PathBuf;
-
-    // TODO Create more ergonomic api for this later
-    // Wrap it together with the builder construct to reduce the noise
-    let sp_paths = vec![
-        Shortpath::new(SPT::new_path("d", PathBuf::from("$a/dddd")), None, None),
-        Shortpath::new(SPT::new_path("c", PathBuf::from("$b/cccc")), None, None),
-        Shortpath::new(SPT::new_path("b", PathBuf::from("$a/bbbb")), None, None),
-        Shortpath::new(SPT::new_path("a", PathBuf::from("aaaa")), None, None),
-    ];
-    println!("{:?}", sp_paths);
-
-    let mut sp_builder = ShortpathsBuilder::new(sp_paths);
-
-    let sp_im = sp_builder.build().unwrap();
-    sp_im.iter().for_each(|p| println!("{:?}", p));
-
-    // Test find_key
-    let key = sp_im.find_key_for_value("$a/bbbb");
-    println!("{:?}", key);
-
-    let key = sp_im.find_key_for_value("$a/bbbb".to_string());
-    println!("{:?}", key);
-
-    // Test sort_shortpaths
-    println!("Sorted list of shortpaths");
-    let sorted = sort_shortpaths(sp_im);
-    sorted.iter().for_each(|p| println!("{:?}", p));
-
-    // Test serialization
-    let export_type = "bash";
-    let output_file = None;
-    export_shortpaths(&sorted, export_type, output_file);
 }
