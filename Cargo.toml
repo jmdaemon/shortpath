@@ -13,6 +13,7 @@ path = "test/lib.rs"
 [dependencies]
 bimap = { version = "0.6.2", features = ["serde"] }
 clap = "4.1.1"
+const_format = "0.2.30"
 derivative = "2.2.0"
 directories = "4.0.1"
 dirs = "4.0.0"
