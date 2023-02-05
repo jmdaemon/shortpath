@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::consts::{
     PROGRAM_NAME,
     VERSION,
@@ -6,8 +8,9 @@ use crate::consts::{
     CONFIG_FILE_PATH,
 };
 use crate::config::{Config, read_config};
-use crate::sp::SP;
+use crate::sp::{SP, get_shortpath_type, Shortpath};
 
+use indexmap::IndexMap;
 use serde::{Serialize, Deserialize};
 use log::LevelFilter;
 use pretty_env_logger::formatted_timed_builder;
@@ -21,7 +24,10 @@ use clap::{arg, ArgAction, Command, ArgMatches};
 pub struct Shortpaths {
     #[serde(rename(serialize = "shortpaths", deserialize = "shortpaths"))]
     //#[serde_as(as = "IndexMap<_, serde_with::toml::TomlString>")]
-    pub paths: SP,
+    //pub paths: SP,
+    pub paths: IndexMap<String, PathBuf>,
+    #[serde(skip)]
+    pub shortpaths: SP,
 }
 
 // Write up a custom serialization for Serde
@@ -39,7 +45,19 @@ impl Shortpaths {
     pub fn new() -> Shortpaths {
         let cfg = setup_config(CONFIG_FILE_PATH);
         let toml_conts = read_config(&cfg, CONFIG_FILE_PATH);
-        let shortpaths: Shortpaths = toml::from_str(&toml_conts).unwrap();
+        //dbg!(&toml_conts);
+        //let shortpaths: Shortpaths = toml::from_str(&toml_conts).unwrap();
+        let sp: Shortpaths = toml::from_str(&toml_conts).unwrap();
+        //dbg!(&shortpaths);
+        let paths = sp.paths;
+        //let shortpaths
+        let spaths: SP = paths.iter().filter_map(|(name, path)| {
+            let spt = get_shortpath_type(name, &path);
+            let sp = Shortpath::new(spt, None, None);
+            Some((name.to_owned(), sp))
+        }).collect();
+
+        let shortpaths = Shortpaths { paths, shortpaths: spaths };
         shortpaths
     }
 }

@@ -9,7 +9,7 @@ use std::{
 use indexmap::IndexMap;
 use itertools::Itertools;
 use log::{debug, trace};
-use serde::{Serialize, Serializer, Deserialize};
+use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use walkdir::{DirEntry, WalkDir};
 
 pub type SP = IndexMap<String, Shortpath>;
@@ -17,7 +17,7 @@ pub type SPT = ShortpathType;
 pub type DEPS = Vec<SPT>; 
 
 /// The type of shortpath it is
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ShortpathType {
     Path(String, PathBuf),      // Shortpath Name   : Shortpath Path
     AliasPath(String, PathBuf), // Shortpath Name   : Shortpath Path
@@ -27,9 +27,10 @@ pub enum ShortpathType {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Shortpath {
     path: SPT,
+    #[serde(skip)]
     full_path: Option<PathBuf>,
+    #[serde(skip)]
     deps: Option<DEPS>,
-    
 }
 //impl Serialize for ShortpathType {
     //fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -40,11 +41,30 @@ pub struct Shortpath {
 
 
 // Implementations
-//impl Serialize for ShortpathType {
-    //fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    //where
-        //S: Serializer,
-    //{
+impl Serialize for ShortpathType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(get_shortpath_path(&self).to_str().unwrap())
+    }
+}
+
+impl<'de> Deserialize<'de> for ShortpathType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s: &str = Deserialize::deserialize(deserializer)?;
+        // do better hex decoding than this
+        //u64::from_str_radix(&s[2..], 16)
+            //.map(Account)
+            //.map_err(D::Error::custom)
+        let path = PathBuf::from(s);
+        // This may cause problems for us later since we may not have the name field available to us here
+        Ok(ShortpathType::Path(String::new(), path))
+    }
+}
         //serializer.serialize_str(&get_shortpath_name(&self))
         //serializer.serialize_str(get_shortpath_path(&self).to_str().unwrap());
 
@@ -81,13 +101,26 @@ impl Ord for Shortpath {
         // NOTE:
         // Ideally, we should order shortpaths around their closest matching paths
         // We can add this later with the strsim crate potentially
-        let (len_deps_1, len_deps_2) = (self.deps.as_ref().unwrap().len(), other.deps.as_ref().unwrap().len());
+        let (mut len_deps_1, mut len_deps_2) = (0, 0);
         let (len_path_1, len_path_2) = (get_shortpath_path(&self.path), get_shortpath_path(&other.path));
         let (len_name_1, len_name_2) = (get_shortpath_name(&self.path), get_shortpath_name(&other.path));
+
+        if self.deps.is_some() {
+            len_deps_1 = self.deps.as_ref().unwrap().len();
+        }
+
+        if other.deps.is_some() {
+            len_deps_2 = other.deps.as_ref().unwrap().len();
+        }
+
+        //if self.deps.is_some() && other.deps.is_some() {
+            //(len_deps_1, len_deps_2) = (self.deps.as_ref().unwrap().len(), other.deps.as_ref().unwrap().len());
+        //}
 
         len_deps_1.cmp(&len_deps_2)
             .then(len_path_1.cmp(&len_path_2))
             .then(len_name_1.cmp(&len_name_2))
+            .reverse()
     }
 }
 
@@ -270,6 +303,15 @@ pub fn parse_alias(path: &[char]) -> Option<SPT> {
         }
         _ => { None }
     }
+}
+
+pub fn get_shortpath_type(name: impl Into<String>, path: &PathBuf) -> SPT {
+    let spt = match &path.to_str().unwrap().to_owned().to_lowercase() {
+        keyword if keyword.contains("$")        => SPT::AliasPath(name.into(), path.to_owned()),
+        keyword if keyword.contains("${env:")   => SPT::EnvPath(name.into(), path.to_owned()),
+        _                                       => SPT::Path(name.into(), path.to_owned())
+    };
+    spt
 }
 
 /// Find the dependencies for a given shortpath

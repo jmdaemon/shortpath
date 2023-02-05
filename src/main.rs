@@ -45,7 +45,8 @@ fn main() {
     //let mut sp_builder = ShortpathsBuilder::new(sp_paths);
 
     //let mut shortpaths = sp_builder.build().unwrap();
-    let mut shortpaths = shortpaths_config.paths;
+    //let mut shortpaths = shortpaths_config.paths;
+    let mut shortpaths = shortpaths_config.shortpaths;
 
     match matches.subcommand() {
         Some(("add", sub_matches)) => {
