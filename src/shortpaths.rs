@@ -156,7 +156,6 @@ pub fn get_shortpath_dep_name(sp: &SPD) -> Option<String> {
     match sp {
         SPD::Shortpath(name) | SPD::EnvironmentVariable(name) => Some(name.to_owned()),
         SPD::None => None
-        //SPT::Path(name, _) | SPT::AliasPath(name, _) | SPT::EnvPath(name, _) => name.to_owned(),
     }
 }
 
@@ -176,10 +175,10 @@ pub fn sort_shortpaths(shortpaths: SP) -> SP {
 
 // Populate Shortpaths
 pub fn populate_dependencies(shortpaths: &mut SP) -> SP {
-    let shortpaths: SP = shortpaths.into_iter().filter_map(|(k, sp)| {
+    let shortpaths: SP = shortpaths.into_iter().map(|(k, sp)| {
         let deps = find_deps(&sp.path);
         sp.deps = Some(deps);
-        Some((k.to_owned(), sp.to_owned()))
+        (k.to_owned(), sp.to_owned())
     }).collect();
     shortpaths
 }
@@ -187,10 +186,10 @@ pub fn populate_dependencies(shortpaths: &mut SP) -> SP {
 pub fn populate_expanded_paths(shortpaths: &mut SP) -> SP {
     let shortpaths_copy = shortpaths.clone();
     // Expand to full_path
-    let shortpaths: SP = shortpaths.into_iter().filter_map(|(k, sp)| {
+    let shortpaths: SP = shortpaths.into_iter().map(|(k, sp)| {
         let full_path = expand_shortpath(sp, &shortpaths_copy);
         sp.full_path = Some(full_path);
-        Some((k.to_owned(), sp.to_owned()))
+        (k.to_owned(), sp.to_owned())
     }).collect();
     shortpaths
 }

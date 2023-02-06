@@ -71,7 +71,9 @@ pub fn find_paths(sp: &Shortpath, find_by: impl Fn(&str, WalkDir) -> Vec<DirEntr
     None
 }
 
-/// Tab align right strings
+/** Tab align right strings
+ * NOTE: Add option to change tab direction
+ **/
 pub fn tab_align(s: &str, width: usize, delim: &str) -> String {
     format!("{: <width$}{delim}", s)
 }
