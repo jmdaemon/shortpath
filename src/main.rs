@@ -39,7 +39,7 @@ fn main() {
         Some(("remove", sub_matches)) => {
             let current_name = sub_matches.get_one::<String>("NAME").unwrap();
             let path = remove_shortpath(&mut shortpaths, current_name);
-            println!("Removed {}: {}", current_name.to_owned(), path.unwrap().path().display());
+            println!("Removed {}: {}", current_name.to_owned(), path.unwrap().path.display());
         }
         Some(("check", _)) => {
             check_shortpaths(&mut shortpaths);

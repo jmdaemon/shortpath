@@ -55,7 +55,7 @@ impl Export for BashExporter {
         let mut output = String::from("#!/bin/bash\n\n");
         if let Some(shortpaths) = &self.shortpaths {
             let serialized: Vec<String> = shortpaths.iter().map(|(name, sp)| {
-                let path = expand_tilde(sp.path()).unwrap();
+                let path = expand_tilde(sp.path.to_owned()).unwrap();
                 fmt_bash_alias(name, &path)
             }).collect();
 

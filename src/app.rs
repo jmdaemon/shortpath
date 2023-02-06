@@ -6,7 +6,7 @@ use crate::consts::{
     CONFIG_FILE_PATH,
 };
 use crate::config::{Config, read_config, write_config};
-use crate::shortpaths::{SP, Shortpath, populate_shortpaths, get_shortpath_type, sort_shortpaths};
+use crate::shortpaths::{SP, Shortpath, populate_shortpaths, sort_shortpaths};
 use crate::helpers::{expand_tilde, tab_align, find_longest_keyname};
 
 use std::path::PathBuf;
@@ -42,8 +42,7 @@ impl Default for Shortpaths {
 
         let paths = sp.paths;
         let mut shortpaths: SP = paths.iter().filter_map(|(name, path)| {
-            let spt = get_shortpath_type(name, path);
-            let sp = Shortpath::new(spt, None, None);
+            let sp = Shortpath::new(name.to_owned(), path.to_owned(), None, None);
             Some((name.to_owned(), sp))
         }).collect();
 
@@ -64,7 +63,7 @@ impl Shortpaths {
         
         let mut shortpaths: SP = shortpaths.into_iter().map(|(name, mut sp)| {
         //let mut shortpaths: SP = self.shortpaths.into_iter().map(|(name, mut sp)| {
-            let path = expand_tilde(sp.path()).unwrap();
+            let path = expand_tilde(&sp.path).unwrap();
             sp.full_path = Some(path);
             (name, sp)
         }).collect();
@@ -74,7 +73,7 @@ impl Shortpaths {
         let length = find_longest_keyname(shortpaths.clone()).len();
 
         let paths: IndexMap<String, PathBuf> = shortpaths.into_iter().map(|(k, sp)| {
-            (k, sp.path().to_owned())
+            (k, sp.path)
         }).collect();
 
         //let paths: IndexMap<String, PathBuf> = paths.into_iter().map(|(k, p)| {

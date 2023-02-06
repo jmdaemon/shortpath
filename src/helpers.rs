@@ -52,8 +52,8 @@ pub fn find_by_matching_path(file_name: &str, dir: WalkDir) -> Vec<DirEntry> {
 }
 
 pub fn find_paths(sp: &Shortpath, find_by: impl Fn(&str, WalkDir) -> Vec<DirEntry>) -> Option<Vec<DirEntry>> {
-    let search_term = sp.path().file_name().unwrap();
-    let mut next = sp.path().parent();
+    let search_term = sp.path.file_name().unwrap();
+    let mut next = sp.path.parent();
     
     while let Some(dir) = next {
         debug!("In Directory {}", dir.display());
