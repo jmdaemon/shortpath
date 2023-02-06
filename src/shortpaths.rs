@@ -197,49 +197,61 @@ pub fn find_deps(entry: &Path, shortpaths: &SP) -> DEPS {
     let mut entry = entry.to_path_buf();
     let mut expand_nested: DEPS = vec![]; 
 
-    //let mut components = entry.components();
-    
-    //let mut expanded_path: PathBuf;
-
-    //let has_dependency = true;
-
-    //while has_dependency {
     let mut deppath: PathBuf = PathBuf::new();
+    //let mut index = 0;
+    //let mut last_dep: Option<ShortpathVariant> = None;
+    //let mut repeated_dependency = String::new();
+
+    // All Termination Conditions:
+    // - If the entry that is substituted is the same as the one given
+
+    // Solve this shit using a dynamic queue where the components are pushed on at runtime
     // While the path is not another nested dependency
-    let mut index = 0;
-    let mut last_dep: Option<ShortpathVariant> = None;
-    let mut repeated_dependency = String::new();
-
-    // While the path is not another nested dependency
-    while let Some(depname) = shortpaths.find_key_for_value(entry.to_str().unwrap_or(old_entry.to_str().unwrap())) {
-        if index == shortpaths.len() {
-            break;
-        }
-        //if last_dep == Some(ShortpathVariant::Independent) {
-            //break;
-        //}
-
-        if &repeated_dependency == depname {
-            break;
-        }
-
+    let mut olddepname = String::new();
+    let mut i = 0;
+    while let Some(depname) = shortpaths.find_key_for_value(entry.to_str().unwrap()) {
         dbg!(&depname);
-        //let deppath = PathBuf::from(depname);
-        let deppath = &shortpaths.get(depname).unwrap().path;
+        //if old_entry == entry { break; }
+        if &olddepname == depname {
+            break;
+        }
+        if i == 7 {
+            println!("Quitting at i=7");
+            break;
+        }
 
-        //let deppath_maybe = &shortpaths.get(depname);
-        //if let Some(p) = deppath_maybe {
-            //deppath = p.path.clone();
-        //} else {
-            //break;
-        //}
-
-         //= &shortpaths.get(depname).unwrap().path;
+        deppath = shortpaths.get(depname).unwrap().path.clone();
         dbg!(&deppath);
         //break;
-        //deppath.components().for_each(|comp| {
-        for comp in deppath.components() {
+        //let mut components = vec![];
+        //let mut components = deppath.components();
+        //for comp in deppath.components() {
+        //let mut components = deppath.components().collect_vec();
+        let mut components = deppath.components().collect_vec();
+        components.reverse();
+
+        //while let Some(comp) = components.next() {
+        let mut index = 0;
+        //while &components.len() > &0 {
+        let mut ppath = PathBuf::new();
+
+        //while !&components.is_empty() {
+        while index < components.len() {
             // When we get a valid directory
+            //let comp = components.get(index).unwrap();
+            let comp = components.pop().unwrap();
+
+            //let pclone = ppath.clone();
+            //for c in pclone.components() {
+                //components.push(c.to_owned());
+            //let a = ppath.to_owned();
+            //components.push(ppath.to_owned())
+            //}
+
+            //for c in ppath.components() {
+                //components.push(c.to_owned());
+            //}
+
             if let Component::Normal(osstr_path) = comp {
                 // Parse the directory to get a potential valid dependency
                 let path_comp = to_str_slice(osstr_path.to_string_lossy());
@@ -247,19 +259,27 @@ pub fn find_deps(entry: &Path, shortpaths: &SP) -> DEPS {
                 dbg!(&dep);
 
                 // Add the dependency to our list
-                //expand_nested.push(dep);
+                //expand_nested.push(dep.clone());
 
                 // Check if this dependency also has a dependency
-                //if let Some(dep) = dep {
-                //repeated_dependency = dep.1.clone();
                 match dep.0 {
                     ShortpathVariant::Independent => {
-                        //expand_nested.push(dep.clone());
-                        if dep.1 != entry.to_str().unwrap() {
-                            //last_dep = Some(dep.0.clone());
+                        if let Some(key_name) = shortpaths.find_key_for_value(&dep.1) {
                             expand_nested.push(dep.clone());
+                            // Ensure that we terminate
+                            olddepname = key_name.clone();
+
+                            // Expand out the dependency
+                            //let path = expand_path(entry.to_str().unwrap(), name, sp.path.to_str().unwrap());
+                            println!("{:?}", &expand_nested);
                         }
-                        break;
+                        //expand_nested.push(dep.clone());
+                        //olddepname = shortpaths.find_key_for_value(&dep.1).unwrap().to_owned();
+
+                        //if dep.1 != entry.to_str().unwrap() {
+                            //break;
+                        //}
+                        //olddepname = dep.1.clone();
                     }
                     ShortpathVariant::Alias => {
                         expand_nested.push(dep.clone());
@@ -267,159 +287,40 @@ pub fn find_deps(entry: &Path, shortpaths: &SP) -> DEPS {
                         dbg!(name);
 
                         if let Some(sp) = shortpaths.get(name) {
-                            //let slice = to_str_slice(sp.path.to_str().unwrap());
-                            //let spd = get_shortpath_dependency(&slice);
-                            //expand_nested.push(spd.unwrap());
+                            //let path = expand_path(entry.to_str().unwrap(), name, sp.path.to_str().unwrap());
+                            let path = PathBuf::from(expand_path(entry.to_str().unwrap(), name, sp.path.to_str().unwrap()));
+                            ppath = path;
+                            
+                            //for c in ppath.components() {
+                                //components.push(c.to_owned());
+                            //}
+                            dbg!(&ppath);
+                            //components.push();
+                            //ppath = PathBuf::from(path.clone());
 
-                            //let spd = ShortpathDependency(ShortpathVariant::Alias, to_string(name));
-                            //let path = expand_path(entry.to_str().unwrap(), &dep.1, sp.path.to_str().unwrap());
-                            let path = expand_path(entry.to_str().unwrap(), name, sp.path.to_str().unwrap());
-                            //println!("{}", &path);
-                            dbg!(&path);
-                            old_entry = entry.to_path_buf();
-                            entry = PathBuf::from(path);
+                            //components = ppath.components().collect_vec();
+                            //dbg!(&path);
+                            //old_entry = entry.to_path_buf();
+
+                            //olddepname = path.clone();
+
+                            //olddepname = path.clone();
+                            //old_entry = entry.to_owned();
+                            //entry = PathBuf::from(path);
                             dbg!("Nested Shortpath. Expanding...");
-                            break;
+                            //break;
                         }
                     }
-                    ShortpathVariant::Environment => {
-                        // TODO: Expand this out too
-
-                        }
+                    ShortpathVariant::Environment => { } // TODO: Expand this out too
                 }
-                    
-                    //}
-                //} else {
-                    //break;
-                //}
-            } else {
-                break;
-            }
+            } 
+            index += 1;
+            //} else { break; }
         }
-        //});
-    index += 1;
-
-        //if old_entry == entry {
-            ////expand_nested.push(dep.clone());
-            //break;
-        //}
-        //break;
-
-        //for comp in components {
-            //// When we get a valid directory
-            //if let Component::Normal(osstr_path) = comp {
-                //// Parse the directory to get a potential dependency
-                //let path_comp = to_str_slice(osstr_path.to_string_lossy());
-                //let dep = get_shortpath_dependency(&path_comp);
-                //// Expand the string, and then retry the loop again with the expanded variant
-
-                //// If we got a dependency
-                //if let Some(dep) = dep {
-
-                    //// Check for a nested dependency
-                    //if let Some(sp) = shortpaths.get(&dep.1) {
-                        //// If found, get the expanded path
-                        //let path = expand_path(entry.to_str().unwrap(), &dep.1, sp.path.to_str().unwrap());
-                        //println!("{}", &path);
-
-                        //// Iterate more
-                        //expanded_path = PathBuf::from(path);
-                        //components = expanded_path.components();
-                    //} else {
-                        //// If none found then add it to the list
-                        //expand_nested.push(dep);
-                    //}
-
-                    ////fold_path(entry.to_str().unwrap(), &dep.1, );
-                    ////dep.1;
-                //}
-            //}
-        //}
-
-        //for comp in components {
-            //// When we get a valid directory
-            //if let Component::Normal(osstr_path) = comp {
-                //// Parse the directory to get a potential dependency
-                //let path_comp = to_str_slice(osstr_path.to_string_lossy());
-                //let dep = get_shortpath_dependency(&path_comp);
-                //// Expand the string, and then retry the loop again with the expanded variant
-
-                //// If we got a dependency
-                //if let Some(dep) = dep {
-
-                    //// Check for a nested dependency
-                    //if let Some(sp) = shortpaths.get(&dep.1) {
-                        //// If found, get the expanded path
-                        //let path = expand_path(entry.to_str().unwrap(), &dep.1, sp.path.to_str().unwrap());
-                        //println!("{}", &path);
-
-                        //// Iterate more
-                        //expanded_path = PathBuf::from(path);
-                        //components = expanded_path.components();
-                    //} else {
-                        //// If none found then add it to the list
-                        //expand_nested.push(dep);
-                    //}
-
-                    ////fold_path(entry.to_str().unwrap(), &dep.1, );
-                    ////dep.1;
-                //}
-            //}
-        //}
+        i += 1;
+        println!("Finished component");
     }
-    // Deal with expanded dependencies
-    //while let Some(sp) = shortpaths.get(entry) {
-    //}
-    //let deps: DEPS = entry.components().into_iter().filter_map(|path_component| {
-        //if let Component::Normal(osstr_path) = path_component {
-            //// Check if the substituted  values also depend on things
-            //let path_comp = to_str_slice(osstr_path.to_string_lossy());
-            //let dep = get_shortpath_dependency(&path_comp);
-            ////let mut dep = get_shortpath_dependency(&path_comp);
-            ////while dep.0 != ShortpathVariant::Normal {
-                ////let path_comp = to_str_slice(dep.1);
-                ////dep = get_shortpath_dependency(&path_comp);
-            ////}
-            ////return Some(dep);
-            //return dep;
-        //}
-        //None
-    //}).collect();
-    //println!("{:?}", deps);
-
-    // Check the dependencies to determine if they also depend on things
-    //let mut expand_nested: DEPS = vec![]; 
-    //deps.into_iter().for_each(|dep| {
-        //let path_comp = to_str_slice(dep.1);
-        //let path_comp = dep.1);
-        //if let Some(sp) = shortpaths.get(&path_comp) {
-
-        //let nested_maybe = shortpaths.get(&dep.1);
-        //while let Some(sp) = nested_maybe {
-            //let deps: DEPS = sp.path.components().into_iter().filter_map(|path_component| {
-                //if let Component::Normal(osstr_path) = path_component {
-                    //let path_comp = to_str_slice(osstr_path.to_string_lossy());
-                    //return get_shortpath_dependency(&path_comp);
-                //}
-                //None
-            //}).collect();
-            //deps.into_iter().for_each(|d| expand_nested.push(d));
-        //}
-
-        //let path_comp = to_str_slice(dep.1);
-        //let mut nested = get_shortpath_dependency(&path_comp);
-        //while let Some(nested_dep) = nested {
-            //expand_nested.push(nested_dep.clone());
-            //nested = get_shortpath_dependency(&path_comp);
-        //}
-
-        //while dep.0 != ShortpathVariant::Normal {
-            //let path_comp = to_str_slice(dep.1);
-            //dep = get_shortpath_dependency(&path_comp);
-            //expand_nested.push(dep.clone());
-        //}
-        //expand_nested.push(dep);
-    //});
+    expand_nested.dedup();
     expand_nested
 }
 
