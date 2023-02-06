@@ -65,25 +65,20 @@ impl Shortpaths {
             (name, sp)
         }).collect();
 
-        let length = find_longest_keyname(shortpaths.clone()).len();
+        let width = find_longest_keyname(shortpaths.clone()).len();
 
         let paths: IndexMap<String, PathBuf> = shortpaths.into_iter().map(|(k, sp)| {
             (k, sp.path)
         }).collect();
         self.paths = paths;
 
-        let fileconts = toml::to_string_pretty(&self).expect("Could not serialize shortpaths");
-        let fileconts = fileconts.split('\n');
+        let conts = toml::to_string_pretty(&self).expect("Could not serialize shortpaths");
+        let delim = " = ";
         
-        let t_align = |s: &str, delim: &str| {
-            let aligned = format!("{: <length$}{}", s, delim);
-            aligned
-        };
-        let fileconts: Vec<String> = fileconts.into_iter().map(|line| {
-            if let Some(value) = line.split_once(" = ") {
+        let fileconts: Vec<String> = conts.split('\n').map(|line| {
+            if let Some(value) = line.split_once(delim) {
                 let (key, path) = value;
-                let delim = " = ";
-                let aligned = t_align(key, delim);
+                let aligned = tab_align(key, width, delim);
                 trace!("{}", &aligned);
                 let output = format!("{}{}\n", aligned, path);
                 trace!("{}", &output);

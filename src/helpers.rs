@@ -71,16 +71,9 @@ pub fn find_paths(sp: &Shortpath, find_by: impl Fn(&str, WalkDir) -> Vec<DirEntr
     None
 }
 
-// Create function to format shortpaths with spaces
-pub fn tab_align(s: &str, delim: &str) -> String {
-    let length = s.len();
-    //let args = format!("{: <length$}{delim}", s, delim);
-    let args = format!("{: <length$}{delim}", s);
-    //let args = format!("{: <length$} =", s);
-    //let args = format!("{: <length$} =", s);
-    //format!("{}: {}", format_args!("{} {}", s, args), s)
-    //format!("{}{}\n", args, s)
-    args
+/// Tab align right strings
+pub fn tab_align(s: &str, width: usize, delim: &str) -> String {
+    format!("{: <width$}{delim}", s)
 }
 
 /// Read environment variable to String
