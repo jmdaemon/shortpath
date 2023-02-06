@@ -12,7 +12,6 @@ use std::{
 use indexmap::IndexMap;
 #[allow(unused_imports)]
 use itertools::Itertools;
-use serde::ser::SerializeStruct;
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use walkdir::DirEntry;
 
@@ -42,7 +41,7 @@ pub enum ShortpathDependency {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Shortpath {
     //#[serde(skip)]
-    pub name: String,
+    //pub name: String,
     pub path: PathBuf,
     //#[serde(skip)]
     pub full_path: Option<PathBuf>,
@@ -56,45 +55,24 @@ pub struct ShortpathsBuilder {
 
 // Trait Implementations
 
-// Serialize ShortpathType as &str
-impl Serialize for ShortpathType {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(get_shortpath_path(self).to_str().unwrap())
-    }
-}
-
+// Serialize Shortpath as &str
 impl Serialize for Shortpath {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         serializer.serialize_str(self.path.to_str().unwrap())
-        //serializer.serialize_str(self.path.to_str().unwrap())
-        //serializer.serialize_str(self.path.to_str().unwrap())
-        //let (name, path) = (self.name, self.path.to_owned());
-
-        //let mut state = serializer.serialize_struct("Shortpath", 2)?;
-        //state.serialize_field("name", &self.name)?;
-        //state.serialize_field("path", &self.path)?;
-        ////state.serialize_field(self.name.as_str(), path.to_str().unwrap())?;
-        //state.end()
     }
 }
 
+// Parse &str into Shortpath
 impl<'de> Deserialize<'de> for Shortpath {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        //let (name, path): (&str, &str) = Deserialize::deserialize(deserializer)?;
-        let s: &str = Deserialize::deserialize(deserializer)?;
-        //let (name, path): (&str, &str) = s;
-        println!("{}", s);
-        //let sp = Shortpath::new(name.to_owned(), PathBuf::from(path), None, vec![]);
-        let sp = Shortpath::new(s.to_owned(), PathBuf::from(s), None, vec![]);
+        let path: &str = Deserialize::deserialize(deserializer)?;
+        let sp = Shortpath::new(PathBuf::from(path), None, vec![]);
         Ok(sp)
     }
 }
@@ -116,21 +94,21 @@ impl PartialOrd for Shortpath {
 // Data Type Implementations
 
 impl Shortpath {
-    pub fn new(name: String, path: PathBuf, full_path: Option<PathBuf>, deps: DEPS) -> Shortpath {
-        Shortpath { name, path, full_path, deps }
+    pub fn new(path: PathBuf, full_path: Option<PathBuf>, deps: DEPS) -> Shortpath {
+        Shortpath { path, full_path, deps }
     }
 }
 
 impl ShortpathsBuilder {
     // TODO: Use FromIterator trait extension
-    pub fn new(sps: Vec<Shortpath>) -> ShortpathsBuilder  {
-        let im = ShortpathsBuilder::from_vec(sps);
-        ShortpathsBuilder { paths: Some(im) }
+    pub fn new(sp: SP) -> ShortpathsBuilder  {
+        //let im = ShortpathsBuilder::from_vec(sps);
+        ShortpathsBuilder { paths: Some(sp) }
     }
 
-    pub fn from_vec(sps: Vec<Shortpath>) -> SP {
-        sps.into_iter().map(|sp| (sp.name.to_owned(), sp) ).collect()
-    }
+    //pub fn from_vec(sps: Vec<Shortpath>) -> SP {
+        //sps.into_iter().map(|sp| (sp.name.to_owned(), sp) ).collect()
+    //}
     pub fn build(&mut self) -> Option<SP> {
         if let Some(shortpaths) = &mut self.paths {
             let shortpaths = populate_shortpaths(shortpaths);
@@ -298,7 +276,7 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
 
 // Commands
 pub fn add_shortpath(shortpaths: &mut SP, name: String, path: PathBuf) {
-    let shortpath = Shortpath::new(name.to_owned(), path, None, vec![]);
+    let shortpath = Shortpath::new(path, None, vec![]);
     shortpaths.insert(name, shortpath);
 }
 
@@ -341,18 +319,21 @@ pub fn check_shortpaths(shortpaths: &mut SP) {
   */
 pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
     // Automode: Make the decision for the user
-    let automode_fn = |sp: &Shortpath, results: Vec<DirEntry>| {
+    let automode_fn = |shortpaths: &SP, sp: &Shortpath, results: Vec<DirEntry>| {
         let first = results.first().unwrap();
-        let (name, path) = (sp.name.to_owned(), first.path().to_owned());
-        (name, path)
+        let path = first.path().to_owned();
+        let name = shortpaths.find_key_for_value(path.to_str().unwrap()).unwrap();
+        (name.to_owned(), path)
     };
 
     // Manual: Provide options at runtime for the user
-    let manualmode_fn = |sp: &Shortpath, _results: Vec<DirEntry>| {
-        let (name, path) = (sp.name.to_owned(), sp.path.to_owned());
+    let manualmode_fn = |shortpaths: &SP, sp: &Shortpath, results: Vec<DirEntry>| {
+        let path = sp.path.to_owned();
+        let name = shortpaths.find_key_for_value(path.to_str().unwrap()).unwrap();
+        //let (name, path) = (sp.name.to_owned(), sp.path.to_owned());
         // TODO Wait for the user to make a decision
         println!("Not yet implemented"); // TODO
-        (name, path)
+        (name.to_owned(), path)
     };
 
     // Feature Selection Closures
@@ -369,7 +350,7 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
     let updates: Vec<(String, PathBuf)> = shortpaths.iter().filter_map(|(_,sp)| {
         if let Some(results) = find_paths(sp, find_by) {
             let current_path = sp.path.to_owned();
-            let (name, path) = resolve_fn(sp, results);
+            let (name, path) = resolve_fn(shortpaths, sp, results);
 
             if path != current_path {
                 println!("Updating shortpath {} from {} to {}", name, current_path.display(), path.display());
@@ -402,7 +383,7 @@ pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<&S
     let entry_exists = || { shortpaths.get(current_name).is_some() }; 
 
     let update_path = |new_path: String, shortpaths: &mut SP| {
-        let shortpath = Shortpath::new(current_name.to_owned(), PathBuf::from(new_path), None, vec![]);
+        let shortpath = Shortpath::new(PathBuf::from(new_path), None, vec![]);
         shortpaths.insert(current_name.to_owned(), shortpath);
     };
     let update_name = |new_name: String, shortpaths: &mut SP| {
