@@ -56,7 +56,7 @@ fn main() {
                 sub_matches.get_one::<String>("OUTPUT_FILE"),
             );
             let dest = export_shortpaths(&shortpaths, export_type, output_file);
-            println!("Exported shell completions to {}", dest);
+            println!("Exported shell completions to {}", dest.display());
         }
         Some(("update", sub_matches)) => {
             let (current_name, alias_name, alias_path) = (

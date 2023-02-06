@@ -6,7 +6,7 @@ use crate::{
 };
 
 use std::{
-    path::Path,
+    path::{Path, PathBuf},
     fs::write,
 };
 
@@ -51,9 +51,7 @@ impl Export for BashExporter {
         todo!("Set user completion file perms");
     }
 
-    fn gen_completions(&self, output_file: Option<&String>) -> String {
-        let dest = self.prepare_directory(output_file);
-
+    fn gen_completions(&self) -> String {
         let mut output = String::from("#!/bin/bash\n\n");
         if let Some(shortpaths) = &self.shortpaths {
             let serialized: Vec<String> = shortpaths.iter().map(|(name, sp)| {
@@ -66,8 +64,13 @@ impl Export for BashExporter {
             });
             trace!("output: {}", output);
         }
+        output
+    }
+
+    fn write_completions(&self, dest: PathBuf) -> PathBuf {
+        let output = self.gen_completions();
         write(&dest, &output).expect("Unable to write to disk");
-        dest.to_str().unwrap().to_owned()
+        dest
     }
 
     fn set_shortpaths(&mut self, shortpaths: &SP) -> Box<dyn Export> {

@@ -54,9 +54,12 @@ pub trait Export {
 
     fn set_shortpaths(&mut self, shortpaths: &SP) -> Box<dyn Export>;
 
-    /** Generate shell completions.
+    /** Generate shell completions */
+    fn gen_completions(&self) -> String;
+
+    /** Write shell completions to disk .
       * If output_file is not None then the file is generated to output_file */
-    fn gen_completions(&self, output_file: Option<&String>) -> String;
+    fn write_completions(&self, dest: PathBuf) -> PathBuf;
 }
 
 /** Returns the specific exporter */

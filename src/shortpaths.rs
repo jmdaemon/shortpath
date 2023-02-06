@@ -22,6 +22,8 @@ pub type SPT = ShortpathType;
 pub type SPD = ShortpathDependency;
 pub type DEPS = Vec<SPD>; 
 
+// Make invalid states inexpressible
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
 pub enum ShortpathType {
     Path(String, PathBuf),      // Shortpath Name   : Shortpath Path
@@ -49,9 +51,9 @@ pub struct ShortpathsBuilder {
     paths: Option<SP>,
 }
 
-// Data Type Implementations
-
 // Trait Implementations
+
+// Serialize ShortpathType as &str
 impl Serialize for ShortpathType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -74,6 +76,8 @@ impl PartialOrd for Shortpath {
         Some(self.cmp(other))
     }
 }
+
+// Data Type Implementations
 
 impl Shortpath {
     pub fn new(path: SPT, full_path: Option<PathBuf>, deps: Option<DEPS>) -> Shortpath {
@@ -145,8 +149,6 @@ where
 
 // Pure Functions
 
-// Shortpaths Specific
-
 pub fn expand_path(src: &str, key_name: &str, key_path: &str) -> String {
     let this = format!("${}", key_name);
     let with = key_path;
@@ -173,11 +175,16 @@ pub fn get_shortpath_dep_name(sp: &SPD) -> Option<String> {
     }
 }
 
-
 pub fn get_shortpath_path(sp: &SPT) -> PathBuf {
     match sp {
         SPT::Path(_, path) | SPT::AliasPath(_, path) | SPT::EnvPath(_, path) => path.to_owned()
     }
+}
+
+pub fn sort_shortpaths(shortpaths: SP) -> SP {
+    shortpaths.sorted_by(|_, v1, _, v2| {
+        v1.cmp(v2)
+    }).collect()
 }
 
 // Input Parsing
@@ -246,7 +253,8 @@ pub fn get_shortpath_type(name: impl Into<String>, path: &PathBuf) -> SPT {
 pub fn find_deps(entry: &Path) -> DEPS {
     let deps: DEPS = entry.components().into_iter().filter_map(|path_component| {
         if let Component::Normal(osstr_path) = path_component {
-            let dep = get_shortpath_dependency(&to_str_slice(osstr_path.to_string_lossy()));
+            let path_comp = to_str_slice(osstr_path.to_string_lossy());
+            let dep = get_shortpath_dependency(&path_comp);
             return Some(dep);
         }
         None
@@ -280,13 +288,7 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
     entry
 }
 
-// Impure Shortpath Functions
 
-pub fn sort_shortpaths(shortpaths: SP) -> SP {
-    shortpaths.sorted_by(|_, v1, _, v2| {
-        v1.cmp(v2)
-    }).collect()
-}
 
 // Commands
 pub fn add_shortpath(shortpaths: &mut SP, name: String, path: PathBuf) {
@@ -385,10 +387,11 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
 }
 
 /** Serialize shortpaths to other formats for use in other applications */
-pub fn export_shortpaths(shortpaths: &SP, export_type: &str, output_file: Option<&String>) -> String {
+pub fn export_shortpaths(shortpaths: &SP, export_type: &str, output_file: Option<&String>) -> PathBuf {
     let exp = get_exporter(export_type)
         .set_shortpaths(shortpaths);
-    exp.gen_completions(output_file)
+    let dest = exp.prepare_directory(output_file);
+    exp.write_completions(dest)
 }
 
 /** Update a single shortpath's alias name or path

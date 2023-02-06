@@ -1,8 +1,11 @@
+
 #[test]
 fn test_serialize_bash() {
-    use shortpaths::shortpaths::{Shortpath, SPT, ShortpathsBuilder};
-    use shortpaths::export::bash::BashExporter;
-    use shortpaths::export::Export;
+    use shortpaths::{
+        shortpaths::{Shortpath, SPT, ShortpathsBuilder},
+        export::{Export, bash::BashExporter},
+    };
+
     use std::path::PathBuf;
 
     use log::LevelFilter;
@@ -26,7 +29,7 @@ fn test_serialize_bash() {
     exp.set_shortpaths(&shortpaths);
 
     // Test
-    let actual = exp.gen_completions(None);
+    let actual = exp.gen_completions();
     let expect = "#!/bin/bash\n\nexport a=\"aaaa\"\nexport b=\"$a/bbbb\"\nexport d=\"$a/dddd\"\nexport c=\"$b/cccc\"\n";
-    assert_eq!(actual, expect);
+    assert_eq!(actual, expect, "Bash shell completions are generated in the correct order");
 }
