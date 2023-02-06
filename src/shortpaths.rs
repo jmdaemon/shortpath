@@ -201,12 +201,13 @@ pub fn populate_shortpaths(shortpaths: &mut SP) -> SP {
 
 /** Parse a Shortpath entry, and returns any dependencies */
 pub fn parse_alias(path: &[char], full_path: PathBuf) -> Option<SPT> {
+    let _env_prefix = to_str_slice("$env:");
     match path {
         ['$', alias_name @ ..] => {
             let (an, ap) = (alias_name.iter().collect(), full_path);
             Some(SPT::AliasPath(an, ap))
         }
-        [ '{', '$', 'e', 'n', 'v', ':', alias_name @ .., '}'] => {
+        [ _env_prefix, alias_name @ .., '}'] => {
             let (an, ap) = (alias_name.iter().collect(), full_path);
             Some(SPT::EnvPath(an, ap))
         }
@@ -222,15 +223,6 @@ pub fn get_shortpath_dependency(path: &[char]) -> SPD {
         [ _env_prefix, env_var_name @ .., '}']  => SPD::EnvironmentVariable(to_string(env_var_name)),
         _                                       => SPD::None
     }
-}
-
-pub fn get_shortpath_type(name: impl Into<String>, path: &PathBuf) -> SPT {
-    let spt = match &path.to_str().unwrap().to_owned().to_lowercase() {
-        keyword if keyword.contains('$')        => SPT::AliasPath(name.into(), path.to_owned()),
-        keyword if keyword.contains("${env:")   => SPT::EnvPath(name.into(), path.to_owned()),
-        _                                       => SPT::Path(name.into(), path.to_owned())
-    };
-    spt
 }
 
 /// Find the dependencies for a given shortpath

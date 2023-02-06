@@ -64,8 +64,8 @@ pub trait Export {
 
 /** Returns the specific exporter */
 pub fn get_exporter(shell_type: &str) -> impl Export {
-    match shell_type {
-        "bash" => BashExporter::default(),
+    match shell_type.to_lowercase() {
+        keyword if keyword.contains("bash") => BashExporter::default(),
         _ => BashExporter::default()
     }
 }
