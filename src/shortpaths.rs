@@ -376,9 +376,10 @@ pub fn export_shortpaths(shortpaths: &SP, export_type: &str, output_file: Option
 /** Update a single shortpath's alias name or path
   * Changes the name or path if given and are unique */
 pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<&String>, path: Option<&String>) {
+    let entry_exists = || { shortpaths.get(current_name).is_some() }; 
+
     let update_path = |new_path: String, shortpaths: &mut SP| {
-        let path = PathBuf::from(new_path);
-        let shortpath = Shortpath::new(current_name.to_owned(), path, None, None);
+        let shortpath = Shortpath::new(current_name.to_owned(), PathBuf::from(new_path), None, None);
         shortpaths.insert(current_name.to_owned(), shortpath);
     };
     let update_name = |new_name: String, shortpaths: &mut SP| {
@@ -386,9 +387,9 @@ pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<&S
         shortpaths.insert(new_name, path);
     };
 
-    match (name, path) {
-        (Some(new_name), _) => { update_name(new_name.to_owned(), shortpaths); }
-        (_, Some(new_path)) => { update_path(new_path.to_owned(), shortpaths); }
-        (_, _)              => { println!("Nothing to do");}
+    match (entry_exists(), name, path) {
+        (true, Some(new_name), _) => { update_name(new_name.to_owned(), shortpaths); }
+        (true, _, Some(new_path)) => { update_path(new_path.to_owned(), shortpaths); }
+        (_, _, _)              => { println!("Nothing to do");}
     }
 }
