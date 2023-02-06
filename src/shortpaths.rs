@@ -24,7 +24,7 @@ pub type DEPS = Vec<SPD>;
 
 // Make invalid states inexpressible
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ShortpathType {
     Path(String, PathBuf),      // Shortpath Name   : Shortpath Path
     AliasPath(String, PathBuf), // Shortpath Name   : Shortpath Path
@@ -32,11 +32,13 @@ pub enum ShortpathType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ShortpathDependency {
-    None,
-    Shortpath(String),
-    EnvironmentVariable(String),
+pub enum ShortpathVariant {
+    Normal,
+    Alias,
+    Environment,
 }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ShortpathDependency(ShortpathVariant, String);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Shortpath {
@@ -98,13 +100,9 @@ impl Shortpath {
 impl ShortpathsBuilder {
     // TODO: Use FromIterator trait extension
     pub fn new(sp: SP) -> ShortpathsBuilder  {
-        //let im = ShortpathsBuilder::from_vec(sps);
         ShortpathsBuilder { paths: Some(sp) }
     }
 
-    //pub fn from_vec(sps: Vec<Shortpath>) -> SP {
-        //sps.into_iter().map(|sp| (sp.name.to_owned(), sp) ).collect()
-    //}
     pub fn build(&mut self) -> Option<SP> {
         if let Some(shortpaths) = &mut self.paths {
             let shortpaths = populate_shortpaths(shortpaths);
@@ -161,13 +159,6 @@ pub fn get_shortpath_name(sp: &SPT) -> String {
     }
 }
 
-pub fn get_shortpath_dep_name(sp: &SPD) -> Option<String> {
-    match sp {
-        SPD::Shortpath(name) | SPD::EnvironmentVariable(name) => Some(name.to_owned()),
-        SPD::None => None
-    }
-}
-
 pub fn get_shortpath_path(sp: &SPT) -> PathBuf {
     match sp {
         SPT::Path(_, path) | SPT::AliasPath(_, path) | SPT::EnvPath(_, path) => path.to_owned()
@@ -209,28 +200,13 @@ pub fn populate_shortpaths(shortpaths: &mut SP) -> SP {
 }
 
 /** Parse a Shortpath entry, and returns any dependencies */
-pub fn parse_alias(path: &[char], full_path: PathBuf) -> Option<SPT> {
-    let _env_prefix = to_str_slice("$env:");
-    match path {
-        ['$', alias_name @ ..] => {
-            let (an, ap) = (alias_name.iter().collect(), full_path);
-            Some(SPT::AliasPath(an, ap))
-        }
-        [ _env_prefix, alias_name @ .., '}'] => {
-            let (an, ap) = (alias_name.iter().collect(), full_path);
-            Some(SPT::EnvPath(an, ap))
-        }
-        _ => { None }
-    }
-}
-
 pub fn get_shortpath_dependency(path: &[char]) -> SPD {
     let to_string = |slice: &[char]| { slice.iter().collect() };
     let _env_prefix = to_str_slice("$env:");
     match path {
-        ['$', alias_name @ ..]                  => SPD::Shortpath(to_string(alias_name)),
-        [ _env_prefix, env_var_name @ .., '}']  => SPD::EnvironmentVariable(to_string(env_var_name)),
-        _                                       => SPD::None
+        ['$', alias_name @ ..]                  => ShortpathDependency(ShortpathVariant::Alias, to_string(alias_name)),
+        [ _env_prefix, env_var_name @ .., '}']  => ShortpathDependency(ShortpathVariant::Environment, to_string(env_var_name)),
+        _                                       => ShortpathDependency(ShortpathVariant::Normal, to_string(path)),
     }
 }
 
@@ -239,6 +215,7 @@ pub fn find_deps(entry: &Path) -> DEPS {
     let deps: DEPS = entry.components().into_iter().filter_map(|path_component| {
         if let Component::Normal(osstr_path) = path_component {
             let path_comp = to_str_slice(osstr_path.to_string_lossy());
+            //let dep = get_shortpath_dependency(&path_comp);
             let dep = get_shortpath_dependency(&path_comp);
             return Some(dep);
         }
@@ -259,13 +236,16 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
     let deps = &sp.deps;
     deps.iter().for_each(|dep| {
         // TODO: Wrap in a while loop later to parse additional paths
-        if let Some(name) = get_shortpath_dep_name(dep) {
-            let dep_shortpath = shortpaths.get(&name).unwrap();
+        let name = &dep.1;
+        //if let Some(name) = get_shortpath_dep_name(dep) {
+        //let dep_shortpath = shortpaths.get(name).unwrap();
+        if let Some(dep_shortpath) = shortpaths.get(name) {
             let path = dep_shortpath.path.to_owned();
 
-            let output = expand_path(entry.to_str().unwrap(), &name, path.to_str().unwrap());
+            let output = expand_path(entry.to_str().unwrap(), name, path.to_str().unwrap());
             entry = PathBuf::from(output);
         }
+        //}
     });
     entry
 }
