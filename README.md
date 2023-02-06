@@ -1,19 +1,16 @@
 # Shortpaths
 
-## Table of Contents
-1. [Features](#features)
-2. [How It Works](#how-it-works)
-3. [Usage](#usage)
-4. [Shell Completions](#shell-completions)
-    - [Bash](#bash)
-    - [Powershell](#powershell)
-5. [Issues](#issues)
-
 Shortpaths is a Rust program that provides a better system for defining custom file path/directory aliases.
 
-When an application relies on a directory path, the moment that directory is moved elsewhere,
-the path breaks the application functionality.With `shortpaths` its possible for your
-path to still be usable even if the directory was moved elsewhere.
+## Table of Contents
+1. [Features](#features)
+2. [Problem](#problem)
+3. [How It Works](#how-it-works)
+4. [Usage](#usage)
+5. [Shell Completions](#shell-completions)
+    - [Bash](#bash)
+    - [Powershell](#powershell)
+6. [Issues](#issues)
 
 ## Features
 
@@ -25,6 +22,12 @@ path to still be usable even if the directory was moved elsewhere.
 - Centralization: One configuration available for use in many applications.
 - Slightly Better Security: The permissions set for your shortpath config is editable only (Not Yet Implemented) by the current user.
     The shell completions file is read + user executable only (Not Yet Implemented).
+
+## Problem
+
+When an application relies on a directory path, the moment that directory is moved elsewhere,
+the path breaks the application functionality.With `shortpaths` its possible for your
+path to still be usable even if the directory was moved elsewhere.
 
 ## How It Works
 
