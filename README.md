@@ -106,8 +106,6 @@ shortpaths export powershell
 ### API
 
 The API is very messy in some areas:
-- `impl ShortpathType` duplicates `impl Shortpath` somewhat
-- Too many enum types `ShortpathType`, `ShortpathDependency`
 - `populate_dependencies`, `populate_expanded_paths`,
     `Shortpaths::default()`, `Shortpaths::to_disk()` are very messy
     and also use some unnecessary `filter_map()`s, as linted by clippy.
@@ -126,6 +124,7 @@ The API is very messy in some areas:
     other applications.
 - Currently, only one layer of variables is guaranteed to be expanded properly, and fully.
     If there is more than one layer of nesting, then it will not be expanded fully, and the order will be wrong.
+- Consider: Modelling state transitions with an enum.
 
 The current api for both creating and serializing shortpaths is duplicated
 across various files in shortpaths, namely `app.rs`, `bash.rs`, `shortpaths.rs`. A
@@ -135,12 +134,44 @@ used across all these files is to be preferred.
 ## Binary
 
 The binary is still missing a few key features:
-- No `remove_hook`, `update_hook` yet. These will make use of `FindKeyIndexMapExt`
-- Proper, featureful `resolve` command
 - Ability to prompt users for a path.
-- More powerful `shortpath remove` command that can accept a vector of paths.
-- More command line options `-y`, `-p`
+- For the command line interface, prefer using clap-derive over clap-builder for
+    better reuseability and composibility.
+- Create an optional `-y` parameter.
+- `shortpath remove --paths [shortpath1] [shortpath2]` command that can accept a vector of paths.
+    - Use the `-y` parameter to skip prompting, and move on to deletion.
 - `shortpath list` and `shortpath lists`
+    - `shortpath list [shortpath]`
+        - Prints out the directory the Shortpath points to
+    - `shortpath list`
+        - Prints out all shortpaths
+- `shortpath refresh`: Platform specific.
+    Unsets all shortpath variables for the platform (bash, powershell), sets them again, and then refreshes the current shell
+    with the new definitions.
+- `shortpath resolve [resolve_type] [options]`: Needs to have a few more additional options, and be written
+    to be more modular. This function will be featureful and needs to play loose to support lots of options.
+- `shortpath update_hook [args]`
+    or `shortpath hook update [args]`
+    or `shortpath update_hook [src] [dest]`:
+    Check if the shortpath exists in our config, and runs the command to update and save our updated path.
+- `shortpath remove_hook [args]`
+    or `shortpath hook remove [args]`
+    or `shortpath remove_hook --paths [shortpaths]`:
+    Check if the shortpath exists in our config, and runs the command to remove the path.
+- Note for the hooks:
+    - If parsing is done in the binary then clap argument parsing must be disabled for these hooks.
+        - This is because if there are binary specific arguments given, like `mv src dest -p`,
+            then the flags will break clap parsing when it detects that those options are missing
+    - If parsing is not done in the binary, and the script hooks are successful, then
+        we can make use of clap argument parsing.
+    - Alternative Solutions:
+        - Since you cannot alias functions in `powershell`,
+            shortpaths could provide `mv` and/or `rm` commands that implement similar bare minimum
+            functionality that wrap the native platform commands instead of providing an update hook.
+            These would be like: `sp mv`, `sp rm`.
+    - The hooks would make use of `FindKeyIndexMapExt` to get the value from the key provided.
+        **NOTE** Be sure to attempt it with the path itself, and the path expanded (if its an alias).
+
 - Detailed manpage file for Linux users.
 
 ## TODO
