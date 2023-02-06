@@ -6,7 +6,6 @@ use crate::helpers::{
 };
 use std::{
     path::{Path, PathBuf, Component},
-    env::var,
     cmp::Ordering,
 };
 
@@ -73,25 +72,6 @@ impl Ord for Shortpath {
 impl PartialOrd for Shortpath {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
-    }
-}
-
-impl ShortpathType {
-    pub fn new_path(name: impl Into<String>, path: impl Into<PathBuf>) -> SPT {
-        SPT::Path(name.into(), path.into())
-    }
-    pub fn new_alias_path(name: impl Into<String>, alias_path: impl Into<PathBuf>) -> SPT {
-        SPT::AliasPath(name.into(), alias_path.into())
-    }
-    pub fn new_env_path(name: impl Into<String>) -> SPT {
-        // Store environment variable values during creation
-        let name = name.into();
-        let mut alias_path = String::new();
-        match var(&name) { // Get from environment
-            Ok(val) => alias_path = val,
-            Err(e) => eprintln!("Error in expanding environment variable ${}: ${}", name, e)
-        };
-        SPT::EnvPath(name, alias_path.into())
     }
 }
 

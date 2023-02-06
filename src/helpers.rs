@@ -1,5 +1,9 @@
 use crate::shortpaths::Shortpath;
-use std::path::{Path, PathBuf};
+
+use std::{
+    env::var,
+    path::{Path, PathBuf},
+};
 
 use indexmap::IndexMap;
 use log::{debug, trace};
@@ -77,4 +81,15 @@ pub fn tab_align(s: &str, delim: &str) -> String {
     //format!("{}: {}", format_args!("{} {}", s, args), s)
     //format!("{}{}\n", args, s)
     args
+}
+
+/// Read environment variable to String
+pub fn getenv<S: Into<String>>(name: S) -> String {
+    let name = name.into();
+    let mut path = String::new();
+    match var(&name) {
+        Ok(val) => path = val,
+        Err(e) => eprintln!("Error in expanding environment variable ${}: ${}", name, e)
+    };
+    path
 }
