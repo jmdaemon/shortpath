@@ -22,10 +22,10 @@ pub type DEPS = Vec<SPD>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ShortpathVariant {
-    Normal,
     Alias,
     Environment,
 }
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ShortpathDependency(ShortpathVariant, String);
 
@@ -152,8 +152,9 @@ pub fn sort_shortpaths(shortpaths: SP) -> SP {
 
 // Populate Shortpaths
 pub fn populate_dependencies(shortpaths: &mut SP) -> SP {
+    let c = shortpaths.clone();
     let shortpaths: SP = shortpaths.into_iter().map(|(k, sp)| {
-        let deps = find_deps(&sp.path);
+        let deps = find_deps(&sp.path, &c);
         sp.deps = deps;
         (k.to_owned(), sp.to_owned())
     }).collect();
@@ -177,28 +178,79 @@ pub fn populate_shortpaths(shortpaths: &mut SP) -> SP {
 }
 
 /** Parse a Shortpath entry, and returns any dependencies */
-pub fn get_shortpath_dependency(path: &[char]) -> SPD {
+pub fn get_shortpath_dependency(path: &[char]) -> Option<SPD> {
     let to_string = |slice: &[char]| { slice.iter().collect() };
     let _env_prefix = to_str_slice("$env:");
     match path {
-        ['$', alias_name @ ..]                  => ShortpathDependency(ShortpathVariant::Alias, to_string(alias_name)),
-        [ _env_prefix, env_var_name @ .., '}']  => ShortpathDependency(ShortpathVariant::Environment, to_string(env_var_name)),
-        _                                       => ShortpathDependency(ShortpathVariant::Normal, to_string(path)),
+        ['$', alias_name @ ..]                  => Some(ShortpathDependency(ShortpathVariant::Alias, to_string(alias_name))),
+        [ _env_prefix, env_var_name @ .., '}']  => Some(ShortpathDependency(ShortpathVariant::Environment, to_string(env_var_name))),
+        _                                       => None,
     }
 }
 
 /// Find the dependencies for a given shortpath
-pub fn find_deps(entry: &Path) -> DEPS {
+pub fn find_deps(entry: &Path, shortpaths: &SP) -> DEPS {
+    println!("For path: {}", entry.display());
     let deps: DEPS = entry.components().into_iter().filter_map(|path_component| {
+        // vec![]:
+        // vec![ '$a' ]:
+        // vec![ '$a', '$b', '$c']:
+        //
+
+        // $a/bbbb
+        // $b/cccc
+        // $c/dddd
+
+        // Check if a component is dependent on a path
         if let Component::Normal(osstr_path) = path_component {
+            // Check if the substituted  values also depend on things
             let path_comp = to_str_slice(osstr_path.to_string_lossy());
-            //let dep = get_shortpath_dependency(&path_comp);
             let dep = get_shortpath_dependency(&path_comp);
-            return Some(dep);
+            //let mut dep = get_shortpath_dependency(&path_comp);
+            //while dep.0 != ShortpathVariant::Normal {
+                //let path_comp = to_str_slice(dep.1);
+                //dep = get_shortpath_dependency(&path_comp);
+            //}
+            //return Some(dep);
+            return dep;
         }
         None
     }).collect();
-    deps
+    println!("{:?}", deps);
+
+    // Check the dependencies to determine if they also depend on things
+    let mut expand_nested: DEPS = vec![]; 
+    deps.into_iter().for_each(|dep| {
+        //let path_comp = to_str_slice(dep.1);
+        //let path_comp = dep.1);
+        //if let Some(sp) = shortpaths.get(&path_comp) {
+        let nested_maybe = shortpaths.get(&dep.1);
+        while let Some(sp) = nested_maybe {
+            let deps: DEPS = sp.path.components().into_iter().filter_map(|path_component| {
+                if let Component::Normal(osstr_path) = path_component {
+                    let path_comp = to_str_slice(osstr_path.to_string_lossy());
+                    return get_shortpath_dependency(&path_comp);
+                }
+                None
+            }).collect();
+            deps.into_iter().for_each(|d| expand_nested.push(d));
+        }
+
+        //let path_comp = to_str_slice(dep.1);
+        //let mut nested = get_shortpath_dependency(&path_comp);
+        //while let Some(nested_dep) = nested {
+            //expand_nested.push(nested_dep.clone());
+            //nested = get_shortpath_dependency(&path_comp);
+        //}
+
+        //while dep.0 != ShortpathVariant::Normal {
+            //let path_comp = to_str_slice(dep.1);
+            //dep = get_shortpath_dependency(&path_comp);
+            //expand_nested.push(dep.clone());
+        //}
+        expand_nested.push(dep);
+    });
+    expand_nested
 }
 
 /**
