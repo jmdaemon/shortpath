@@ -8,7 +8,7 @@ use crate::consts::{
     CONFIG_FILE_PATH,
 };
 use crate::config::{Config, read_config, write_config};
-use crate::shortpaths::{SP, Shortpath, populate_shortpaths, get_shortpath_type, sort_shortpaths, expand_tilde};
+use crate::shortpaths::{SP, Shortpath, populate_shortpaths, get_shortpath_type, sort_shortpaths, expand_tilde, tab_align, find_longest_keyname};
 
 use indexmap::IndexMap;
 use serde::{Serialize, Deserialize};
@@ -70,15 +70,47 @@ impl Shortpaths {
         shortpaths.sort_by(|_, v1, _, v2| { v1.cmp(v2) });
         //self.shortpaths = shortpaths;
 
+        let length = find_longest_keyname(shortpaths.clone()).len();
+
         let paths: IndexMap<String, PathBuf> = shortpaths.into_iter().map(|(k, sp)| {
             (k, sp.path().to_owned())
         }).collect();
+
+        //let paths: IndexMap<String, PathBuf> = paths.into_iter().map(|(k, p)| {
+            //let s = p.to_str().unwrap();
+            //let delim = " =";
+            //let s = tab_align(s, delim);
+            //(k, PathBuf::from(s))
+        //}).collect();
         
         self.paths = paths;
         //let newsps = Shortpaths { shortpaths: shortpaths, ..} = *self;
 
         //let conts = toml::to_string_pretty(&paths).expect("Could not serialize shortpaths");
-        let conts = toml::to_string_pretty(&self).expect("Could not serialize shortpaths");
+        //let conts = toml::to_string_pretty(&self).expect("Could not serialize shortpaths");
+        let fileconts = toml::to_string_pretty(&self).expect("Could not serialize shortpaths");
+        
+        //let fileconts = fileconts.split('\n').skip(1);
+        let fileconts = fileconts.split('\n');
+
+        let fileconts: Vec<String> = fileconts.into_iter().filter_map(|line| {
+            if let Some(value) = line.split_once(" = ") {
+                let (key, path) = value;
+                let delim = " = ";
+                //let s = tab_align(key, delim);
+
+                let s = format!("{: <length$} = ", key);
+
+                dbg!(&s);
+                let output = format!("{}{}\n", s, path);
+                dbg!(&output);
+                return Some(output);
+                //(k, PathBuf::from(s))
+            }
+            Some(format!("{}\n", line))
+        }).collect();
+        let conts = fileconts.join("").strip_suffix("\n").unwrap().to_owned();
+
         let result = write_config(&self.cfg, CONFIG_FILE_PATH, &conts);
         if let Err(e) = result {
             eprintln!("Failed to write shortpaths config to disk: {}", e);
