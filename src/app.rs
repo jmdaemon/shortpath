@@ -41,15 +41,14 @@ impl Default for Shortpaths {
         let sp: Shortpaths = toml::from_str(&toml_conts).unwrap();
 
         let paths = sp.paths;
-        let mut shortpaths: SP = paths.iter().filter_map(|(name, path)| {
+        let mut shortpaths: SP = paths.iter().map(|(name, path)| {
             let sp = Shortpath::new(name.to_owned(), path.to_owned(), None, None);
-            Some((name.to_owned(), sp))
+            (name.to_owned(), sp)
         }).collect();
 
         let shortpaths = populate_shortpaths(&mut shortpaths);
         Shortpaths { cfg, paths, shortpaths }
     }
-
 }
 
 impl Shortpaths {
@@ -59,41 +58,24 @@ impl Shortpaths {
 
     pub fn to_disk(&mut self) {
         let shortpaths = sort_shortpaths(self.shortpaths.to_owned());
-        //self.shortpaths = shortpaths;
         
-        let mut shortpaths: SP = shortpaths.into_iter().map(|(name, mut sp)| {
-        //let mut shortpaths: SP = self.shortpaths.into_iter().map(|(name, mut sp)| {
+        let shortpaths: SP = shortpaths.into_iter().map(|(name, mut sp)| {
             let path = expand_tilde(&sp.path).unwrap();
             sp.full_path = Some(path);
             (name, sp)
         }).collect();
-        shortpaths.sort_by(|_, v1, _, v2| { v1.cmp(v2) });
-        //self.shortpaths = shortpaths;
 
         let length = find_longest_keyname(shortpaths.clone()).len();
 
         let paths: IndexMap<String, PathBuf> = shortpaths.into_iter().map(|(k, sp)| {
             (k, sp.path)
         }).collect();
-
-        //let paths: IndexMap<String, PathBuf> = paths.into_iter().map(|(k, p)| {
-            //let s = p.to_str().unwrap();
-            //let delim = " =";
-            //let s = tab_align(s, delim);
-            //(k, PathBuf::from(s))
-        //}).collect();
-        
         self.paths = paths;
-        //let newsps = Shortpaths { shortpaths: shortpaths, ..} = *self;
 
-        //let conts = toml::to_string_pretty(&paths).expect("Could not serialize shortpaths");
-        //let conts = toml::to_string_pretty(&self).expect("Could not serialize shortpaths");
         let fileconts = toml::to_string_pretty(&self).expect("Could not serialize shortpaths");
-        
-        //let fileconts = fileconts.split('\n').skip(1);
         let fileconts = fileconts.split('\n');
-
-        let fileconts: Vec<String> = fileconts.into_iter().filter_map(|line| {
+        
+        let fileconts: Vec<String> = fileconts.into_iter().map(|line| {
             if let Some(value) = line.split_once(" = ") {
                 let (key, path) = value;
                 let delim = " = ";
@@ -104,12 +86,12 @@ impl Shortpaths {
                 dbg!(&s);
                 let output = format!("{}{}\n", s, path);
                 dbg!(&output);
-                return Some(output);
+                return output
                 //(k, PathBuf::from(s))
             }
-            Some(format!("{}\n", line))
+            format!("{}\n", line)
         }).collect();
-        let conts = fileconts.join("").strip_suffix("\n").unwrap().to_owned();
+        let conts = fileconts.join("").strip_suffix('\n').unwrap().to_owned();
 
         let result = write_config(&self.cfg, CONFIG_FILE_PATH, &conts);
         if let Err(e) = result {
