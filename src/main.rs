@@ -29,15 +29,15 @@ fn main() {
     match matches.subcommand() {
         Some(("add", sub_matches)) => {
             let (alias_name, alias_path) = (
-                sub_matches.get_one::<String>("ALIAS_NAME").unwrap().to_owned(),
-                sub_matches.get_one::<String>("ALIAS_PATH").unwrap()
+                sub_matches.get_one::<String>("NAME").unwrap().to_owned(),
+                sub_matches.get_one::<String>("PATH").unwrap()
             );
 
             add_shortpath(&mut shortpaths, alias_name.clone(), PathBuf::from(alias_path));
             println!("Saved shortpath {}: {}", alias_name, alias_path);
         }
         Some(("remove", sub_matches)) => {
-            let current_name = sub_matches.get_one::<String>("ALIAS_NAME").unwrap();
+            let current_name = sub_matches.get_one::<String>("NAME").unwrap();
             let path = remove_shortpath(&mut shortpaths, current_name);
             println!("Removed {}: {}", current_name.to_owned(), path.unwrap().path().display());
         }
@@ -61,8 +61,8 @@ fn main() {
         Some(("update", sub_matches)) => {
             let (current_name, alias_name, alias_path) = (
                 sub_matches.get_one::<String>("CURRENT_NAME").unwrap(),
-                sub_matches.get_one::<String>("ALIAS_NAME"),
-                sub_matches.get_one::<String>("ALIAS_PATH"),
+                sub_matches.get_one::<String>("NAME"),
+                sub_matches.get_one::<String>("PATH"),
             );
 
             if alias_name.is_none() && alias_path.is_none() {

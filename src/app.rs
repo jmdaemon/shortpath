@@ -139,13 +139,13 @@ pub fn build_cli() -> Command {
         .subcommand(
             Command::new("add")
             .about("Add a shortpath")
-            .arg(arg!([ALIAS_NAME]).required(true))
-            .arg(arg!([ALIAS_PATH]).required(true)),
+            .arg(arg!([NAME]).required(true))
+            .arg(arg!([PATH]).required(true)),
             )
         .subcommand(
             Command::new("remove")
             .about("Remove a shortpath")
-            .arg(arg!([ALIAS_NAME]).required(true))
+            .arg(arg!([NAME]).required(true))
             )
         .subcommand(
             Command::new("check")
@@ -172,8 +172,8 @@ pub fn build_cli() -> Command {
             .args(
                 &[
                 arg!([CURRENT_NAME]).required(true),
-                arg!(ALIAS_NAME: -n --name <ALIAS_NAME> "New shortpath name"),
-                arg!(ALIAS_PATH: -p --path <ALIAS_PATH> "New shortpath path"),
+                arg!(NAME: -n --name <NAME> "New shortpath name"),
+                arg!(PATH: -p --path <PATH> "New shortpath path"),
                 ])
         );
     cli
