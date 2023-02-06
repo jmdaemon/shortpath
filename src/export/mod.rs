@@ -12,6 +12,10 @@ use crate::shortpaths::SP;
 /** 
   * Export to multiple applications with a single unified interface
   *
+  * NOTE:
+  * The interface is very shell-related as of right now. When more formats
+  * are available, then this trait could be made more abstract.
+  *
   * Export Paths:
   * Bash:
   *     Default : ./completions/shortpaths.bash
@@ -38,6 +42,9 @@ pub trait Export {
 
     /** Get the default local platform independent shell completions path */
     fn get_completions_path(&self) -> String;
+
+    /** Get the user shell completions file path */
+    fn get_completions_user_path(&self) -> String;
 
     /** Get the system shell completions file path */
     fn get_completions_sys_path(&self) -> String;

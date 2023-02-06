@@ -1,6 +1,5 @@
 use crate::export::{Export, get_exporter};
 use crate::helpers::{
-    expand_tilde,
     find_by_matching_path,
     find_paths,
     to_str_slice,

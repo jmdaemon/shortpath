@@ -17,7 +17,7 @@ use directories::ProjectDirs;
 #[derivative(Debug, Default)]
 pub struct Config {
     #[derivative(Default(value = "ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).expect(\"Could not initialize config\")"))]
-    project_dirs: ProjectDirs,
+    pub project_dirs: ProjectDirs,
     pub files: HashMap<String, PathBuf>
 }
 
