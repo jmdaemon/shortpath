@@ -16,20 +16,9 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use walkdir::DirEntry;
 
 // Data Types
-
 pub type SP = IndexMap<String, Shortpath>;
-pub type SPT = ShortpathType;
 pub type SPD = ShortpathDependency;
 pub type DEPS = Vec<SPD>; 
-
-// Make invalid states inexpressible
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ShortpathType {
-    Path(String, PathBuf),      // Shortpath Name   : Shortpath Path
-    AliasPath(String, PathBuf), // Shortpath Name   : Shortpath Path
-    EnvPath(String, PathBuf),   // Env Var Name     : Shortpath Path
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ShortpathVariant {
@@ -153,18 +142,6 @@ pub fn fold_path(src: &str, key_name: &str, key_path: &str) -> String {
     src.replace(this, &with)
 }
 
-pub fn get_shortpath_name(sp: &SPT) -> String {
-    match sp {
-        SPT::Path(name, _) | SPT::AliasPath(name, _) | SPT::EnvPath(name, _) => name.to_owned(),
-    }
-}
-
-pub fn get_shortpath_path(sp: &SPT) -> PathBuf {
-    match sp {
-        SPT::Path(_, path) | SPT::AliasPath(_, path) | SPT::EnvPath(_, path) => path.to_owned()
-    }
-}
-
 pub fn sort_shortpaths(shortpaths: SP) -> SP {
     shortpaths.sorted_by(|_, v1, _, v2| {
         v1.cmp(v2)
@@ -237,15 +214,12 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
     deps.iter().for_each(|dep| {
         // TODO: Wrap in a while loop later to parse additional paths
         let name = &dep.1;
-        //if let Some(name) = get_shortpath_dep_name(dep) {
-        //let dep_shortpath = shortpaths.get(name).unwrap();
         if let Some(dep_shortpath) = shortpaths.get(name) {
             let path = dep_shortpath.path.to_owned();
 
             let output = expand_path(entry.to_str().unwrap(), name, path.to_str().unwrap());
             entry = PathBuf::from(output);
         }
-        //}
     });
     entry
 }
