@@ -1,3 +1,5 @@
+use shortpaths::export::get_exporter;
+
 
 #[test]
 fn test_serialize_bash() {
@@ -26,8 +28,11 @@ fn test_serialize_bash() {
 
     let shortpaths = sp_builder.build().unwrap();
 
-    let mut exp = BashExporter::default();
-    exp.set_shortpaths(&shortpaths);
+    //let mut exp = BashExporter::default();
+    //exp.set_shortpaths(&shortpaths);
+    let exp = BashExporter::default()
+        .set_shortpaths(&shortpaths);
+    //let exp = get_exporter("bash")
 
     // Test
     let actual = exp.gen_completions();

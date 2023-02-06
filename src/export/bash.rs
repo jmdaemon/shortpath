@@ -53,15 +53,20 @@ impl Export for BashExporter {
 
     fn gen_completions(&self) -> String {
         let mut output = String::from("#!/bin/bash\n\n");
-        if let Some(shortpaths) = &self.shortpaths {
+        let cpy = self.shortpaths.clone();
+        let shortpaths = sort_shortpaths(cpy.unwrap());
+
+        //if let Some(shortpaths) = shortpaths {
             let serialized: Vec<String> = shortpaths.iter().map(|(name, sp)| {
+                println!("shortpaths: {}: {}", &name, sp.path.display());
+                println!("shortpaths: {}: {:?}", &name, sp.full_path);
                 let path = expand_tilde(&sp.path).unwrap();
                 fmt_bash_alias(name, &path)
             }).collect();
 
             serialized.iter().for_each(|line| output += line);
             trace!("output: {}", output);
-        }
+        //}
         output
     }
 

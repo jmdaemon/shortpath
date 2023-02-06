@@ -45,4 +45,5 @@ fn test_shortpaths() {
     let export_type = "bash";
     let output_file = None;
     export_shortpaths(&sorted, export_type, output_file);
+    //assert_eq!(1, 0);
 }
