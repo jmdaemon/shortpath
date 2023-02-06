@@ -1,7 +1,6 @@
 #[test]
 fn test_shortpaths() {
     use shortpaths::shortpaths::{
-        SPT,
         Shortpath,
         ShortpathsBuilder,
         FindKeyIndexMapExt,
@@ -14,10 +13,10 @@ fn test_shortpaths() {
     // TODO Create more ergonomic api for this later
     // Wrap it together with the builder construct to reduce the noise
     let sp_paths = vec![
-        Shortpath::new(SPT::AliasPath("d".to_owned(), PathBuf::from("$a/dddd")), None, None),
-        Shortpath::new(SPT::AliasPath("c".to_owned(), PathBuf::from("$b/cccc")), None, None),
-        Shortpath::new(SPT::AliasPath("b".to_owned(), PathBuf::from("$a/bbbb")), None, None),
-        Shortpath::new(SPT::Path("a".to_owned(), PathBuf::from("aaaa")), None, None),
+        Shortpath::new("d".to_owned(), PathBuf::from("$a/dddd"), None, None),
+        Shortpath::new("c".to_owned(), PathBuf::from("$b/cccc"), None, None),
+        Shortpath::new("b".to_owned(), PathBuf::from("$a/bbbb"), None, None),
+        Shortpath::new("a".to_owned(), PathBuf::from("aaaa"), None, None),
     ];
     println!("{:?}", sp_paths);
 
