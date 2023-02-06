@@ -10,14 +10,16 @@ fn test_shortpaths() {
 
     use std::path::PathBuf;
 
+    use indexmap::indexmap;
+
     // TODO Create more ergonomic api for this later
     // Wrap it together with the builder construct to reduce the noise
-    let sp_paths = vec![
-        Shortpath::new("d".to_owned(), PathBuf::from("$a/dddd"), None, vec![]),
-        Shortpath::new("c".to_owned(), PathBuf::from("$b/cccc"), None, vec![]),
-        Shortpath::new("b".to_owned(), PathBuf::from("$a/bbbb"), None, vec![]),
-        Shortpath::new("a".to_owned(), PathBuf::from("aaaa"), None, vec![]),
-    ];
+    let sp_paths = indexmap!{
+        "d".to_owned() => Shortpath::new(PathBuf::from("$a/dddd"), None, vec![]),
+        "c".to_owned() => Shortpath::new(PathBuf::from("$b/cccc"), None, vec![]),
+        "b".to_owned() => Shortpath::new(PathBuf::from("$a/bbbb"), None, vec![]),
+        "a".to_owned() => Shortpath::new(PathBuf::from("aaaa"), None, vec![]),
+    };
     println!("{:?}", sp_paths);
 
     let mut sp_builder = ShortpathsBuilder::new(sp_paths);

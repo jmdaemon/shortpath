@@ -40,12 +40,8 @@ pub enum ShortpathDependency {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Shortpath {
-    //#[serde(skip)]
-    //pub name: String,
     pub path: PathBuf,
-    //#[serde(skip)]
     pub full_path: Option<PathBuf>,
-    //#[serde(skip)]
     pub deps: DEPS,
 }
 

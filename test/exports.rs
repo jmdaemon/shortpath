@@ -2,12 +2,13 @@
 #[test]
 fn test_serialize_bash() {
     use shortpaths::{
-        shortpaths::{SPD, Shortpath, ShortpathsBuilder},
+        shortpaths::{Shortpath, ShortpathsBuilder},
         export::{Export, bash::BashExporter},
     };
 
     use std::path::PathBuf;
 
+    use indexmap::indexmap;
     use log::LevelFilter;
     use pretty_env_logger::formatted_timed_builder;
 
@@ -15,12 +16,12 @@ fn test_serialize_bash() {
     formatted_timed_builder().filter_level(LevelFilter::Trace).init();
 
     // Init
-    let sp_paths = vec![
-        Shortpath::new("d".to_owned(), PathBuf::from("$a/dddd"), None, vec![]),
-        Shortpath::new("c".to_owned(), PathBuf::from("$b/cccc"), None, vec![]),
-        Shortpath::new("b".to_owned(), PathBuf::from("$a/bbbb"), None, vec![]),
-        Shortpath::new("a".to_owned(), PathBuf::from("aaaa"), None, vec![]),
-    ];
+    let sp_paths = indexmap!{
+        "d".to_owned() => Shortpath::new(PathBuf::from("$a/dddd"), None, vec![]),
+        "c".to_owned() => Shortpath::new(PathBuf::from("$b/cccc"), None, vec![]),
+        "b".to_owned() => Shortpath::new(PathBuf::from("$a/bbbb"), None, vec![]),
+        "a".to_owned() => Shortpath::new(PathBuf::from("aaaa"), None, vec![]),
+    };
     let mut sp_builder = ShortpathsBuilder::new(sp_paths);
 
     let shortpaths = sp_builder.build().unwrap();
