@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use crate::consts::{
     PROGRAM_NAME,
     VERSION,
@@ -8,7 +6,10 @@ use crate::consts::{
     CONFIG_FILE_PATH,
 };
 use crate::config::{Config, read_config, write_config};
-use crate::shortpaths::{SP, Shortpath, populate_shortpaths, get_shortpath_type, sort_shortpaths, expand_tilde, tab_align, find_longest_keyname};
+use crate::shortpaths::{SP, Shortpath, populate_shortpaths, get_shortpath_type, sort_shortpaths};
+use crate::helpers::{expand_tilde, tab_align, find_longest_keyname};
+
+use std::path::PathBuf;
 
 use indexmap::IndexMap;
 use serde::{Serialize, Deserialize};

@@ -1,4 +1,10 @@
 use crate::export::{Export, get_exporter};
+use crate::helpers::{
+    expand_tilde,
+    find_by_matching_path,
+    find_paths,
+    to_str_slice,
+};
 use std::{
     path::{Path, PathBuf, Component},
     env::var,
@@ -8,9 +14,8 @@ use std::{
 use indexmap::IndexMap;
 #[allow(unused_imports)]
 use itertools::Itertools;
-use log::{debug, trace};
 use serde::{Serialize, Serializer, Deserialize};
-use walkdir::{DirEntry, WalkDir};
+use walkdir::DirEntry;
 
 // Data Types
 
@@ -133,7 +138,7 @@ impl ShortpathsBuilder {
 }
 
 // Trait Extensions
-// NOTE: We may not need these in the future, so they could be potentially removed
+// We need these for remove_hook, move_hook to check shortpath configs
 pub trait FindKeyIndexMapExt<'a, K, V> {
     /// Get keys from value of IndexMap
     fn find_keys_for_value(&'a self, value: V) -> Vec<&'a K>;
@@ -160,38 +165,6 @@ where
 }
 
 // Pure Functions
-
-// General Purpose
-/// Convert strings into a vector of characters
-pub fn to_str_slice(s: impl Into<String>) -> Vec<char> {
-    s.into().chars().collect()
-}
-
-pub fn find_longest_keyname<T>(map: IndexMap<String, T>) -> String {
-    map.iter()
-       .max_by(|(k1,_), (k2, _)| k1.len().cmp(&k2.len()))
-       .unwrap().0.to_owned()
-}
-
-pub fn expand_tilde<P: AsRef<Path>>(path_user_input: P) -> Option<PathBuf> {
-    let p = path_user_input.as_ref();
-    if !p.starts_with("~") {
-        return Some(p.to_path_buf());
-    }
-    if p == Path::new("~") {
-        return dirs::home_dir();
-    }
-    dirs::home_dir().map(|mut h| {
-        if h == Path::new("/") {
-            // Corner case: `h` root directory;
-            // don't prepend extra `/`, just drop the tilde.
-            p.strip_prefix("~").unwrap().to_path_buf()
-        } else {
-            h.push(p.strip_prefix("~/").unwrap());
-            h
-        }
-    })
-}
 
 // Shortpaths Specific
 
@@ -364,37 +337,6 @@ pub fn check_shortpaths(shortpaths: &mut SP) {
     println!("Check Complete");
 }
 
-// File search functions
-
-/// Attempt to find the a file in a dir
-pub fn find_by_matching_path(file_name: &str, dir: WalkDir) -> Vec<DirEntry> {
-    let files: Vec<DirEntry> = dir.into_iter()
-        .filter_map(Result::ok)
-        .filter(|file| file.file_name() == file_name)
-        .collect();
-    files
-}
-
-pub fn find_paths(sp: &Shortpath, find_by: impl Fn(&str, WalkDir) -> Vec<DirEntry>) -> Option<Vec<DirEntry>> {
-    let search_term = sp.path().file_name().unwrap();
-    let mut next = sp.path().parent();
-    
-    while let Some(dir) = next {
-        debug!("In Directory {}", dir.display());
-        let parent_files = WalkDir::new(dir).max_depth(1);
-
-        debug!("Searching for files");
-        let files = find_by(search_term.to_str().unwrap(), parent_files);
-        files.iter().for_each(|f| trace!("File: {}", f.file_name().to_str().unwrap()));
-
-        if files.is_empty() {
-            return Some(files);
-        }
-        next = dir.parent(); // Continue searching
-    }
-    None
-}
-
 /** Fix unreachable or broken paths
   * 
   * There are a few different resolve types to select from:
@@ -493,16 +435,4 @@ pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<&S
         (_, Some(new_path)) => { update_path(new_path.to_owned(), shortpaths); }
         (_, _)              => { println!("Nothing to do");}
     }
-}
-
-// Create function to format shortpaths with spaces
-pub fn tab_align(s: &str, delim: &str) -> String {
-    let length = s.len();
-    //let args = format!("{: <length$}{delim}", s, delim);
-    let args = format!("{: <length$}{delim}", s);
-    //let args = format!("{: <length$} =", s);
-    //let args = format!("{: <length$} =", s);
-    //format!("{}: {}", format_args!("{} {}", s, args), s)
-    //format!("{}{}\n", args, s)
-    args
 }
