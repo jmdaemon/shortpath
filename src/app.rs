@@ -6,7 +6,7 @@ use crate::consts::{
     CONFIG_FILE_PATH,
 };
 use crate::config::{Config, read_config, write_config};
-use crate::shortpaths::{SP, Shortpath, populate_shortpaths, sort_shortpaths};
+use crate::shortpaths::{SP, SPD, Shortpath, populate_shortpaths, sort_shortpaths};
 use crate::helpers::{expand_tilde, tab_align, find_longest_keyname};
 
 use std::path::PathBuf;
@@ -42,7 +42,7 @@ impl Default for Shortpaths {
 
         let paths = sp.paths;
         let mut shortpaths: SP = paths.iter().map(|(name, path)| {
-            let sp = Shortpath::new(name.to_owned(), path.to_owned(), None, None);
+            let sp = Shortpath::new(name.to_owned(), path.to_owned(), None, vec![SPD::None]);
             (name.to_owned(), sp)
         }).collect();
 

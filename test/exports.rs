@@ -2,7 +2,7 @@
 #[test]
 fn test_serialize_bash() {
     use shortpaths::{
-        shortpaths::{Shortpath, ShortpathsBuilder},
+        shortpaths::{SPD, Shortpath, ShortpathsBuilder},
         export::{Export, bash::BashExporter},
     };
 
@@ -16,10 +16,10 @@ fn test_serialize_bash() {
 
     // Init
     let sp_paths = vec![
-        Shortpath::new("d".to_owned(), PathBuf::from("$a/dddd"), None, None),
-        Shortpath::new("c".to_owned(), PathBuf::from("$b/cccc"), None, None),
-        Shortpath::new("b".to_owned(), PathBuf::from("$a/bbbb"), None, None),
-        Shortpath::new("a".to_owned(), PathBuf::from("aaaa"), None, None),
+        Shortpath::new("d".to_owned(), PathBuf::from("$a/dddd"), None, vec![]),
+        Shortpath::new("c".to_owned(), PathBuf::from("$b/cccc"), None, vec![]),
+        Shortpath::new("b".to_owned(), PathBuf::from("$a/bbbb"), None, vec![]),
+        Shortpath::new("a".to_owned(), PathBuf::from("aaaa"), None, vec![]),
     ];
     let mut sp_builder = ShortpathsBuilder::new(sp_paths);
 

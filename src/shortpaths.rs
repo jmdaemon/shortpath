@@ -45,7 +45,7 @@ pub struct Shortpath {
     #[serde(skip)]
     pub full_path: Option<PathBuf>,
     #[serde(skip)]
-    pub deps: Option<DEPS>,
+    pub deps: DEPS,
 }
 
 pub struct ShortpathsBuilder {
@@ -81,7 +81,7 @@ impl PartialOrd for Shortpath {
 // Data Type Implementations
 
 impl Shortpath {
-    pub fn new(name: String, path: PathBuf, full_path: Option<PathBuf>, deps: Option<DEPS>) -> Shortpath {
+    pub fn new(name: String, path: PathBuf, full_path: Option<PathBuf>, deps: DEPS) -> Shortpath {
         Shortpath { name, path, full_path, deps }
     }
 }
@@ -177,7 +177,7 @@ pub fn sort_shortpaths(shortpaths: SP) -> SP {
 pub fn populate_dependencies(shortpaths: &mut SP) -> SP {
     let shortpaths: SP = shortpaths.into_iter().map(|(k, sp)| {
         let deps = find_deps(&sp.path);
-        sp.deps = Some(deps);
+        sp.deps = deps;
         (k.to_owned(), sp.to_owned())
     }).collect();
     shortpaths
@@ -255,26 +255,23 @@ pub fn find_deps(entry: &Path) -> DEPS {
   */
 pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
     let mut entry = sp.path.to_owned();
-    match &sp.deps {
-        Some(deps) => // Expand entry into full_path
-            deps.iter().for_each(|dep| {
-                // TODO: Wrap in a while loop later to parse additional paths
-                if let Some(name) = get_shortpath_dep_name(dep) {
-                    let dep_shortpath = shortpaths.get(&name).unwrap();
-                    let path = dep_shortpath.path.to_owned();
+    let deps = &sp.deps;
+    deps.iter().for_each(|dep| {
+        // TODO: Wrap in a while loop later to parse additional paths
+        if let Some(name) = get_shortpath_dep_name(dep) {
+            let dep_shortpath = shortpaths.get(&name).unwrap();
+            let path = dep_shortpath.path.to_owned();
 
-                    let output = expand_path(entry.to_str().unwrap(), &name, path.to_str().unwrap());
-                    entry = PathBuf::from(output);
-                }
-            }),
-            None => {}
-    };
+            let output = expand_path(entry.to_str().unwrap(), &name, path.to_str().unwrap());
+            entry = PathBuf::from(output);
+        }
+    });
     entry
 }
 
 // Commands
 pub fn add_shortpath(shortpaths: &mut SP, name: String, path: PathBuf) {
-    let shortpath = Shortpath::new(name.to_owned(), path, None, None);
+    let shortpath = Shortpath::new(name.to_owned(), path, None, vec![]);
     shortpaths.insert(name, shortpath);
 }
 
@@ -378,7 +375,7 @@ pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<&S
     let entry_exists = || { shortpaths.get(current_name).is_some() }; 
 
     let update_path = |new_path: String, shortpaths: &mut SP| {
-        let shortpath = Shortpath::new(current_name.to_owned(), PathBuf::from(new_path), None, None);
+        let shortpath = Shortpath::new(current_name.to_owned(), PathBuf::from(new_path), None, vec![]);
         shortpaths.insert(current_name.to_owned(), shortpath);
     };
     let update_name = |new_name: String, shortpaths: &mut SP| {

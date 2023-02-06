@@ -13,10 +13,10 @@ fn test_shortpaths() {
     // TODO Create more ergonomic api for this later
     // Wrap it together with the builder construct to reduce the noise
     let sp_paths = vec![
-        Shortpath::new("d".to_owned(), PathBuf::from("$a/dddd"), None, None),
-        Shortpath::new("c".to_owned(), PathBuf::from("$b/cccc"), None, None),
-        Shortpath::new("b".to_owned(), PathBuf::from("$a/bbbb"), None, None),
-        Shortpath::new("a".to_owned(), PathBuf::from("aaaa"), None, None),
+        Shortpath::new("d".to_owned(), PathBuf::from("$a/dddd"), None, vec![]),
+        Shortpath::new("c".to_owned(), PathBuf::from("$b/cccc"), None, vec![]),
+        Shortpath::new("b".to_owned(), PathBuf::from("$a/bbbb"), None, vec![]),
+        Shortpath::new("a".to_owned(), PathBuf::from("aaaa"), None, vec![]),
     ];
     println!("{:?}", sp_paths);
 
