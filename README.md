@@ -1,6 +1,6 @@
 # Shortpaths
 
-Shortpaths is a Rust program that provides a better system for defining custom file path/directory aliases.
+Shortpaths is a Rust program for providing better path aliases to files or directories.
 
 ## Table of Contents
 1. [Features](#features)
