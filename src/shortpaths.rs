@@ -12,7 +12,8 @@ use std::{
 use indexmap::IndexMap;
 #[allow(unused_imports)]
 use itertools::Itertools;
-use serde::{Serialize, Serializer, Deserialize};
+use serde::ser::SerializeStruct;
+use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use walkdir::DirEntry;
 
 // Data Types
@@ -38,13 +39,14 @@ pub enum ShortpathDependency {
     EnvironmentVariable(String),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Shortpath {
+    //#[serde(skip)]
     pub name: String,
     pub path: PathBuf,
-    #[serde(skip)]
+    //#[serde(skip)]
     pub full_path: Option<PathBuf>,
-    #[serde(skip)]
+    //#[serde(skip)]
     pub deps: DEPS,
 }
 
@@ -61,6 +63,39 @@ impl Serialize for ShortpathType {
         S: Serializer,
     {
         serializer.serialize_str(get_shortpath_path(self).to_str().unwrap())
+    }
+}
+
+impl Serialize for Shortpath {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.path.to_str().unwrap())
+        //serializer.serialize_str(self.path.to_str().unwrap())
+        //serializer.serialize_str(self.path.to_str().unwrap())
+        //let (name, path) = (self.name, self.path.to_owned());
+
+        //let mut state = serializer.serialize_struct("Shortpath", 2)?;
+        //state.serialize_field("name", &self.name)?;
+        //state.serialize_field("path", &self.path)?;
+        ////state.serialize_field(self.name.as_str(), path.to_str().unwrap())?;
+        //state.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for Shortpath {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        //let (name, path): (&str, &str) = Deserialize::deserialize(deserializer)?;
+        let s: &str = Deserialize::deserialize(deserializer)?;
+        //let (name, path): (&str, &str) = s;
+        println!("{}", s);
+        //let sp = Shortpath::new(name.to_owned(), PathBuf::from(path), None, vec![]);
+        let sp = Shortpath::new(s.to_owned(), PathBuf::from(s), None, vec![]);
+        Ok(sp)
     }
 }
 
