@@ -29,8 +29,7 @@ pub struct Shortpaths {
 
 pub fn setup_config(file: &str) -> Config {
     let mut config = Config::new();
-    let cfg_name = file.to_string();
-    config.add_config(cfg_name, CONFIG_FILE_PATH);
+    config.add_config(file.to_string(), CONFIG_FILE_PATH);
     config
 }
 
