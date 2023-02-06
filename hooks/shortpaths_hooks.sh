@@ -1,19 +1,11 @@
 #!/bin/bash
 
-# Used to differentiate arguments passed vs options passed
-# Match anything but the passes options
-# Usage: nmatch_options "${options[@]}"
-#nmatch_options() {
-    #options="$1"
-    #args=[]
-    #opts=[]
-    #case in
-    #esac
-#}
+# Thoughts:
+# Should all the arg parsing logic be moved into into the shortpaths binary instead?
+# - If so, all clap argument formatting/parsing must be disabled and handled manually.
 
+# Find and update any entry in the shortpaths config that contains "$src"
 mv() {
-    #src=""
-    #src=""
     src_was_set=0
     dest_was_set=0
 
@@ -23,6 +15,7 @@ mv() {
             src="$var"
             src_was_set=1
         fi
+
         # Set source
         if [[ "$dest" == -* && (dest_was_set == 0) ]]; then
             dest="$var"
@@ -31,18 +24,16 @@ mv() {
 
         # Do the move
         if [[ (src_was_set == 1) && (dest_was_set == 1) ]]; then
-            # Finds any entry in the shortpaths config that contains
-            #shortpaths update_hook "$src" "$dest"
             shortpaths move_hook "$src" "$dest"
 
+            # Pass all the arguments
             /usr/bin/mv $@
         fi
     done
 }
 
+# Find and remove any entry in the shortpaths config that contains "$src"
 rm() {
-    #src=""
-    #src=""
     src_was_set=0
 
     for var in "$@" do
@@ -53,10 +44,9 @@ rm() {
         fi
 
         if [[ (src_was_set == 1) && (dest_was_set == 1) ]]; then
-            # Finds any entry in the shortpaths config that contains "$src"
-            #shortpaths update_hook "$src" "$dest"
             shortpaths remove_hook "$src"
 
+            # Pass all the arguments
             /usr/bin/rm $@
         fi
     done
