@@ -59,9 +59,7 @@ impl Export for BashExporter {
                 fmt_bash_alias(name, &path)
             }).collect();
 
-            serialized.iter().for_each(|line| {
-                output += line;
-            });
+            serialized.iter().for_each(|line| output += line);
             trace!("output: {}", output);
         }
         output
@@ -69,7 +67,7 @@ impl Export for BashExporter {
 
     fn write_completions(&self, dest: PathBuf) -> PathBuf {
         let output = self.gen_completions();
-        write(&dest, &output).expect("Unable to write to disk");
+        write(&dest, output).expect("Unable to write to disk");
         dest
     }
 

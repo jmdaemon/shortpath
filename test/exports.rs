@@ -30,6 +30,6 @@ fn test_serialize_bash() {
 
     // Test
     let actual = exp.gen_completions();
-    let expect = "#!/bin/bash\n\nexport a=\"aaaa\"\nexport b=\"$a/bbbb\"\nexport d=\"$a/dddd\"\nexport c=\"$b/cccc\"\n";
+    let expect = "#!/bin/bash\n\nexport a=\"aaaa\"\nexport b=\"$a/bbbb\"\nnexport c=\"$b/cccc\nexport d=\"$a/dddd\"\n";
     assert_eq!(actual, expect, "Bash shell completions are generated in the correct order");
 }

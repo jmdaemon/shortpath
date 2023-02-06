@@ -107,7 +107,6 @@ shortpaths export powershell
 
 The API is very messy in some areas:
 - `impl ShortpathType` duplicates `impl Shortpath` somewhat
-- `FindKeyIndexMapExt` isn't used anywhere
 - Too many enum types `ShortpathType`, `ShortpathDependency`
 - `populate_dependencies`, `populate_expanded_paths`,
     `Shortpaths::default()`, `Shortpaths::to_disk()` are very messy
@@ -125,6 +124,8 @@ The API is very messy in some areas:
 - There are no `powershell` completions yet.
 - There is little documentation for how to use `shortpaths` as a library in
     other applications.
+- Currently, only one layer of variables is guaranteed to be expanded properly, and fully.
+    If there is more than one layer of nesting, then it will not be expanded fully, and the order will be wrong.
 
 The current api for both creating and serializing shortpaths is duplicated
 across various files in shortpaths, namely `app.rs`, `bash.rs`, `shortpaths.rs`. A
@@ -134,6 +135,7 @@ used across all these files is to be preferred.
 ## Binary
 
 The binary is still missing a few key features:
+- No `remove_hook`, `update_hook` yet. These will make use of `FindKeyIndexMapExt`
 - Proper, featureful `resolve` command
 - Ability to prompt users for a path.
 - More powerful `shortpath remove` command that can accept a vector of paths.
