@@ -20,7 +20,7 @@ Shortpaths is a Rust program for providing better path aliases to files or direc
 - Shell Completions: Shortpaths can export shell completions for paths. Supported shells are: bash, powershell **(Not Yet Implemented)**.
 - Easy Alias Path Management: Adding new shortpaths is as easy as `shortpath add [name] [path]`
 - Centralization: One configuration available for use in many applications.
-- Slightly Better Security: The permissions set for your shortpath config is editable only **(Not Yet Implemented)** by the current user.
+- Slightly Better Security: The permissions set for your shortpath config is editable only by the current user **(Not Yet Implemented)**.
     The shell completions file is read + user executable only **(Not Yet Implemented)**.
 
 ## Problem
