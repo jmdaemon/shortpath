@@ -17,11 +17,11 @@ Shortpaths is a Rust program for providing better path aliases to files or direc
 - **Better Redundancy:** If a directory is moved, the shortpath is updated, and every application that uses the shortpath functions as intended.
 - **Environment Variable Support:** Make use of environment variables as path names using the `${env:my_env_var}` syntax.
 - **Nested Definitions:** Embed one shortpath inside of another with the `$alias_path` syntax.
-- **Shell Completions:** Shortpaths can export shell completions for paths. Supported shells are: bash, powershell **(Not Yet Implemented)**.
+- **Shell Completions:** Shortpaths can export shell completions for paths. Supported shells are: bash, powershell. **(Not Yet Implemented)**
 - **Easy Alias Path Management:** Adding new shortpaths is as easy as `shortpath add [name] [path]`
 - **Centralization:** One configuration available for use in many applications.
-- **Slightly Better Security:** The permissions set for your shortpath config is editable only by the current user **(Not Yet Implemented)**.
-    The shell completions file is read + user executable only **(Not Yet Implemented)**.
+- **Slightly Better Security:** The permissions set for your shortpath config is editable only by the current user. **(Not Yet Implemented)**
+    The shell completions file is read + user executable only. **(Not Yet Implemented)**
 
 ## Problem
 
@@ -36,7 +36,7 @@ This allows you to expand the shortpath at runtime, leading to a more resilient 
 at the expense of the cost to expand.
 
 Combined with the shell update hooks, its possible for the user to define a path and seamlessly
-work without having to worry about updating aliases again.
+work without having to worry about updating aliases again. **(Not Yet Implemented)**
 
 > What happens if I one of my paths is still broken?
 
@@ -52,10 +52,8 @@ See [below](#usage) for usage on removing shortpaths.
 ## Usage
 
 ```bash
-# Add a new shortpath
 shortpath add "name" "path"
 
-# Remove a shortpath
 shortpath remove -n "name" # Remove by name
 shortpath remove -p "path" # Remove by path
 
@@ -65,7 +63,7 @@ shortpath check
 # Resolve broken shortpath links if any
 shortpath resolve
 
-# Update a shortpath
+# Update
 shortpath update "current_name" -n "new_name" # Renames shortpath
 shortpath update "current_name" -p "new_path" # Change shortpath directory
 
@@ -76,68 +74,74 @@ shortpath export powershell # Powershell completions
 
 ## Shell Completions
 
+**Not Yet Implemented**
+
+If you want shortpaths to automatically update your shortpaths config when
+you're working with files and/or folders in the shell, then load the
+helper scripts in `hooks`.
+
 ### Bash
 
-If you'd like to get resilient shortpath completions for bash, add the following to your `.bashrc`:
+**Not Yet Implemented**
+
+Source `hooks/shortpaths_hooks.sh` in your `.bashrc`. Or if you'd prefer to generate these manually:
 
 ```bash
-mv() {
-    # TODO
-}
-
-rm() {
-    # TODO
-}
-```
-
-Generate and source the shell completions with:
-
-```bash
-# TODO: Make install script to install bash/powershell completions
-cargo b
-mv target/completions/shortpath.bash /usr/share/bash-completion/completions
+shortpaths export bash
 ```
 
 ### Powershell
+**Not Yet Implemented**
 
-To get resilient completions for powershell, add the following to your `$profile`:
-
-```ps1
-move() {
-    # TODO
-}
-
-remove() {
-    # TODO
-}
-```
-
-Generate and source the shell completions with:
+Source `hooks/shortpaths_hooks.ps1` in your `$profile`. Or if you'd prefer to generate these manually:
 
 ```bash
-cargo b
-mv target/completions/shortpath.ps1 $profile/shortpath.ps1
+shortpaths export powershell
 ```
 
 ## Issues
 
+### API
+
+The API is very messy in some areas:
+- `impl ShortpathType` duplicates `impl Shortpath` somewhat
+- `FindKeyIndexMapExt` isn't used anywhere
+- Too many enum types `ShortpathType`, `ShortpathDependency`
+- `populate_dependencies`, `populate_expanded_paths`,
+    `Shortpaths::default()`, `Shortpaths::to_disk()` are very messy
+    and also use some unnecessary `filter_map()`s, as linted by clippy.
+    For more on this issue see below:
+- Not enough unit tests for shortpaths + difficulty in writing out tests.
+    There's too much boilerplate in initializing and preparing the shortpaths.
+- `expand_shortpath`, `fold_shortpath` are not fallible. This is a bug however since
+    if the input is not formatted properly, then we should definitely not use it.
+- Shortpaths is probably not as lightweight as it could be with the various clones used,
+    as a workaround for the borrow checker. Once the shortpath config file is read,
+    there should be no need to clone the data at all.
+- The `ShortpathsBuilder` currently doesn't support various other features outlined
+    in the `arch.rs` architecture wishlist.
+- There are no `powershell` completions yet.
+- There is little documentation for how to use `shortpaths` as a library in
+    other applications.
+
 The current api for both creating and serializing shortpaths is duplicated
-across various files in shortpaths, namely `app.rs`, `bash.rs`, `shortpaths.rs`.
+across various files in shortpaths, namely `app.rs`, `bash.rs`, `shortpaths.rs`. A
+single `api.rs` (name in progress) that defines the same functionality and types
+used across all these files is to be preferred.
 
-A single `api.rs` (name in progress) that defines the same functionality used across
-all these files is to be preferred.
+## Binary
 
-When shortpaths expands or folds a path, the function should return a result, in case the path wasn't correctly formatted.
-
-The api should be modified to make it easier and faster to load shortpath configs from disk.
+The binary is still missing a few key features:
+- Proper, featureful `resolve` command
+- Ability to prompt users for a path.
+- More powerful `shortpath remove` command that can accept a vector of paths.
+- More command line options `-y`, `-p`
+- `shortpath list` and `shortpath lists`
+- Detailed manpage file for Linux users.
 
 ## TODO
 
 - Profile/benchmark shortpaths
     - Benches crate?
-- Write more unit tests
-- Generate man pages for shortpaths (cli)
-- Export powershell completions
-- Create and Complete Documentation
 
 - Consider `tracing` crate.
