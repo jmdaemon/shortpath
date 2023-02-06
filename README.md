@@ -17,11 +17,11 @@ Shortpaths is a Rust program for providing better path aliases to files or direc
 - Better Redundancy: If a directory is moved, the shortpath is updated, and every application that uses the shortpath functions as intended.
 - Environment Variable Support: Make use of environment variables as path names using the `${env:my_env_var}` syntax.
 - Nested Definitions: Embed one shortpath inside of another with the `$alias_path` syntax.
-- Shell Completions: Shortpaths can export shell completions for paths. Supported shells are: bash, powershell (Not Yet Implemented).
+- Shell Completions: Shortpaths can export shell completions for paths. Supported shells are: bash, powershell **(Not Yet Implemented)**.
 - Easy Alias Path Management: Adding new shortpaths is as easy as `shortpath add [name] [path]`
 - Centralization: One configuration available for use in many applications.
-- Slightly Better Security: The permissions set for your shortpath config is editable only (Not Yet Implemented) by the current user.
-    The shell completions file is read + user executable only (Not Yet Implemented).
+- Slightly Better Security: The permissions set for your shortpath config is editable only **(Not Yet Implemented)** by the current user.
+    The shell completions file is read + user executable only **(Not Yet Implemented)**.
 
 ## Problem
 
@@ -41,7 +41,7 @@ work without having to worry about updating aliases again.
 > What happens if I one of my paths is still broken?
 
 If the path is breakable, then you can make use of `shortpaths` additional feature:
-- `shortpath resolve`: Lets you manually/automatically find and fix unreachable or broken shortpaths.
+- `shortpath resolve`: Lets you manually/automatically find and fix unreachable or broken shortpaths. **(Partially Implemented)**
 
 If you would prefer to work through your paths manually then `shortpaths` has you covered:
 - `shortpath list`: Displays your current configuration
