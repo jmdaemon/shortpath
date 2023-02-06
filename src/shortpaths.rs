@@ -4,6 +4,7 @@ use crate::helpers::{
     find_paths,
     to_str_slice,
 };
+use std::ffi::{OsStr, OsString};
 use std::{
     path::{Path, PathBuf, Component},
     cmp::Ordering,
@@ -179,19 +180,125 @@ pub fn populate_shortpaths(shortpaths: &mut SP) -> SP {
 }
 
 /** Parse a Shortpath entry, and returns any dependencies */
-//pub fn get_shortpath_dependency(path: &[char]) -> Option<SPD> {
-pub fn get_shortpath_dependency(path: &[char]) -> SPD {
+pub fn get_shortpath_dependency(path: &[char]) -> Option<SPD> {
+//pub fn get_shortpath_dependency(path: &[char]) -> SPD {
+    // Closures
     let to_string = |slice: &[char]| { slice.iter().collect() };
     let _env_prefix = to_str_slice("$env:");
-    match path {
-        ['$', alias_name @ ..]                  => ShortpathDependency(ShortpathVariant::Alias, to_string(alias_name)),
-        [ _env_prefix, env_var_name @ .., '}']  => ShortpathDependency(ShortpathVariant::Environment, to_string(env_var_name)),
-        _                                       => ShortpathDependency(ShortpathVariant::Independent, to_string(path)),
+    let is_not_empty = |path: &[char]| { !path.is_empty() };
+    let to_spd = |variant: ShortpathVariant, dependency_name: String| { ShortpathDependency(variant, dependency_name) };
+
+    match (is_not_empty(path), path) {
+        (true, ['$', alias_name @ ..])                  => Some(to_spd(ShortpathVariant::Alias, to_string(alias_name))),
+        (true, [ _env_prefix, env_var_name @ .., '}'])  => Some(to_spd(ShortpathVariant::Environment, to_string(env_var_name))),
+        (true, [ normal_name @ .. ])                    => Some(to_spd(ShortpathVariant::Independent, to_string(path))),
+        (false, _)                                      => None
     }
 }
 
+// We need to match
+// Alias Paths, Environment Paths, Independent Paths, and also describe the absence of a path
+
 /// Find the dependencies for a given shortpath
 pub fn find_deps(entry: &Path, shortpaths: &SP) -> DEPS {
+    // For every component in the path.components()
+    // If component is a valid shortpath dependency, add it to our array.
+    // For every shortpath dependency in our array
+    //  If any shortpath dependency is another shortpath dependency
+    //  Add that to the list of nested dependencies
+    // At the end, merge the two vectors together into one vector
+    
+    let mut dependencies: Vec<ShortpathDependency> = vec![];
+
+    // For every component in the path.components()
+    for comp in entry.components() {
+        if let Component::Normal(osstr_path) = comp {
+            // If component is a valid shortpath dependency
+            let path_comp_slice = to_str_slice(osstr_path.to_string_lossy());
+            let dep = get_shortpath_dependency(&path_comp_slice);
+
+            match dep {
+                Some(dep_variant) => {
+                    // Add it to our array.
+                    dependencies.push(dep_variant.clone());
+                    match dep_variant.0 {
+                        ShortpathVariant::Independent => { }
+                        ShortpathVariant::Alias => { }
+                        ShortpathVariant::Environment => { }
+                    };
+                }
+                None => {
+                    // Otherwise, end our loop
+                    break;
+                }
+            }
+            
+        }
+    }
+
+    let is_nested_dep = |dep: &ShortpathDependency, shortpaths: &SP| {
+        shortpaths.get(&dep.1).is_some()
+    };
+
+    let mut nested_deps: Vec<ShortpathDependency> = vec![];
+
+    // For every shortpath dependency in our array
+    for dep in dependencies.clone() {
+        // If not a nested dependency
+        if !is_nested_dep(&dep, shortpaths) {
+            break; // Exit
+        }
+
+        // Else, get the nested dependency
+        let nested_dep = shortpaths.get(&dep.1).unwrap();
+        let nested_path = &nested_dep.path;
+
+        for comp in nested_path.components() {
+            // Duplicated Again
+            if let Component::Normal(osstr_path) = comp {
+                // If component is a valid shortpath dependency
+                let path_comp_slice = to_str_slice(osstr_path.to_string_lossy());
+                let dep = get_shortpath_dependency(&path_comp_slice);
+
+                match dep {
+                    Some(dep_variant) => {
+                        // Add it to our array.
+                        nested_deps.push(dep_variant.clone());
+                        match dep_variant.0 {
+                            ShortpathVariant::Independent => { }
+                            ShortpathVariant::Alias => { }
+                            ShortpathVariant::Environment => { }
+                        };
+                    }
+                    None => {
+                        // Otherwise, end our loop
+                        break;
+                    }
+                }
+            }
+        }
+        
+        //nested_dep.path.components();
+        
+        //nested_deps.push(dep); // Add it to our array.
+        //match nested_dep.0 {
+            //ShortpathVariant::Independent => { }
+            //ShortpathVariant::Alias => { }
+            //ShortpathVariant::Environment => { }
+        //};
+    }
+
+    dependencies.append(&mut nested_deps);
+    dependencies
+
+
+    /*
+    let get_dep = |osstr_path: &OsStr| {
+        let path_comp = to_str_slice(osstr_path.to_string_lossy());
+        let dep = get_shortpath_dependency(&path_comp);
+        dbg!(&dep);
+        dep
+    };
     println!("For path: {}", entry.display());
     let mut old_entry = PathBuf::new();
     let mut entry = entry.to_path_buf();
@@ -240,23 +347,10 @@ pub fn find_deps(entry: &Path, shortpaths: &SP) -> DEPS {
             // When we get a valid directory
             //let comp = components.get(index).unwrap();
             let comp = components.pop().unwrap();
-
-            //let pclone = ppath.clone();
-            //for c in pclone.components() {
-                //components.push(c.to_owned());
-            //let a = ppath.to_owned();
-            //components.push(ppath.to_owned())
-            //}
-
-            //for c in ppath.components() {
-                //components.push(c.to_owned());
-            //}
-
             if let Component::Normal(osstr_path) = comp {
+                let dep = get_dep(osstr_path);
                 // Parse the directory to get a potential valid dependency
-                let path_comp = to_str_slice(osstr_path.to_string_lossy());
-                let dep = get_shortpath_dependency(&path_comp);
-                dbg!(&dep);
+
 
                 // Add the dependency to our list
                 //expand_nested.push(dep.clone());
@@ -320,8 +414,9 @@ pub fn find_deps(entry: &Path, shortpaths: &SP) -> DEPS {
         i += 1;
         println!("Finished component");
     }
-    expand_nested.dedup();
-    expand_nested
+    */
+    //expand_nested.dedup();
+    //expand_nested
 }
 
 /**
