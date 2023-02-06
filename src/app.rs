@@ -13,7 +13,7 @@ use std::path::PathBuf;
 
 use indexmap::IndexMap;
 use serde::{Serialize, Deserialize};
-use log::LevelFilter;
+use log::{LevelFilter, trace};
 use pretty_env_logger::formatted_timed_builder;
 use clap::{arg, ArgAction, Command, ArgMatches};
  
@@ -75,19 +75,19 @@ impl Shortpaths {
         let fileconts = toml::to_string_pretty(&self).expect("Could not serialize shortpaths");
         let fileconts = fileconts.split('\n');
         
+        let t_align = |s: &str, delim: &str| {
+            let aligned = format!("{: <length$}{}", s, delim);
+            aligned
+        };
         let fileconts: Vec<String> = fileconts.into_iter().map(|line| {
             if let Some(value) = line.split_once(" = ") {
                 let (key, path) = value;
                 let delim = " = ";
-                //let s = tab_align(key, delim);
-
-                let s = format!("{: <length$} = ", key);
-
-                dbg!(&s);
-                let output = format!("{}{}\n", s, path);
-                dbg!(&output);
+                let aligned = t_align(key, delim);
+                trace!("{}", &aligned);
+                let output = format!("{}{}\n", aligned, path);
+                trace!("{}", &output);
                 return output
-                //(k, PathBuf::from(s))
             }
             format!("{}\n", line)
         }).collect();
