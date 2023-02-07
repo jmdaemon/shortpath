@@ -696,7 +696,6 @@ dependencies = [
  "derivative",
  "directories",
  "dirs",
- "either",
  "indexmap",
  "itertools",
  "log",

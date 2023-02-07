@@ -42,6 +42,7 @@ impl Shortpaths {
     }
 
     pub fn to_disk(&mut self) {
+        // May have to benchmark this
         let mut shortpaths: SP = self.shortpaths.iter().map(|(name, sp)| {
             let path = expand_tilde(&sp.path).unwrap();
             let shortpath = Shortpath { full_path: Some(path), ..sp.to_owned() };
