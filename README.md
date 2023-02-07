@@ -93,6 +93,7 @@ shortpaths export bash
 ```
 
 ### Powershell
+
 **Not Yet Implemented**
 
 Source `hooks/shortpaths_hooks.ps1` in your `$profile`. Or if you'd prefer to generate these manually:
@@ -105,28 +106,19 @@ shortpaths export powershell
 
 ### API
 
-The API is very messy in some areas:
-- `populate_dependencies`, `populate_expanded_paths`,
-    `Shortpaths::default()`, `Shortpaths::to_disk()` are very messy
-    and also use some unnecessary `filter_map()`s, as linted by clippy.
-    For more on this issue see below:
-- Not enough unit tests for shortpaths + difficulty in writing out tests.
-    There's too much boilerplate in initializing and preparing the shortpaths.
-- `expand_shortpath`, `fold_shortpath` are not fallible. This is a bug however since
-    if the input is not formatted properly, then we should definitely not use it.
-- Shortpaths is probably not as lightweight as it could be with the various clones used,
-    as a workaround for the borrow checker. Once the shortpath config file is read,
-    there should be no need to clone the data at all.
-- The `ShortpathsBuilder` currently doesn't support various other features outlined
-    in the `arch.rs` architecture wishlist.
-- There are no `powershell` completions yet.
-- There is little documentation for how to use `shortpaths` as a library in
-    other applications.
+- `expand_shortpath`, `fold_shortpath` are not fallible, which means
+    that if there's a bad shortpath, then various bugs *could* occur.
+- `Shortpaths::to_disk()` as well as various other areas of the API are very messy::
+    - Be sure eliminate all unneeded clones especially in `app.rs`, and `bash.rs`.
+- Use `ShortpathsBuilder` as a common API for `Export`, and `app.rs`
+    with desired architecture methods outlined in `arch.rs`
+- Leverage rustdoc to document library, and provide examples in `examples`
+- Create `powershell` exporter.
+- Write more unit tests, preferably after the builder api is finished.
 
-The current api for both creating and serializing shortpaths is duplicated
-across various files in shortpaths, namely `app.rs`, `bash.rs`, `shortpaths.rs`. A
-single `api.rs` (name in progress) that defines the same functionality and types
-used across all these files is to be preferred.
+The api for both creating + serializing shortpaths is duplicated
+across `app.rs`, `bash.rs`, and `shortpaths.rs`.
+A common shared `builder.rs` module based on `ShortpathsBuilder` is the best solution going forward.
 
 ## Binary
 
