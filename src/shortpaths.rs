@@ -150,19 +150,6 @@ pub fn sort_shortpaths(shortpaths: SP) -> SP {
 }
 
 // Input Parsing
-
-// Populate Shortpaths
-//pub fn populate_dependencies(shortpaths: &mut SP) -> SP {
-    //let c = shortpaths.clone();
-    //let shortpaths: SP = shortpaths.into_iter().map(|(k, sp)| {
-        //let deps = find_deps(&sp.path, false, &c);
-        //trace!("Dependencies for Shortpath: {} : {:?}", k, deps);
-        //sp.deps = deps;
-        //(k.to_owned(), sp.to_owned())
-    //}).collect();
-    //shortpaths
-//}
-
 pub fn populate_expanded_paths(shortpaths: &mut SP) -> SP {
     let shortpaths_copy = shortpaths.clone();
     // Expand to full_path
@@ -175,47 +162,19 @@ pub fn populate_expanded_paths(shortpaths: &mut SP) -> SP {
 }
 
 pub fn populate_shortpaths(shortpaths: &mut SP) -> SP {
-    //let mut shortpaths = populate_dependencies(shortpaths);
     populate_expanded_paths(shortpaths)
 }
 
-/** Parse a Shortpath entry, and returns any dependencies */
-pub fn get_shortpath_dependency(path: &[char]) -> Option<SPD> {
-//pub fn get_shortpath_dependency(path: &[char]) -> SPD {
-    // Closures
-    let to_string = |slice: &[char]| { slice.iter().collect() };
-    let _env_prefix = to_str_slice("$env:");
-    let is_not_empty = |path: &[char]| { !path.is_empty() };
-    let to_spd = |variant: ShortpathVariant, dependency_name: String| { ShortpathDependency(variant, dependency_name) };
-
-    match (is_not_empty(path), path) {
-        (true, ['$', alias_name @ ..])                  => Some(to_spd(ShortpathVariant::Alias, to_string(alias_name))),
-        (true, [ _env_prefix, env_var_name @ .., '}'])  => Some(to_spd(ShortpathVariant::Environment, to_string(env_var_name))),
-        (true, [ normal_path @ ..])                     => Some(to_spd(ShortpathVariant::Independent, to_string(normal_path))),
-        (false, _)                                      => None
-    }
-}
-
 /** Return the type of a shortpath entry */
-//pub fn get_shortpath_type(path: &[char]) -> Option<ShortpathVariant> {
-//pub fn get_shortpath_type(comp: Component) -> Option<ShortpathVariant> {
 pub fn get_shortpath_type(comp: &[char]) -> Option<ShortpathVariant> {
-    //let to_string = |slice: &[char]| { slice.iter().collect() };
     let _env_prefix = to_str_slice("$env:");
     let is_not_empty = |path: &[char]| { !path.is_empty() };
-    //let to_spd = |variant: ShortpathVariant, dependency_name: String| { ShortpathDependency(variant, dependency_name) };
 
-    
-    //comp.as_os_str().to_str().unwrap().to_string().chars())
-    //match (is_not_empty(path), path) {
-    //let is_not_empty = |comp: Component| { !comp.as_os_str().is_empty() };
-    //let path = to_str_slice(&comp.as_os_str().to_str().unwrap();
-    //match (is_not_empty(), &path) {
     match (is_not_empty(comp), comp) {
-        (true, ['$', alias_name @ ..])                  => Some(ShortpathVariant::Alias),
-        (true, [ _env_prefix, env_var_name @ .., '}'])  => Some(ShortpathVariant::Environment),
-        (true, [ normal_path @ ..])                     => Some(ShortpathVariant::Independent),
-        (false, _)                                      => None
+        (true, ['$', ..])               => Some(ShortpathVariant::Alias),
+        (true, [ _env_prefix, .., '}']) => Some(ShortpathVariant::Environment),
+        (true, [ .. ])                  => Some(ShortpathVariant::Independent),
+        (false, _)                      => None
     }
 }
 // Parses the alias, and only alias variant of a string
@@ -246,36 +205,6 @@ pub fn str_join_path(s1: &str, s2: &str) -> PathBuf {
   * is accessed here without the hashmap.
   */
 pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
-    //let mut entry = sp.path.to_owned();
-
-    // Algorithm Example:
-    // (alias_path='$c/dddd', entry='$c/dddd', sp)
-    // -> $c
-    //    -> alias
-    //    -> '$b/cccc'
-    //    -> ('$b/cccc', '$b/cccc', sp)
-    //       -> ('$b/cccc', '$b/cccc', sp)
-    //       -> $b
-    //       -> alias
-    //       -> '$a/bbbb'
-    //       -> ('$a/bbbb', '$a/bbbb', sp)
-    //          -> $a
-    //          -> alias
-    //          -> 'aaaa'
-    //          -> ('aaaa', 'aaaa', sp)
-    //             -> None 
-    //             -> Return 'aaaa'
-    //          -> Return expand_path(entry='$a/bbbb', alias_name='a', alias_path='aaaa')
-    //       -> Return expand_path(entry='$b/cccc', alias_name='b', alias_path='aaaa/bbbb')
-    //    -> Return expand_path(entry='$c/dddd', alias_name='c', alias_path='aaaa/bbbb/cccc')
-    // -> Store entry, send as PathBuf
-    //pub fn f(mut alias_path: String, entry: PathBuf, alias_name, shortpaths: &SP) -> Option<String> {
-
-    // (String::new(), '$c/dddd', String::new(), sp)
-    // -> ('$b=cccc', '$c/dddd', "$c", sp)
-    //    -> ('$a/bbbb', '$b/dddd', "$a", sp)
-    //       -> ('aaaa', '$a/bbbb', "", sp)
-    //pub fn f(alias_name: Either<String, Option<String>>, alias_path: String, entry: PathBuf, shortpaths: &SP) -> String {
     pub fn f(alias_name: String, alias_path: String, entry: PathBuf, has_started: bool, shortpaths: &SP) -> String {
         println!();
         println!("Summary");
