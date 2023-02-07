@@ -120,6 +120,11 @@ The api for both creating + serializing shortpaths is duplicated
 across `app.rs`, `bash.rs`, and `shortpaths.rs`.
 A common shared `builder.rs` module based on `ShortpathsBuilder` is the best solution going forward.
 
+Things that are nice to have but are not necessary:
+- Caching/Reusing `full_paths` from previous paths given that they
+    contain matching alias names.
+    - This could be a potential order of magnitude speedup.
+
 ## Binary
 
 The binary is still missing a few key features:
