@@ -127,15 +127,6 @@ pub fn sort_shortpaths(shortpaths: SP) -> SP {
 
 // Input Parsing
 
-///// Expand shortpaths to full_paths at runtime
-//pub fn populate_expanded_paths(shortpaths: &SP) -> SP {
-    //shortpaths.iter().map(|(k, sp)| {
-        //let full_path = expand_shortpath(sp, shortpaths);
-        //let shortpath = Shortpath{ full_path: Some(full_path), ..sp.to_owned()};
-        //(k.to_owned(), shortpath)
-    //}).collect()
-//}
-
 /** Return the type of a shortpath entry */
 pub fn get_shortpath_type(comp: &[char]) -> Option<ShortpathVariant> {
     let _env_prefix = to_str_slice("$env:");

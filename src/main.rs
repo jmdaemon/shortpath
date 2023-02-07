@@ -22,14 +22,12 @@ fn main() {
     toggle_logging(&matches);
 
     // Setup initial configs
-    //let mut shortpaths_config = Shortpaths::new();
     let mut shortpaths_builder = ShortpathsBuilder::new()
         .with_config(CONFIG_FILE_PATH)
         .read_shortpaths_from(CONFIG_FILE_PATH);
 
     info!("Current App Shortpaths:\n{}", toml::to_string_pretty(&shortpaths_builder).expect("Could not serialize."));
 
-    //let mut shortpaths = shortpaths_config.shortpaths.clone();
     let mut shortpaths = shortpaths_builder.build().unwrap();
 
     match matches.subcommand() {
@@ -80,5 +78,4 @@ fn main() {
         _ => {}
     }
     to_disk(shortpaths, &shortpaths_builder.cfg.unwrap(), CONFIG_FILE_PATH);
-    //shortpaths_config.to_disk();
 }
