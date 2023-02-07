@@ -6,7 +6,6 @@ use crate::consts::{
 
 use std::{
     path::PathBuf,
-    collections::HashMap,
     fs::{create_dir_all, read_to_string, write},
 };
 
@@ -18,12 +17,12 @@ use directories::ProjectDirs;
 pub struct Config {
     #[derivative(Default(value = "ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).expect(\"Could not initialize config\")"))]
     pub project_dirs: ProjectDirs,
-    pub files: HashMap<String, PathBuf>
+    pub file: PathBuf
 }
 
 impl Config {
-    pub fn new() -> Config {
-        Config { files: HashMap::new(), ..Default::default() }
+    pub fn new(file: impl Into<String>) -> Config {
+        Config { file: PathBuf::from(file.into()), ..Default::default() }
     }
 
     pub fn make_config_directory(&self) {
@@ -34,18 +33,11 @@ impl Config {
         self.project_dirs.config_dir().to_path_buf().join(config.into())
     }
 
-    pub fn add_config(&mut self, key: String, file: &str) {
-        self.files.insert(key, self.format_config_path(file));
+    pub fn read_config(&self) -> String {
+        read_to_string(&self.file).expect("Could not read config file.")
     }
-}
 
-pub fn read_config(config: &Config, file: &str) -> String {
-    let toml_config = config.files.get(file).expect("Unable to retrieve config path from files");
-    read_to_string(toml_config)
-        .expect("Could not read config file.")
-}
-
-pub fn write_config(config: &Config, file: &str, conts: &str) -> std::io::Result<()> {
-    let toml_config = config.files.get(file).expect("Unable to retrieve config path from files");
-    write(toml_config, conts)
+    pub fn write_config(&self, conts: &str) -> std::io::Result<()> {
+        write(&self.file, conts)
+    }
 }

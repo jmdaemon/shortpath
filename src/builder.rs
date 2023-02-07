@@ -1,5 +1,9 @@
 use serde::{Serialize, Deserialize};
-use crate::{shortpaths::{SP, Shortpath, expand_shortpath}, config::{Config, read_config, write_config}, helpers::{expand_tilde, find_longest_keyname, tab_align}};
+use crate::{
+    shortpaths::{SP, Shortpath, expand_shortpath},
+    config::Config,
+    helpers::{expand_tilde, find_longest_keyname, tab_align}
+};
 use log::trace;
 
 #[derive(Serialize, Deserialize, Default, Debug)]
@@ -27,8 +31,6 @@ pub trait ShortpathOperationsExt {
 
     /// Expand shortpaths to full_paths at runtime
     fn populate_expanded_paths(&self) -> SP;
-
-    //fn tab_align_paths(&self) -> SP;
 }
 
 impl ShortpathsAlignExt for Shortpaths {
@@ -78,14 +80,11 @@ impl ShortpathsBuilder {
         Default::default()
     }
 
-    //pub fn build(&mut self) -> Option<SP> {
     pub fn build(mut self) -> Option<Shortpaths> {
         if let Some(paths) = &mut self.paths {
             let shortpaths = paths.shortpaths
                 .expand_special_characters()
                 .populate_expanded_paths();
-            //let cfg = self.cfg.unwrap()
-            //let paths = Shortpaths{ shortpaths, ..self.paths.unwrap()};
             let paths = Shortpaths { shortpaths, cfg: self.cfg.unwrap()};
             return Some(paths);
         }
@@ -93,16 +92,14 @@ impl ShortpathsBuilder {
     }
 
     pub fn with_config(mut self, file: &str) -> Self {
-        let mut config = Config::new();
-        config.add_config(file.to_owned(), file);
-        self.cfg = Some(config);
+        self.cfg = Some(Config::new(file));
         self
     }
 
-    pub fn read_shortpaths_from(self, file: &str) -> Self {
+    pub fn read_shortpaths(self) -> Self {
         assert!(self.cfg.is_some());
         let cfg = self.cfg.unwrap();
-        let toml_conts = read_config(&cfg, file);
+        let toml_conts = cfg.read_config();
 
         let sp = toml::from_str(&toml_conts);
         assert!(sp.is_ok());
@@ -111,15 +108,11 @@ impl ShortpathsBuilder {
     }
 }
 
-//pub fn to_disk(shortpaths: SP, cfg: &Config, file: &str) {
-//pub fn to_disk(shortpaths: Shortpaths, file: &str) {
-pub fn to_disk(paths: Shortpaths, file: &str) {
-    //let result = write_config(&self.cfg, CONFIG_FILE_PATH, &conts);
-    //let conts = toml::to_string_pretty(&paths).expect("Could not serialize shortpaths");
+pub fn to_disk(paths: Shortpaths) {
     let conts = paths.tab_align_paths();
-    let result = write_config(&paths.cfg, file, &conts);
+    let result = paths.cfg.write_config(&conts);
     if let Err(e) = result {
         eprintln!("Failed to write shortpaths config to disk: {}", e);
     }
-    println!("Wrote shortpaths config to {}", paths.cfg.files.get(file).unwrap().display());
+    println!("Wrote shortpaths config to {}", paths.cfg.file.display());
 }

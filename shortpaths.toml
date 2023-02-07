@@ -1,3 +1,2 @@
-# Example shortpaths file
 [shortpaths]
-alias_name = "alias_path"
+alias_name = 'alias_path'
