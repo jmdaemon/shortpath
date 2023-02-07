@@ -3,27 +3,14 @@
 Shortpaths is a Rust program for providing better path aliases to files or directories.
 
 ## Table of Contents
-1. [Features](#features)
-2. [Problem](#problem)
-3. [How It Works](#how-it-works)
-4. [Usage](#usage)
+1. [Problem](#problem)
+2. [How It Works](#how-it-works)
+3. [Usage](#usage)
+4. [Features](#features)
 5. [Shell Completions](#shell-completions)
     - [Bash](#bash)
     - [Powershell](#powershell)
 6. [Issues](#issues)
-
-## Features
-
-- **Better Redundancy:** If a directory is moved, the shortpath is updated, and every application that uses the shortpath functions as intended.
-- **Environment Variable Support:** Make use of environment variables as path names using the `${env:my_env_var}` syntax.
-- **Nested Definitions:** Embed one shortpath inside of another with the `$alias_path` syntax.
-- **Shell Completions:** Shortpaths can export shell completions for paths. Supported shells are: bash, powershell.
-    - **(Not Yet Implemented)**
-- **Easy Alias Path Management:** Adding new shortpaths is as easy as `shortpath add [name] [path]`
-- **Centralization:** One configuration available for use in many applications.
-- **Slightly Better Security:** The permissions set for your shortpath config is editable only by the current user.
-    The shell completions file is read + user executable only.
-    - **(Not Yet Implemented)**
 
 ## Problem
 
@@ -49,7 +36,7 @@ If you would prefer to work through your paths manually then `shortpaths` has yo
 - `shortpath list`: Displays your current configuration
 - `shortpath list [alias]`: Displays the path of the corresponding `shortpath`.
 
-See [below](#usage) for usage on removing shortpaths.
+See [here](#usage) for more information on managing shortpaths.
 
 ## Usage
 
@@ -73,6 +60,19 @@ shortpath update "current_name" -p "new_path" # Change shortpath directory
 shortpath export bash       # Bash completions
 shortpath export powershell # Powershell completions
 ```
+
+## Features
+
+- **Better Redundancy:** If a directory is moved, the shortpath is updated, and every application that uses the shortpath functions as intended.
+- **Environment Variable Support:** Make use of environment variables as path names using the `${env:my_env_var}` syntax.
+- **Nested Definitions:** Embed one shortpath inside of another with the `$alias_path` syntax.
+- **Shell Completions:** Shortpaths can export shell completions for paths. Supported shells are: bash, powershell.
+    - **(Not Yet Implemented)**
+- **Easy Alias Path Management:** Adding new shortpaths is as easy as `shortpath add [name] [path]`
+- **Centralization:** One configuration available for use in many applications.
+- **Slightly Better Security:** The permissions set for your shortpath config is editable only by the current user.
+    The shell completions file is read + user executable only.
+    - **(Not Yet Implemented)**
 
 ## Shell Completions
 
