@@ -29,7 +29,7 @@ fn bench_nested_serialize_bash(shortpaths: SP) {
 
 fn criterion_benchmark(c: &mut Criterion) {
     // Enable debug statements
-    formatted_timed_builder().filter_level(LevelFilter::Trace).init();
+    //formatted_timed_builder().filter_level(LevelFilter::Trace).init();
 
     // Initialization
     let sp_paths = indexmap!{
