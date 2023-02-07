@@ -71,7 +71,6 @@ impl PartialOrd for Shortpath {
 }
 
 // Data Type Implementations
-
 impl Shortpath {
     pub fn new(path: PathBuf, full_path: Option<PathBuf>) -> Shortpath {
         Shortpath { path, full_path }

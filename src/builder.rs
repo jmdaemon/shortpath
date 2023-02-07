@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use crate::{
     shortpaths::{SP, Shortpath, expand_shortpath},
     config::Config,
-    helpers::{expand_tilde, find_longest_keyname, tab_align}
+    helpers::{expand_tilde, find_longest_keyname, tab_align, sort_shortpaths}
 };
 use log::trace;
 
@@ -31,6 +31,12 @@ pub trait ShortpathOperationsExt {
 
     /// Expand shortpaths to full_paths at runtime
     fn populate_expanded_paths(&self) -> SP;
+
+    /// Sort shortpaths in lexicographical order of the expanded paths
+    fn sort_paths(&self) -> SP;
+
+    /// Same as sort_paths but without creating a copy
+    fn sort_paths_inplace(&mut self) -> SP;
 }
 
 impl ShortpathsAlignExt for Shortpaths {
@@ -72,6 +78,16 @@ impl ShortpathOperationsExt for SP {
             (k.to_owned(), shortpath)
         }).collect()
     }
+
+    fn sort_paths(&self) -> SP { sort_shortpaths(self.to_owned()) }
+
+    fn sort_paths_inplace(&mut self) -> SP {
+        self.sort_by(|_, v1, _, v2| {
+            v1.cmp(v2)
+        });
+        self.to_owned()
+    }
+
 }
 
 impl ShortpathsBuilder {
@@ -84,6 +100,7 @@ impl ShortpathsBuilder {
         if let Some(paths) = &mut self.paths {
             let shortpaths = paths.shortpaths
                 .expand_special_characters()
+                .sort_paths_inplace()
                 .populate_expanded_paths();
             let paths = Shortpaths { shortpaths, cfg: self.cfg.unwrap()};
             return Some(paths);

@@ -1,4 +1,4 @@
-use crate::shortpaths::Shortpath;
+use crate::shortpaths::{Shortpath, SP};
 
 use std::{
     env::var,
@@ -91,4 +91,12 @@ pub fn getenv<S: Into<String>>(name: S) -> String {
         Err(e) => eprintln!("Error in expanding environment variable ${}: ${}", name, e)
     };
     path
+}
+
+/// Sort shortpaths according to the lexicographical order of their expanded paths
+/// Note that this returns a copy of the shortpaths
+pub fn sort_shortpaths(shortpaths: SP) -> SP {
+    shortpaths.sorted_by(|_, v1, _, v2| {
+        v1.cmp(v2)
+    }).collect()
 }
