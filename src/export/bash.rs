@@ -2,7 +2,6 @@ use crate::{
     consts::PROGRAM_NAME,
     export::Export,
     shortpaths::{SP, sort_shortpaths},
-    helpers::expand_tilde,
 };
 
 use std::{
@@ -54,20 +53,13 @@ impl Export for BashExporter {
     fn gen_completions(&self) -> String {
         info!("gen_completions()");
         let mut output = String::from("#!/bin/bash\n\n");
-        let cpy = self.shortpaths.clone();
-        let shortpaths = sort_shortpaths(cpy.unwrap());
-
-        //if let Some(shortpaths) = shortpaths {
-            let serialized: Vec<String> = shortpaths.iter().map(|(name, sp)| {
+        self.shortpaths.to_owned().unwrap()
+            .iter().for_each(|(name, sp)| {
                 trace!("shortpaths: {}: {}", &name, sp.path.display());
                 trace!("shortpaths: {}: {:?}", &name, sp.full_path);
-                let path = expand_tilde(&sp.path).unwrap();
-                fmt_bash_alias(name, &path)
-            }).collect();
-
-            serialized.iter().for_each(|line| output += line);
-            trace!("output: {}", output);
-        //}
+                output += &fmt_bash_alias(name, &sp.path);
+        });
+        trace!("output: {}", output);
         output
     }
 
