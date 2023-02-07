@@ -1,4 +1,7 @@
-use shortpaths::shortpaths::{Shortpath, ShortpathsBuilder, SP};
+use shortpaths::{
+    shortpaths::{Shortpath, SP},
+    builder:: ShortpathsBuilder,
+};
 
 use std::path::PathBuf;
 
@@ -31,12 +34,13 @@ pub fn shortpaths_nested() -> SP {
 /// This ensures that we always set the logger
 pub fn enable_logging() {
     // Enable debug statements
-    //formatted_timed_builder().filter_level(LevelFilter::Trace).init();
+    formatted_timed_builder().filter_level(LevelFilter::Trace).init();
 }
 
 /// Initialize shortpaths
 pub fn setup_shortpaths(get_shortpaths: impl Fn() -> SP) -> SP {
     let sp_paths = get_shortpaths();
-    let mut sp_builder = ShortpathsBuilder::new(sp_paths);
-    sp_builder.build().unwrap()
+    let paths =
+        ShortpathsBuilder::from(sp_paths).build().unwrap();
+    paths .shortpaths
 }

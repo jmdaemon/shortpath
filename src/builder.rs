@@ -10,7 +10,7 @@ use log::trace;
 pub struct Shortpaths {
     pub shortpaths: SP,
     #[serde(skip)]
-    pub cfg: Config,
+    pub cfg: Option<Config>,
 }
 
 #[derive(Default, Debug)]
@@ -90,11 +90,17 @@ impl ShortpathOperationsExt for SP {
 
 }
 
-impl ShortpathsBuilder {
-    // TODO: Use FromIterator trait extension
-    pub fn new() -> ShortpathsBuilder  {
-        Default::default()
+impl From<SP> for ShortpathsBuilder {
+    fn from(item: SP) -> Self {
+        //Number { value: item }
+        let shortpaths = Shortpaths { shortpaths: item, cfg: None };
+        ShortpathsBuilder { paths: Some(shortpaths), cfg: None }
     }
+}
+
+
+impl ShortpathsBuilder {
+    pub fn new() -> ShortpathsBuilder  { Default::default() }
 
     pub fn build(mut self) -> Option<Shortpaths> {
         if let Some(paths) = &mut self.paths {
@@ -102,7 +108,7 @@ impl ShortpathsBuilder {
                 .expand_special_characters()
                 .sort_paths_inplace()
                 .populate_expanded_paths();
-            let paths = Shortpaths { shortpaths, cfg: self.cfg.unwrap()};
+            let paths = Shortpaths { shortpaths, cfg: self.cfg};
             return Some(paths);
         }
         None
@@ -127,9 +133,10 @@ impl ShortpathsBuilder {
 
 pub fn to_disk(paths: Shortpaths) {
     let conts = paths.tab_align_paths();
-    let result = paths.cfg.write_config(&conts);
+    let cfg = paths.cfg.expect("Config was empty");
+    let result = cfg.write_config(&conts);
     if let Err(e) = result {
         eprintln!("Failed to write shortpaths config to disk: {}", e);
     }
-    println!("Wrote shortpaths config to {}", paths.cfg.file.display());
+    println!("Wrote shortpaths config to {}", cfg.file.display());
 }

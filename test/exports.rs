@@ -2,7 +2,7 @@ use crate::helpers::{
     shortpaths_default,
     shortpaths_nested,
     setup_shortpaths,
-    enable_logging,
+    //enable_logging,
 };
 
 use shortpaths::export::{Export, bash::BashExporter};
@@ -16,13 +16,13 @@ fn test_serialize_bash() {
 
     // Test
     let actual = exp.gen_completions();
-    let expect = "#!/bin/bash\n\nexport a=\"aaaa\"\nexport b=\"$a/bbbb\"\nexport c=\"$b/cccc\"\nexport d=\"$a/dddd\"\n";
+    let expect = "#!/bin/bash\n\nexport a=\"aaaa\"\nexport b=\"$a/bbbb\"\nexport d=\"$a/dddd\"\nexport c=\"$b/cccc\"\n";
     assert_eq!(actual, expect, "Bash shell completions are generated in the correct order");
 }
 
 #[test]
 fn test_nested_serialize_bash() {
-    enable_logging();
+    //enable_logging();
     let shortpaths = setup_shortpaths(shortpaths_nested);
     let exp = BashExporter::default()
         .set_shortpaths(&shortpaths);
@@ -31,5 +31,4 @@ fn test_nested_serialize_bash() {
     let actual = exp.gen_completions();
     let expect = "#!/bin/bash\n\nexport a=\"aaaa\"\nexport b=\"$a/bbbb\"\nexport c=\"$b/cccc\"\nexport d=\"$c/dddd\"\n";
     assert_eq!(actual, expect, "Bash shell completions are generated in the correct order");
-    //assert_eq!(1, 0);
 }
