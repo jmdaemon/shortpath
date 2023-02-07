@@ -328,8 +328,9 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
     // -> Store entry, send as PathBuf
     //pub fn f(mut alias_path: String, entry: PathBuf, alias_name, shortpaths: &SP) -> Option<String> {
     pub fn f(mut alias_path: String, entry: PathBuf, alias_name: String, shortpaths: &SP) -> String {
-        const msg: &str = "Summary";
-        dbg!(msg);
+        //const msg: &str = "Summary";
+        //dbg!(msg);
+        println!("Summary");
         dbg!(&alias_path);
         dbg!(&entry);
         dbg!(&alias_name);
@@ -354,31 +355,27 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         let shortpath_variant = shortpath_type.unwrap();
 
         match shortpath_variant {
-            ShortpathVariant::Alias       => {
+            ShortpathVariant::Alias => {
 
                 // If the name is empty
-                dbg!("Start of Name");
+                println!("Setting Name");
                 let name = if alias_name.is_empty() {
-                    // Then parse the current path component
-                    dbg!("Executing name -> parse_alias first branch");
-                    //parse_alias(&to_string(&comp)).unwrap()
+                    println!("Branch 1");
                     let alias_name = parse_alias(&to_string(&comp)).unwrap();
                     let sp = shortpaths.get(&alias_name).unwrap();
                     let out = sp.path.to_str().unwrap().to_string();
-                    //let out = format!("${}", out);
                     dbg!(&out);
                     out
-
                 } else {
                     // If not, then if parse alias is 
                     if let Some(parsed) = parse_alias(&alias_name) {
+                        println!("Branch 2");
 
                         dbg!(&parsed);
                         let pbuf = PathBuf::from(parsed);
                         let alias_name = to_string(&pbuf.components().next().unwrap());
 
                         //let alias_name = format!("${}", parsed);
-                        dbg!("Executing name -> parse_alias if branch");
 
                         //let sp = shortpaths.get(&parsed).unwrap();
                         let sp = shortpaths.get(&alias_name).unwrap();
@@ -390,25 +387,13 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                         //let out = format!("${}", out);
                         dbg!(&out);
                         out
-                        //parsed
                     } else {
-                        dbg!("Executing name -> parse_alias else branch");
-                        //alias_name
-                        //let alias_name = parse_alias(&to_string(&comp)).unwrap();
-
-                        //let sp = shortpaths.get(&alias_name).unwrap();
-                        //let out = sp.path.to_str().unwrap().to_string();
-                        //dbg!(&out);
-                        //out
+                        println!("Branch 3");
+                        //return alias_name;
                         String::new()
                     }
-                    //else {
-                        //let sp = shortpaths.get(&alias_name).unwrap();
-                        //sp.path.to_str().unwrap().to_string()
-                        //alias_name
-                    //}
                 };
-                dbg!("End of Name");
+                println!("Name is: {}\n\n", &name);
 
                 //let sp = shortpaths.get(&name).unwrap();
                 //let path = &sp.path;
@@ -416,23 +401,38 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                 //let expanded = expand_path(&alias_path, &name, &alias_path);
                 //output = expand_path(&alias_path, &name, &alias_path);
                 //let expanded = expand_path(&alias_path, &name, &alias_path);
+
+                // aaaa
                 if name.is_empty() {
+                    println!("In Recurse Statement:");
+                    //return alias_path;
+                    let expanded = expand_path(&alias_path, &name, &alias_path);
+                    //return expanded
+                    //return f(expanded, PathBuf::from(output), name, shortpaths);
+                    output = expanded.clone();
+                    //return f(expanded, PathBuf::from(output), name, shortpaths);
+                    let result = f(expanded, PathBuf::from(output), name, shortpaths);
+                    let other_msg = format!("Returned from f with : {}", &result);
+                    dbg!(other_msg);
+                    return result;
+                } else {
+                    println!("In Termination Statement");
+                    //let sp = shortpaths.get(&alias_name).unwrap();
+                    if let Some(sp) = shortpaths.get(&alias_name) {
+                        let this = sp.path.to_str().unwrap();
+                        //let expanded = expand_path(&alias_path, &name, &alias_path);
+                        //let expanded = expand_path(&alias_path, &name, &alias_name);
+                        //let this = alias_path;
+                        let expanded = expand_path(this, &name, &alias_name);
+                        println!("{}", &expanded);
+                        return expanded;
+                        //return alias_path;
+                    }
                     return alias_path;
-                } 
-
-                let n1 = name.clone();
-                let ap1 = alias_path.clone();
-
-                //let expanded = expand_path(&alias_path, name, &alias_path);
-                let expanded = expand_path(&alias_path, &n1, &ap1);
-                //return expanded
-                //return f(expanded, PathBuf::from(output), name, shortpaths);
-                output = expanded.clone();
-                //return f(expanded, PathBuf::from(output), name, shortpaths);
-                let result = f(expanded, PathBuf::from(output), name, shortpaths);
-                let other_msg = format!("Returned from f with : {}", &result);
-                dbg!(other_msg);
-                return result;
+                }
+                //{
+                //}
+                //return result;
 
                 //let output = f(expanded, PathBuf::from(output), name, shortpaths);
                 //return output;
