@@ -26,9 +26,10 @@ fn main() {
         .with_config(CONFIG_FILE_PATH)
         .read_shortpaths_from(CONFIG_FILE_PATH);
 
-    info!("Current App Shortpaths:\n{}", toml::to_string_pretty(&shortpaths_builder).expect("Could not serialize."));
-
-    let mut shortpaths = shortpaths_builder.build().unwrap();
+    //let mut shortpaths = shortpaths_builder.build().unwrap();
+    let mut paths = shortpaths_builder.build().unwrap();
+    let mut shortpaths = paths.shortpaths.to_owned();
+    info!("Current App Shortpaths:\n{}", toml::to_string_pretty(&shortpaths).expect("Could not serialize."));
 
     match matches.subcommand() {
         Some(("add", sub_matches)) => {
@@ -77,5 +78,8 @@ fn main() {
         }
         _ => {}
     }
-    to_disk(shortpaths, &shortpaths_builder.cfg.unwrap(), CONFIG_FILE_PATH);
+    //to_disk(shortpaths, &shortpaths_builder.cfg.unwrap(), CONFIG_FILE_PATH);
+    //to_disk(shortpaths_builder.paths.unwrap(), &shortpaths_builder.cfg.unwrap(), CONFIG_FILE_PATH);
+    //to_disk(shortpaths_builder.paths.unwrap(), CONFIG_FILE_PATH);
+    to_disk(paths, CONFIG_FILE_PATH);
 }

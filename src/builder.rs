@@ -1,11 +1,23 @@
 use serde::{Serialize, Deserialize};
 use crate::{shortpaths::{SP, Shortpath, expand_shortpath}, config::{Config, read_config, write_config}, helpers::{expand_tilde, find_longest_keyname, tab_align}};
+use log::trace;
 
 #[derive(Serialize, Deserialize, Default, Debug)]
-pub struct ShortpathsBuilder {
-    pub shortpaths: Option<SP>,
+pub struct Shortpaths {
+    pub shortpaths: SP,
     #[serde(skip)]
+    pub cfg: Config,
+}
+
+#[derive(Default, Debug)]
+pub struct ShortpathsBuilder {
+    pub paths: Option<Shortpaths>,
     pub cfg: Option<Config>,
+}
+
+pub trait ShortpathsAlignExt {
+    /// Horizontally align shortpaths for the shortpaths config file
+    fn tab_align_paths(&self) -> String;
 }
 
 pub trait ShortpathOperationsExt {
@@ -16,13 +28,33 @@ pub trait ShortpathOperationsExt {
     /// Expand shortpaths to full_paths at runtime
     fn populate_expanded_paths(&self) -> SP;
 
-    /// Horizontally align shortpaths
-    fn tab_align_paths(&self) -> SP;
+    //fn tab_align_paths(&self) -> SP;
+}
+
+impl ShortpathsAlignExt for Shortpaths {
+    fn tab_align_paths(&self) -> String {
+        let width = find_longest_keyname(&self.shortpaths).len();
+        let delim = " = ";
+
+        let conts = toml::to_string_pretty(&self).expect("Could not serialize shortpaths");
+        let conts: Vec<String> = conts.split('\n').map(|line| {
+            if let Some(value) = line.split_once(delim) {
+                let (key, path) = value;
+                let aligned = tab_align(key, width, Some(delim));
+                trace!("{}", &aligned);
+                let output = format!("{}{}\n", aligned, path);
+                trace!("{}", &output);
+                return output
+            }
+            format!("{}\n", line)
+        }).collect();
+        let conts = conts.join("").strip_suffix('\n').unwrap().to_owned();
+        conts
+    }
 }
 
 impl ShortpathOperationsExt for SP {
     fn expand_special_characters(&self) -> SP {
-        //let mut shortpaths: SP = self.shortpaths.iter().map(|(name, sp)| {
         let shortpaths: SP = self.iter().map(|(name, sp)| {
             let path = expand_tilde(&sp.path).unwrap();
             let shortpath = Shortpath { full_path: Some(path), ..sp.to_owned() };
@@ -32,50 +64,12 @@ impl ShortpathOperationsExt for SP {
     }
 
     fn populate_expanded_paths(&self) -> SP {
-        //shortpaths.iter().map(|(k, sp)| {
         self.iter().map(|(k, sp)| {
             let full_path = expand_shortpath(sp, self);
             let shortpath = Shortpath{ full_path: Some(full_path), ..sp.to_owned()};
             (k.to_owned(), shortpath)
         }).collect()
     }
-
-    fn tab_align_paths(&self) -> SP {
-        let width = find_longest_keyname(self).len();
-        //self.shortpaths = shortpaths;
-
-        //let conts = toml::to_string_pretty(&self).expect("Could not serialize shortpaths");
-        //let delim = " = ";
-        
-        self.into_iter().map(|(name, sp)| {
-            //let aligned = tab_align(name, width, delim);
-            let aligned = tab_align(name, width, None);
-            (aligned, sp.to_owned())
-            //let output = format!("{}{}\n", aligned);
-            //let (key, path) = value;
-            //let aligned = tab_align(key, width, delim);
-            //trace!("{}", &aligned);
-            //let output = format!("{}{}\n", aligned, path);
-            //trace!("{}", &output);
-            //return output
-        }).collect()
-        
-        /*
-        let fileconts: Vec<String> = conts.split('\n').map(|line| {
-            if let Some(value) = line.split_once(delim) {
-                let (key, path) = value;
-                let aligned = tab_align(key, width, delim);
-                trace!("{}", &aligned);
-                let output = format!("{}{}\n", aligned, path);
-                trace!("{}", &output);
-                return output
-            }
-            format!("{}\n", line)
-        }).collect();
-        */
-        //self.to_owned()
-    }
-
 }
 
 impl ShortpathsBuilder {
@@ -84,12 +78,16 @@ impl ShortpathsBuilder {
         Default::default()
     }
 
-    pub fn build(&mut self) -> Option<SP> {
-        if let Some(shortpaths) = &mut self.shortpaths {
-            let shortpaths = shortpaths
+    //pub fn build(&mut self) -> Option<SP> {
+    pub fn build(mut self) -> Option<Shortpaths> {
+        if let Some(paths) = &mut self.paths {
+            let shortpaths = paths.shortpaths
                 .expand_special_characters()
                 .populate_expanded_paths();
-            return Some(shortpaths);
+            //let cfg = self.cfg.unwrap()
+            //let paths = Shortpaths{ shortpaths, ..self.paths.unwrap()};
+            let paths = Shortpaths { shortpaths, cfg: self.cfg.unwrap()};
+            return Some(paths);
         }
         None
     }
@@ -108,17 +106,20 @@ impl ShortpathsBuilder {
 
         let sp = toml::from_str(&toml_conts);
         assert!(sp.is_ok());
-        let sp: ShortpathsBuilder = sp.unwrap();
-        ShortpathsBuilder { cfg: Some(cfg), ..sp }
+        let sp: Shortpaths = sp.unwrap();
+        ShortpathsBuilder { cfg: Some(cfg), paths: Some(sp)}
     }
 }
 
-pub fn to_disk(shortpaths: SP, cfg: &Config, file: &str) {
+//pub fn to_disk(shortpaths: SP, cfg: &Config, file: &str) {
+//pub fn to_disk(shortpaths: Shortpaths, file: &str) {
+pub fn to_disk(paths: Shortpaths, file: &str) {
     //let result = write_config(&self.cfg, CONFIG_FILE_PATH, &conts);
-    let conts = toml::to_string_pretty(&shortpaths).expect("Could not serialize shortpaths");
-    let result = write_config(cfg, file, &conts);
+    //let conts = toml::to_string_pretty(&paths).expect("Could not serialize shortpaths");
+    let conts = paths.tab_align_paths();
+    let result = write_config(&paths.cfg, file, &conts);
     if let Err(e) = result {
         eprintln!("Failed to write shortpaths config to disk: {}", e);
     }
-    println!("Wrote shortpaths config to {}", cfg.files.get(file).unwrap().display());
+    println!("Wrote shortpaths config to {}", paths.cfg.files.get(file).unwrap().display());
 }
