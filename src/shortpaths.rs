@@ -18,8 +18,6 @@ use walkdir::DirEntry;
 
 // Data Types
 pub type SP = IndexMap<String, Shortpath>;
-pub type SPD = ShortpathDependency;
-pub type DEPS = Vec<SPD>; 
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ShortpathVariant {
@@ -27,9 +25,6 @@ pub enum ShortpathVariant {
     Alias,
     Environment,
 }
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ShortpathDependency(ShortpathVariant, String);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Shortpath {
@@ -174,12 +169,11 @@ pub fn get_shortpath_type(comp: &[char]) -> Option<ShortpathVariant> {
         (false, _)                      => None
     }
 }
-// Parses the alias, and only alias variant of a string
-pub fn parse_alias(comp: &str) -> Option<String> {
-    let copy = comp.to_string();
-    if copy.starts_with('$') {
-        Some(copy.split_at(1).1.to_owned())
-        //copy.chars()
+
+/// Parse a component of a path, and determine any shortpath variants
+pub fn parse_alias(comp: String) -> Option<String> {
+    if comp.starts_with('$') {
+        Some(comp.split_at(1).1.to_owned())
     } else {
         None
     }
@@ -244,19 +238,17 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                 info!("Branch 1: Beginning recursive expansion");
 
                 info!("Setting Name");
-                let sp_depend_name = parse_alias(&to_string(&comp)).unwrap();
+                let sp_depend_name = parse_alias(to_string(&comp)).unwrap();
                 let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
 
                 let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
                 debug!("depend_path = {}", &depend_path);
-                //assert_ne!(String::new(), depend_path);
 
                 info!("Starting recursion");
 
                 let expanded = expand_path(entry.to_str().unwrap(), &sp_depend_name, &depend_path);
                 debug!("Expanding layer: {} -> {}", entry.display(), &expanded);
 
-                //output = expanded.clone();
                 output = expanded;
 
                 trace!("Expanding all layers...");
@@ -264,13 +256,13 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                 let result = f(verbatim_depend_name, depend_path, PathBuf::from(output), true, shortpaths);
                 debug!("B1: Received result: {}\n", result);
                 return result
-            } else if let Some(parsed) = parse_alias(&alias_name) {
+            } else if let Some(parsed) = parse_alias(alias_name) {
                 trace!("Branch 2: In recursive expansion");
                 trace!("Parsed alias_name: {}", parsed);
 
                 // Note that this only works for the first component of a string
                 let pbuf = PathBuf::from(alias_path);
-                let sp_depend_name = parse_alias(&to_string(&pbuf.components().next().unwrap())).unwrap();
+                let sp_depend_name = parse_alias(to_string(&pbuf.components().next().unwrap())).unwrap();
                 
                 let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
                 debug!("sp_depend_name = {}", &sp_depend_name);
@@ -292,7 +284,7 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                 trace!("Alias Path: {}", &alias_path);
 
                 let pbuf = PathBuf::from(alias_path);
-                let sp_depend_name = parse_alias(&to_string(&pbuf.components().next().unwrap())).unwrap();
+                let sp_depend_name = parse_alias(to_string(&pbuf.components().next().unwrap())).unwrap();
                 debug!("sp_depend_name = {}", &sp_depend_name);
 
                 let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();

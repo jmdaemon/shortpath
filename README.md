@@ -122,9 +122,6 @@ The API is very messy in some areas:
 - There are no `powershell` completions yet.
 - There is little documentation for how to use `shortpaths` as a library in
     other applications.
-- Currently, only one layer of variables is guaranteed to be expanded properly, and fully.
-    If there is more than one layer of nesting, then it will not be expanded fully, and the order will be wrong.
-- Consider: Modelling state transitions with an enum.
 
 The current api for both creating and serializing shortpaths is duplicated
 across various files in shortpaths, namely `app.rs`, `bash.rs`, `shortpaths.rs`. A
