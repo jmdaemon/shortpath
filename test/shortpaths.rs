@@ -1,30 +1,23 @@
+use shortpaths::shortpaths::{
+    FindKeyIndexMapExt,
+    sort_shortpaths,
+};
+use crate::helpers::{
+    shortpaths_default,
+    enable_logging,
+    setup_shortpaths,
+};
+
+#[test]
+fn set_logger() {
+    enable_logging();
+}
+
+// Test the shortpath library internals
+
 #[test]
 fn test_shortpaths() {
-    use shortpaths::shortpaths::{
-        Shortpath,
-        ShortpathsBuilder,
-        FindKeyIndexMapExt,
-        sort_shortpaths,
-        export_shortpaths,
-    };
-
-    use std::path::PathBuf;
-
-    use indexmap::indexmap;
-
-    // TODO Create more ergonomic api for this later
-    // Wrap it together with the builder construct to reduce the noise
-    let sp_paths = indexmap!{
-        "d".to_owned() => Shortpath::new(PathBuf::from("$a/dddd"), None, vec![]),
-        "c".to_owned() => Shortpath::new(PathBuf::from("$b/cccc"), None, vec![]),
-        "b".to_owned() => Shortpath::new(PathBuf::from("$a/bbbb"), None, vec![]),
-        "a".to_owned() => Shortpath::new(PathBuf::from("aaaa"), None, vec![]),
-    };
-    println!("{:?}", sp_paths);
-
-    let mut sp_builder = ShortpathsBuilder::new(sp_paths);
-
-    let sp_im = sp_builder.build().unwrap();
+    let sp_im = setup_shortpaths(shortpaths_default);
     sp_im.iter().for_each(|p| println!("{:?}", p));
 
     // Test find_key
@@ -40,10 +33,4 @@ fn test_shortpaths() {
     println!("Sorted list of shortpaths");
     let sorted = sort_shortpaths(sp_im);
     sorted.iter().for_each(|p| println!("{:?}", p));
-
-    // Test serialization
-    let export_type = "bash";
-    let output_file = None;
-    export_shortpaths(&sorted, export_type, output_file);
-    //assert_eq!(1, 0);
 }
