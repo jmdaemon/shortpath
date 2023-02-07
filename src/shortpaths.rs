@@ -12,6 +12,7 @@ use std::{
 use indexmap::IndexMap;
 #[allow(unused_imports)]
 use itertools::Itertools;
+use log::trace;
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use walkdir::DirEntry;
 
@@ -155,7 +156,8 @@ pub fn sort_shortpaths(shortpaths: SP) -> SP {
 pub fn populate_dependencies(shortpaths: &mut SP) -> SP {
     let c = shortpaths.clone();
     let shortpaths: SP = shortpaths.into_iter().map(|(k, sp)| {
-        let deps = find_deps(&sp.path, &c);
+        let deps = find_deps(&sp.path, false, &c);
+        trace!("Dependencies for Shortpath: {} : {:?}", k, deps);
         sp.deps = deps;
         (k.to_owned(), sp.to_owned())
     }).collect();
@@ -205,11 +207,13 @@ pub fn get_shortpath_dependency(path: &[char]) -> Option<SPD> {
   *     If any shortpath dependency is another shortpath dependency
   *         Recursively yield the next dependency, and add it to our array
   * At the end, merge the two vectors together into one vector */
-pub fn find_deps(entry: &Path, shortpaths: &SP) -> DEPS {
-    let mut dependencies: Vec<ShortpathDependency> = vec![];
+pub fn find_deps(entry: &Path, in_find_nested_mode: bool, shortpaths: &SP) -> DEPS {
+    let mut dependencies: Vec<ShortpathDependency> = Vec::new();
 
     // For every component in the path.components()
     for comp in entry.components() {
+        trace!("entry: {:#?}", entry.display());
+        trace!("comp: {:?}", comp);
         if let Component::Normal(osstr_path) = comp {
             // If component is a valid shortpath dependency
             let path_comp_slice = to_str_slice(osstr_path.to_string_lossy());
@@ -218,11 +222,19 @@ pub fn find_deps(entry: &Path, shortpaths: &SP) -> DEPS {
             match dep {
                 Some(dep_variant) => {
                     // Add it to our array.
-                    dependencies.push(dep_variant.clone());
+                    //if in_find_nested_mode == false {
+                    if !in_find_nested_mode {
+                        dependencies.push(dep_variant.clone());
+                    }
+                    trace!("dependencies: {:?}", &dependencies);
                     match dep_variant.0 {
                         ShortpathVariant::Independent => { }
-                        ShortpathVariant::Alias => { }
-                        ShortpathVariant::Environment => { }
+                        ShortpathVariant::Alias => {
+                            dependencies.push(dep_variant.clone());
+                        }
+                        ShortpathVariant::Environment => {
+                            dependencies.push(dep_variant.clone());
+                        }
                     };
                 }
                 None => {
@@ -232,13 +244,16 @@ pub fn find_deps(entry: &Path, shortpaths: &SP) -> DEPS {
             }
         }
     }
+    if dependencies.is_empty() {
+        return dependencies;
+    }
 
     // Nested Dependencies
     let is_nested_dep = |dep: &ShortpathDependency, shortpaths: &SP| {
         shortpaths.get(&dep.1).is_some()
     };
 
-    let mut nested_deps: Vec<ShortpathDependency> = vec![];
+    let mut nested_deps: Vec<ShortpathDependency> = Vec::new();
 
     // For every shortpath dependency in our array
     for dep in dependencies.clone() {
@@ -247,12 +262,19 @@ pub fn find_deps(entry: &Path, shortpaths: &SP) -> DEPS {
             break; // Exit
         }
 
+        //if in_find_nested_mode == false {
+        //if !in_find_nested_mode {
+            //in_find_nested_mode = true;
+        //}
+
         // Recursively yield the next dependency
         let nested_dep = shortpaths.get(&dep.1).unwrap();
+        trace!("nested_dep: {}", nested_dep.path.display());
         let entry = &nested_dep.path;
-        nested_deps.append(&mut find_deps(entry, shortpaths));
+        nested_deps.append(&mut find_deps(entry, true, shortpaths));
     }
     dependencies.append(&mut nested_deps); // Flatten
+    trace!("dependencies: {:?}", dependencies);
     dependencies
 }
 
