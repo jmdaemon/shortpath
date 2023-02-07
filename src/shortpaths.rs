@@ -211,7 +211,7 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         to_string(&pbuf.components().next().unwrap())
     }
 
-    fn get_sp_deps(alias_name: String, alias_path: String, shortpaths: &SP) -> (String, String) {
+    fn get_sp_deps(alias_name: String, shortpaths: &SP) -> (String, String) {
         let sp_depend_name = parse_alias(alias_name).unwrap();
         debug!("sp_depend_name = {}", &sp_depend_name);
 
@@ -266,16 +266,7 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         if ShortpathVariant::Alias == shortpath_variant {
             if !has_started {
                 info!("Branch 1: Beginning recursive expansion");
-
-                info!("Setting Name");
-                let (sp_depend_name, depend_path)  = get_sp_deps(get_sp_alias_name_base(comp), alias_path, shortpaths);
-                //let sp_depend_name = parse_alias(to_string(&comp)).unwrap();
-                //let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
-
-                //let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
-                //debug!("depend_path = {}", &depend_path);
-
-                info!("Starting recursion");
+                let (sp_depend_name, depend_path)  = get_sp_deps(get_sp_alias_name_base(comp), shortpaths);
                 let expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
                 output = expanded;
 
@@ -288,8 +279,7 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                 trace!("Branch 2: In recursive expansion");
                 trace!("Parsed alias_name: {}", parsed);
 
-                let (sp_depend_name, depend_path) = get_sp_deps(
-                    get_sp_alias_name_recurse(alias_path.clone()), alias_path, shortpaths);
+                let (sp_depend_name, depend_path) = get_sp_deps(get_sp_alias_name_recurse(alias_path), shortpaths);
                 let expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
 
                 output = expanded.clone();
@@ -302,7 +292,7 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                 trace!("Branch 3: Inside Termination Case");
                 trace!("Alias Path: {}", &alias_path);
 
-                let (sp_depend_name, depend_path) = get_sp_deps(get_sp_alias_name_recurse(alias_path.clone()), alias_path, shortpaths);
+                let (sp_depend_name, depend_path) = get_sp_deps(get_sp_alias_name_recurse(alias_path), shortpaths);
                 let expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
 
                 trace!("All Layers Expanded");
