@@ -15,14 +15,10 @@ fn bench_populdate_expanded_paths(shortpaths: &SP) -> SP {
     shortpaths.populate_expanded_paths()
 }
 
-fn bench_nested_serialize_bash(shortpaths: &SP) {
+fn bench_nested_serialize_bash(shortpaths: &SP) -> String {
     let exp = BashExporter::default()
         .set_shortpaths(shortpaths);
-
-    // Test
-    let actual = exp.gen_completions();
-    let expect = "#!/bin/bash\n\nexport a=\"aaaa\"\nexport b=\"$a/bbbb\"\nexport c=\"$b/cccc\"\nexport d=\"$c/dddd\"\n";
-    assert_eq!(actual, expect, "Bash shell completions are generated in the correct order");
+    exp.gen_completions()
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
