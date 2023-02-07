@@ -229,18 +229,18 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
 
     fn expand_layer(alias_name: String, depend_path: String, entry: PathBuf, shortpaths: &SP) -> String {
         trace!("Expanding all layers...");
-        let result = f(alias_name, depend_path, entry, true, shortpaths);
+        let result = expand_shortpath_inner(alias_name, depend_path, entry, true, shortpaths);
         debug!("Received result: {}\n", result);
         result
     }
 
-    pub fn f(alias_name: String, alias_path: String, entry: PathBuf, has_started: bool, shortpaths: &SP) -> String {
+    pub fn expand_shortpath_inner(alias_name: String, alias_path: String, entry: PathBuf, has_started: bool, shortpaths: &SP) -> String {
         info!("Inputs ");
         debug!("alias_path  = {}", &alias_path);
         debug!("entry       = {}", &entry.display());
         debug!("alias_name  = {}\n", &alias_name);
 
-        let mut output = String::new();
+        let mut expanded = String::new();
 
         if alias_name.is_empty() && has_started {
             return alias_path;
@@ -250,7 +250,7 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         if entry.components().peekable().peek().is_none() {
             return alias_path;
         }
-        // Assume we can obtain a component
+        // Else Assume we can obtain a component
         let comp = entry.components().next().unwrap();
         let comp_slice = to_str_slice(comp.as_os_str().to_str().unwrap());
         let shortpath_type = get_shortpath_type(&comp_slice);
@@ -259,10 +259,8 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         if shortpath_type.is_none() {
             return alias_path;
         }
-
-        // Assume we can obtain a variant
+        // Else Assume we can obtain a variant
         let shortpath_variant = shortpath_type.unwrap();
-
         match shortpath_variant {
             ShortpathVariant::Environment | ShortpathVariant::Independent => {
                 return alias_path;
@@ -274,33 +272,30 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
             if !has_started {
                 info!("Branch 1: Beginning recursive expansion");
                 let (sp_depend_name, depend_path)  = get_sp_deps(get_sp_alias_name_base(comp), shortpaths);
-                let expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
-                output = expanded;
-                return expand_layer(format!("${}", &sp_depend_name), depend_path, PathBuf::from(output), shortpaths);
+                expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
+                return expand_layer(format!("${}", &sp_depend_name), depend_path, PathBuf::from(expanded), shortpaths);
             } else if let Some(parsed) = parse_alias(alias_name) {
                 trace!("Branch 2: In recursive expansion");
-                trace!("Parsed alias_name: {}", parsed);
+                trace!("Parsed alias_name: {}", &parsed);
 
                 let (sp_depend_name, depend_path) = get_sp_deps(get_sp_alias_name_recurse(alias_path), shortpaths);
-                let expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
-                output = expanded.clone();
-                return expand_layer(sp_depend_name, expanded, PathBuf::from(output), shortpaths);
+                expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
+                return expand_layer(sp_depend_name, expanded.clone(), PathBuf::from(expanded), shortpaths);
             } else {
                 trace!("Branch 3: Inside Termination Case");
                 trace!("Alias Path: {}", &alias_path);
 
                 let (sp_depend_name, depend_path) = get_sp_deps(get_sp_alias_name_recurse(alias_path), shortpaths);
-                let expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
-
+                expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
                 trace!("All Layers Expanded");
                 return expanded;
             }
         }
-        debug!("Output: {}", output);
-        output
+        debug!("Expanded: {}", expanded);
+        expanded
     }
 
-    let str_path = f(String::new(), String::new(), sp.path.to_owned(), false, shortpaths);
+    let str_path = expand_shortpath_inner(String::new(), String::new(), sp.path.to_owned(), false, shortpaths);
     PathBuf::from(str_path)
 }
 

@@ -31,7 +31,7 @@ pub fn shortpaths_nested() -> SP {
 /// This ensures that we always set the logger
 pub fn enable_logging() {
     // Enable debug statements
-    formatted_timed_builder().filter_level(LevelFilter::Trace).init();
+    //formatted_timed_builder().filter_level(LevelFilter::Trace).init();
 }
 
 /// Initialize shortpaths
