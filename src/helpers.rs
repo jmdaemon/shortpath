@@ -15,7 +15,7 @@ pub fn to_str_slice(s: impl Into<String>) -> Vec<char> {
 }
 
 /// Find the longest key name in any IndexMap
-pub fn find_longest_keyname<T>(map: IndexMap<String, T>) -> String {
+pub fn find_longest_keyname<T>(map: &IndexMap<String, T>) -> String {
     map.iter()
        .max_by(|(k1,_), (k2, _)| k1.len().cmp(&k2.len()))
        .unwrap().0.to_owned()
@@ -74,8 +74,12 @@ pub fn find_paths(sp: &Shortpath, find_by: impl Fn(&str, WalkDir) -> Vec<DirEntr
 /** Tab align right strings
  * NOTE: Add option to change tab direction
  **/
-pub fn tab_align(s: &str, width: usize, delim: &str) -> String {
-    format!("{: <width$}{delim}", s)
+pub fn tab_align(s: &str, width: usize, delim: Option<&str>) -> String {
+    if let Some(delim) = delim {
+        format!("{: <width$}{}", s, delim)
+    } else {
+        format!("{: <width$} ", s)
+    }
 }
 
 /// Read environment variable to String

@@ -32,10 +32,6 @@ pub struct Shortpath {
     pub full_path: Option<PathBuf>,
 }
 
-pub struct ShortpathsBuilder {
-    paths: Option<SP>,
-}
-
 // Trait Implementations
 
 // Serialize Shortpath as &str
@@ -79,21 +75,6 @@ impl PartialOrd for Shortpath {
 impl Shortpath {
     pub fn new(path: PathBuf, full_path: Option<PathBuf>) -> Shortpath {
         Shortpath { path, full_path }
-    }
-}
-
-impl ShortpathsBuilder {
-    // TODO: Use FromIterator trait extension
-    pub fn new(sp: SP) -> ShortpathsBuilder  {
-        ShortpathsBuilder { paths: Some(sp) }
-    }
-
-    pub fn build(&mut self) -> Option<SP> {
-        if let Some(shortpaths) = &mut self.paths {
-            let shortpaths = populate_expanded_paths(shortpaths);
-            return Some(shortpaths);
-        }
-        None
     }
 }
 
@@ -146,14 +127,14 @@ pub fn sort_shortpaths(shortpaths: SP) -> SP {
 
 // Input Parsing
 
-/// Expand shortpaths to full_paths at runtime
-pub fn populate_expanded_paths(shortpaths: &SP) -> SP {
-    shortpaths.iter().map(|(k, sp)| {
-        let full_path = expand_shortpath(sp, shortpaths);
-        let shortpath = Shortpath{ full_path: Some(full_path), ..sp.to_owned()};
-        (k.to_owned(), shortpath)
-    }).collect()
-}
+///// Expand shortpaths to full_paths at runtime
+//pub fn populate_expanded_paths(shortpaths: &SP) -> SP {
+    //shortpaths.iter().map(|(k, sp)| {
+        //let full_path = expand_shortpath(sp, shortpaths);
+        //let shortpath = Shortpath{ full_path: Some(full_path), ..sp.to_owned()};
+        //(k.to_owned(), shortpath)
+    //}).collect()
+//}
 
 /** Return the type of a shortpath entry */
 pub fn get_shortpath_type(comp: &[char]) -> Option<ShortpathVariant> {
