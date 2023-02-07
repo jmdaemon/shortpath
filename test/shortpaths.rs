@@ -4,14 +4,8 @@ use shortpaths::shortpaths::{
 };
 use crate::helpers::{
     shortpaths_default,
-    enable_logging,
     setup_shortpaths,
 };
-
-#[test]
-fn set_logger() {
-    enable_logging();
-}
 
 // Test the shortpath library internals
 

@@ -1,16 +1,10 @@
 use crate::helpers::{
     shortpaths_default,
     shortpaths_nested,
-    enable_logging,
     setup_shortpaths,
 };
 
 use shortpaths::export::{Export, bash::BashExporter};
-
-#[test]
-fn set_logger() {
-    enable_logging();
-}
 
 #[test]
 fn test_serialize_bash() {
