@@ -197,6 +197,36 @@ pub fn str_join_path(s1: &str, s2: &str) -> PathBuf {
   */
 pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
     info!("expand_shortpath()");
+
+    // Helper functions
+    fn get_sp_alias_name_base(comp: Component) -> String {
+        to_string(&comp)
+    }
+
+    /// NOTE: This only works for the first component of a string
+    /// and it's highly likely that in the future, this will have to change
+    /// to support more complex shortpaths (doubly nested paths like $a/$b)
+    fn get_sp_alias_name_recurse(alias_path: String) -> String {
+        let pbuf = PathBuf::from(alias_path);
+        to_string(&pbuf.components().next().unwrap())
+    }
+
+    fn get_sp_deps(alias_name: String, alias_path: String, shortpaths: &SP) -> (String, String) {
+        let sp_depend_name = parse_alias(alias_name).unwrap();
+        debug!("sp_depend_name = {}", &sp_depend_name);
+
+        let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
+        let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
+        debug!("depend_path = {}", &depend_path);
+        (sp_depend_name, depend_path)
+    }
+
+    fn get_expanded_path(entry: PathBuf, sp_depend_name: &str, depend_path: &str) -> String {
+        let expanded = expand_path(entry.to_str().unwrap(), sp_depend_name, depend_path);
+        debug!("Expanding layer: {} -> {}", entry.display(), &expanded);
+        expanded
+    }
+
     pub fn f(alias_name: String, alias_path: String, entry: PathBuf, has_started: bool, shortpaths: &SP) -> String {
         info!("Inputs ");
         debug!("alias_path  = {}", &alias_path);
@@ -238,17 +268,15 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                 info!("Branch 1: Beginning recursive expansion");
 
                 info!("Setting Name");
-                let sp_depend_name = parse_alias(to_string(&comp)).unwrap();
-                let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
+                let (sp_depend_name, depend_path)  = get_sp_deps(get_sp_alias_name_base(comp), alias_path, shortpaths);
+                //let sp_depend_name = parse_alias(to_string(&comp)).unwrap();
+                //let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
 
-                let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
-                debug!("depend_path = {}", &depend_path);
+                //let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
+                //debug!("depend_path = {}", &depend_path);
 
                 info!("Starting recursion");
-
-                let expanded = expand_path(entry.to_str().unwrap(), &sp_depend_name, &depend_path);
-                debug!("Expanding layer: {} -> {}", entry.display(), &expanded);
-
+                let expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
                 output = expanded;
 
                 trace!("Expanding all layers...");
@@ -260,18 +288,9 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                 trace!("Branch 2: In recursive expansion");
                 trace!("Parsed alias_name: {}", parsed);
 
-                // Note that this only works for the first component of a string
-                let pbuf = PathBuf::from(alias_path);
-                let sp_depend_name = parse_alias(to_string(&pbuf.components().next().unwrap())).unwrap();
-                
-                let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
-                debug!("sp_depend_name = {}", &sp_depend_name);
-
-                let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
-                debug!("sp_depend_path = {}", &depend_path);
-
-                let expanded = expand_path(entry.to_str().unwrap(), &sp_depend_name, &depend_path);
-                trace!("Expanding layer: {} -> {}", entry.display(), &expanded);
+                let (sp_depend_name, depend_path) = get_sp_deps(
+                    get_sp_alias_name_recurse(alias_path.clone()), alias_path, shortpaths);
+                let expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
 
                 output = expanded.clone();
 
@@ -283,16 +302,8 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                 trace!("Branch 3: Inside Termination Case");
                 trace!("Alias Path: {}", &alias_path);
 
-                let pbuf = PathBuf::from(alias_path);
-                let sp_depend_name = parse_alias(to_string(&pbuf.components().next().unwrap())).unwrap();
-                debug!("sp_depend_name = {}", &sp_depend_name);
-
-                let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
-                let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
-                debug!("sp_depend_path = {}", &depend_path);
-
-                let expanded = expand_path(entry.to_str().unwrap(), &sp_depend_name, &depend_path);
-                trace!("Expanding layer: {} -> {}", entry.display(), &expanded);
+                let (sp_depend_name, depend_path) = get_sp_deps(get_sp_alias_name_recurse(alias_path.clone()), alias_path, shortpaths);
+                let expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
 
                 trace!("All Layers Expanded");
                 return expanded;
