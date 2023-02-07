@@ -4,18 +4,15 @@ use crate::helpers::{
     find_paths,
     to_str_slice,
 };
-use std::fmt::format;
-use std::path::Components;
 use std::{
-    path::{Path, PathBuf, Component},
+    path::{PathBuf, Component},
     cmp::Ordering,
 };
 
 use indexmap::IndexMap;
 #[allow(unused_imports)]
 use itertools::Itertools;
-use log::{trace, info, debug};
-use either::Either;
+use log::{trace, debug};
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use walkdir::DirEntry;
 
@@ -38,7 +35,6 @@ pub struct ShortpathDependency(ShortpathVariant, String);
 pub struct Shortpath {
     pub path: PathBuf,
     pub full_path: Option<PathBuf>,
-    pub deps: DEPS,
 }
 
 pub struct ShortpathsBuilder {
@@ -64,7 +60,7 @@ impl<'de> Deserialize<'de> for Shortpath {
         D: Deserializer<'de>,
     {
         let path: &str = Deserialize::deserialize(deserializer)?;
-        let sp = Shortpath::new(PathBuf::from(path), None, vec![]);
+        let sp = Shortpath::new(PathBuf::from(path), None);
         Ok(sp)
     }
 }
@@ -86,8 +82,8 @@ impl PartialOrd for Shortpath {
 // Data Type Implementations
 
 impl Shortpath {
-    pub fn new(path: PathBuf, full_path: Option<PathBuf>, deps: DEPS) -> Shortpath {
-        Shortpath { path, full_path, deps }
+    pub fn new(path: PathBuf, full_path: Option<PathBuf>) -> Shortpath {
+        Shortpath { path, full_path }
     }
 }
 
@@ -156,16 +152,16 @@ pub fn sort_shortpaths(shortpaths: SP) -> SP {
 // Input Parsing
 
 // Populate Shortpaths
-pub fn populate_dependencies(shortpaths: &mut SP) -> SP {
-    let c = shortpaths.clone();
-    let shortpaths: SP = shortpaths.into_iter().map(|(k, sp)| {
-        let deps = find_deps(&sp.path, false, &c);
-        trace!("Dependencies for Shortpath: {} : {:?}", k, deps);
-        sp.deps = deps;
-        (k.to_owned(), sp.to_owned())
-    }).collect();
-    shortpaths
-}
+//pub fn populate_dependencies(shortpaths: &mut SP) -> SP {
+    //let c = shortpaths.clone();
+    //let shortpaths: SP = shortpaths.into_iter().map(|(k, sp)| {
+        //let deps = find_deps(&sp.path, false, &c);
+        //trace!("Dependencies for Shortpath: {} : {:?}", k, deps);
+        //sp.deps = deps;
+        //(k.to_owned(), sp.to_owned())
+    //}).collect();
+    //shortpaths
+//}
 
 pub fn populate_expanded_paths(shortpaths: &mut SP) -> SP {
     let shortpaths_copy = shortpaths.clone();
@@ -179,8 +175,8 @@ pub fn populate_expanded_paths(shortpaths: &mut SP) -> SP {
 }
 
 pub fn populate_shortpaths(shortpaths: &mut SP) -> SP {
-    let mut shortpaths = populate_dependencies(shortpaths);
-    populate_expanded_paths(&mut shortpaths)
+    //let mut shortpaths = populate_dependencies(shortpaths);
+    populate_expanded_paths(shortpaths)
 }
 
 /** Parse a Shortpath entry, and returns any dependencies */
@@ -219,63 +215,9 @@ pub fn get_shortpath_type(comp: &[char]) -> Option<ShortpathVariant> {
         (true, ['$', alias_name @ ..])                  => Some(ShortpathVariant::Alias),
         (true, [ _env_prefix, env_var_name @ .., '}'])  => Some(ShortpathVariant::Environment),
         (true, [ normal_path @ ..])                     => Some(ShortpathVariant::Independent),
-        (false, [])                                     => None,
         (false, _)                                      => None
     }
 }
-
-
-/** Find the dependencies for a given shortpath
-  *
-  * Algorithm:
-  * For every component in the path.components()
-  *     If component is a valid shortpath dependency, add it to our array.
-  *
-  * For every shortpath dependency in our array
-  *     If any shortpath dependency is another shortpath dependency
-  *         Recursively yield the next dependency, and add it to our array
-  * At the end, merge the two vectors together into one vector */
-pub fn find_deps(entry: &Path, in_find_nested_mode: bool, shortpaths: &SP) -> DEPS {
-    let mut dependencies: Vec<ShortpathDependency> = Vec::new();
-
-    // For every component in the path.components()
-    for comp in entry.components() {
-        trace!("entry: {:#?}", entry.display());
-        trace!("comp: {:?}", comp);
-        if let Component::Normal(osstr_path) = comp {
-            // If component is a valid shortpath dependency
-            let path_comp_slice = to_str_slice(osstr_path.to_string_lossy());
-            let dep = get_shortpath_dependency(&path_comp_slice);
-
-            match dep {
-                Some(dep_variant) => {
-                    // Add it to our array.
-                    //if in_find_nested_mode == false {
-                    if !in_find_nested_mode {
-                        //dependencies.push(dep_variant.clone());
-                    }
-                    trace!("dependencies: {:?}", &dependencies);
-                    match dep_variant.0 {
-                        ShortpathVariant::Independent => { }
-                        ShortpathVariant::Alias => {
-                            dependencies.push(dep_variant.clone());
-                        }
-                        ShortpathVariant::Environment => {
-                            dependencies.push(dep_variant.clone());
-                        }
-                    };
-                }
-                None => {
-                    // Otherwise, end our loop
-                    break;
-                }
-            }
-        }
-    }
-    println!("dependencies: {:?}", &dependencies);
-    dependencies
-}
-
 // Parses the alias, and only alias variant of a string
 pub fn parse_alias(comp: &str) -> Option<String> {
     let copy = comp.to_string();
@@ -304,7 +246,7 @@ pub fn str_join_path(s1: &str, s2: &str) -> PathBuf {
   * is accessed here without the hashmap.
   */
 pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
-    let mut entry = sp.path.to_owned();
+    //let mut entry = sp.path.to_owned();
 
     // Algorithm Example:
     // (alias_path='$c/dddd', entry='$c/dddd', sp)
@@ -349,8 +291,6 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
 
         // Return alias path if entry has nothing
         if entry.components().peekable().peek().is_none() {
-        //if entry.components().next().is_none() {
-        //if has_started {
             return alias_path;
         }
         // Assume we can obtain a component
@@ -455,13 +395,13 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         output
     }
 
-    let str_path = f(String::new(), String::new(), entry, false, shortpaths);
+    let str_path = f(String::new(), String::new(), sp.path.to_owned(), false, shortpaths);
     PathBuf::from(str_path)
 }
 
 // Commands
 pub fn add_shortpath(shortpaths: &mut SP, name: String, path: PathBuf) {
-    let shortpath = Shortpath::new(path, None, vec![]);
+    let shortpath = Shortpath::new(path, None);
     shortpaths.insert(name, shortpath);
 }
 
@@ -568,7 +508,7 @@ pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<&S
     let entry_exists = || { shortpaths.get(current_name).is_some() }; 
 
     let update_path = |new_path: String, shortpaths: &mut SP| {
-        let shortpath = Shortpath::new(PathBuf::from(new_path), None, vec![]);
+        let shortpath = Shortpath::new(PathBuf::from(new_path), None);
         shortpaths.insert(current_name.to_owned(), shortpath);
     };
     let update_name = |new_name: String, shortpaths: &mut SP| {

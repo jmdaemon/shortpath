@@ -10,20 +10,20 @@ use pretty_env_logger::formatted_timed_builder;
 // Different shortpath configurations to choose from
 pub fn shortpaths_default() -> SP {
     let sp_paths = indexmap!{
-        "d".to_owned() => Shortpath::new(PathBuf::from("$a/dddd"), None, vec![]),
-        "c".to_owned() => Shortpath::new(PathBuf::from("$b/cccc"), None, vec![]),
-        "b".to_owned() => Shortpath::new(PathBuf::from("$a/bbbb"), None, vec![]),
-        "a".to_owned() => Shortpath::new(PathBuf::from("aaaa"), None, vec![]),
+        "d".to_owned() => Shortpath::new(PathBuf::from("$a/dddd"), None),
+        "c".to_owned() => Shortpath::new(PathBuf::from("$b/cccc"), None),
+        "b".to_owned() => Shortpath::new(PathBuf::from("$a/bbbb"), None),
+        "a".to_owned() => Shortpath::new(PathBuf::from("aaaa"), None),
     };
     sp_paths
 }
 
 pub fn shortpaths_nested() -> SP {
     let sp_paths = indexmap!{
-        "d".to_owned() => Shortpath::new(PathBuf::from("$c/dddd"), None, vec![]),
-        "c".to_owned() => Shortpath::new(PathBuf::from("$b/cccc"), None, vec![]),
-        "b".to_owned() => Shortpath::new(PathBuf::from("$a/bbbb"), None, vec![]),
-        "a".to_owned() => Shortpath::new(PathBuf::from("aaaa"), None, vec![]),
+        "d".to_owned() => Shortpath::new(PathBuf::from("$c/dddd"), None),
+        "c".to_owned() => Shortpath::new(PathBuf::from("$b/cccc"), None),
+        "b".to_owned() => Shortpath::new(PathBuf::from("$a/bbbb"), None),
+        "a".to_owned() => Shortpath::new(PathBuf::from("aaaa"), None),
     };
     sp_paths
 }
