@@ -8,6 +8,10 @@ autotests = false
 name = "shortpaths"
 path = "test/lib.rs"
 
+[[bench]]
+name = "find_deps"
+harness = false
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -24,3 +28,6 @@ serde = { version = "1.0.152", features = ["derive"] }
 serde_derive = "1.0.152"
 toml = { version = "0.5.10", features = ["preserve_order", "indexmap"] }
 walkdir = "2.3.2"
+
+[dev-dependencies]
+criterion = "0.4.0"
