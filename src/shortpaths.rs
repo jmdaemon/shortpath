@@ -15,6 +15,7 @@ use indexmap::IndexMap;
 #[allow(unused_imports)]
 use itertools::Itertools;
 use log::{trace, info};
+use either::Either;
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use walkdir::DirEntry;
 
@@ -332,9 +333,9 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
     // -> ('$b=cccc', '$c/dddd', "$c", sp)
     //    -> ('$a/bbbb', '$b/dddd', "$a", sp)
     //       -> ('aaaa', '$a/bbbb', "", sp)
-    pub fn f(mut alias_path: String, entry: PathBuf, alias_name: String, shortpaths: &SP) -> String {
-        //const msg: &str = "Summary";
-        //dbg!(msg);
+    //pub fn f(alias_name: Either<String, Option<String>>, alias_path: String, entry: PathBuf, shortpaths: &SP) -> String {
+    pub fn f(alias_name: String, alias_path: String, entry: PathBuf, has_started: bool, shortpaths: &SP) -> String {
+        println!();
         println!("Summary");
         dbg!(&alias_path);
         dbg!(&entry);
@@ -342,8 +343,13 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
 
         let mut output = String::new();
 
+        if alias_name.is_empty() && has_started {
+            return alias_path;
+        }
+
         // Return alias path if entry has nothing
-        if entry.components().peekable().peek().is_none() {
+        //if entry.components().peekable().peek().is_none() {
+        if entry.components().next().is_none() {
             return alias_path;
         }
         // Assume we can obtain a component
@@ -359,9 +365,136 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         // Assume we can obtain a variant
         let shortpath_variant = shortpath_type.unwrap();
 
-        match shortpath_variant {
-            ShortpathVariant::Alias => {
+        //match shortpath_variant {
+            //ShortpathVariant::Alias => {
+        //let result = 
+            if ShortpathVariant::Alias == shortpath_variant {
+                if !has_started {
+                    println!("Beginning recursive expansion");
+                    println!("Branch 1");
 
+                    println!("Setting Name");
+                    let sp_depend_name = parse_alias(&to_string(&comp)).unwrap();
+                    let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
+
+                    let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
+                    dbg!(&depend_path);
+                    assert_ne!(String::new(), depend_path);
+
+                    println!("Starting recursion");
+
+                    let expanded = expand_path(entry.to_str().unwrap(), &sp_depend_name, &depend_path);
+                    //dbg!(expanded);
+                    println!("Expanding layer: {} -> {}", entry.display(), &expanded);
+
+                    //output = expanded.clone();
+                    output = expanded;
+
+                    //let expanded = expand_path(&alias_path, &name, &alias_path);
+                    println!("Expanding all layers...");
+                    let verbatim_depend_name = format!("${}", sp_depend_name);
+                    //let result = f(sp_depend_name, expanded, PathBuf::from(output), true, shortpaths);
+                    let result = f(verbatim_depend_name, depend_path, PathBuf::from(output), true, shortpaths);
+                    //let result = f(name, expanded, PathBuf::from(output), true, shortpaths);
+                    //let other_msg = format!("Returned from f with : {}", &result);
+                    //dbg!(other_msg);
+                    println!("Received result: {}", result);
+                    //return result;
+                    println!();
+                    return result
+                    //result
+                } else {
+                    println!("In recursive expansion");
+                    println!("Branch 2");
+
+                    if let Some(parsed) = parse_alias(&alias_name) {
+                        println!("Parsed alias_name: {}", parsed);
+                        //dbg!(&parsed);
+
+                        // Note that this only works for the first component of a string
+                        //let pbuf = PathBuf::from(parsed);
+                        let pbuf = PathBuf::from(alias_path);
+                        let sp_depend_name = parse_alias(&to_string(&pbuf.components().next().unwrap())).unwrap();
+                        //let sp_depend_name = parsed;
+                        //let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
+                        
+                        let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
+                        //dbg!(&sp_depend_name);
+                        dbg!(&sp_depend_name);
+                        //let out = sp.path.to_str().unwrap().to_string();
+                        let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
+                        dbg!(&depend_path);
+
+                        // Now what do we do with this information?
+                        //assert_eq!(1, 0);
+
+                        let expanded = expand_path(entry.to_str().unwrap(), &sp_depend_name, &depend_path);
+                        //dbg!(expanded);
+                        println!("Expanding layer: {} -> {}", entry.display(), &expanded);
+
+                        output = expanded.clone();
+
+                        //let expanded = expand_path(&alias_path, &name, &alias_path);
+                        println!("Expanding all layers...");
+                        println!();
+                        let result = f(sp_depend_name, expanded, PathBuf::from(output), true, shortpaths);
+                        return result;
+                        //result
+
+
+                        //let alias_name = format!("${}", parsed);
+
+                        //let sp = shortpaths.get(&parsed).unwrap();
+                        //let sp = shortpaths.find_key_for_value(&alias_name).unwrap();
+
+                        //let out = sp.to_owned();
+                        //let out = format!("${}", out);
+                    }
+                    //else {
+                    //else {
+                        //// We need to parse the names
+                    //}
+                    //else {
+                    println!("Inside Termination Case");
+                    println!("Branch 3");
+                    println!("Alias Path: {}", &alias_path);
+                    println!();
+
+                    let pbuf = PathBuf::from(alias_path);
+                    let sp_depend_name = parse_alias(&to_string(&pbuf.components().next().unwrap())).unwrap();
+                    dbg!(&sp_depend_name);
+
+                    let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
+                    let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
+                    dbg!(&depend_path);
+
+                    let expanded = expand_path(entry.to_str().unwrap(), &sp_depend_name, &depend_path);
+                    println!("Expanding layer: {} -> {}", entry.display(), &expanded);
+
+                    //output = expanded.clone();
+                    println!("All Layers Expanded");
+                    return expanded;
+                    //expanded
+                    //}
+
+                    // When we're about to terminate, alias_name will be empty
+                    // But alias_path, entry will not be.
+                    //return alias_path;
+                    //return depend_path;
+
+                        //let sp_depend_name = shortpaths.find_key_for_value(entry.to_str().unwrap().to_owned());
+                        //let sp_depend_path = entry;
+
+                        //let this = sp.path.to_str().unwrap();
+                        //let expanded = expand_path(this, &name, &alias_name);
+                        //println!("{}", &expanded);
+                        //return expanded;
+                    //}
+                    //return String::new();
+                    //return String::new();
+                }
+
+                /*
                 // If the name is empty
                 println!("Setting Name");
                 let name = if alias_name.is_empty() {
@@ -399,6 +532,7 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                     }
                 };
                 println!("Name is: {}\n\n", &name);
+                */
 
                 //let sp = shortpaths.get(&name).unwrap();
                 //let path = &sp.path;
@@ -420,6 +554,8 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                     //// When alias_path is empty, this means we're at i=0
                     //// Therefore, we will begin the recurse statement
                 //}
+
+                /*
                 if let Some(sp) = shortpaths.get(&alias_name) {
                     println!("In Termination Statement");
                     let this = sp.path.to_str().unwrap();
@@ -431,13 +567,14 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                         println!("In Recurse Statement:");
                         let expanded = expand_path(&alias_path, &name, &alias_path);
                         output = expanded.clone();
-                        let result = f(expanded, PathBuf::from(output), name, shortpaths);
+                        let result = f(name, expanded, PathBuf::from(output), shortpaths);
                         let other_msg = format!("Returned from f with : {}", &result);
                         dbg!(other_msg);
                         return result;
                     }
                     return alias_name;
                 }
+                */
                 //if name.is_empty() {
                     
                 //} else {
@@ -460,19 +597,24 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                 //output = expanded;
                 //return Some(output);
             }
-            ShortpathVariant::Independent => {
-                let path = to_string(&comp);
-                return path;
-            }
-            ShortpathVariant::Environment => {
-                return output;
-            }
-        }
+
+        //else {
+            //return output;
+            //output
+        //};
+        //result
+            output
+            //ShortpathVariant::Independent => {
+                //let path = to_string(&comp);
+                //return path;
+            //}
+            //ShortpathVariant::Environment => {
+                //return output;
+            //}
+        //}
     }
 
-    //let alias_path = entry.to_str().unwrap().to_string();
-    //let str_path = f(alias_path, entry, String::new(), shortpaths);
-    let str_path = f(String::new(), entry, String::new(), shortpaths);
+    let str_path = f(String::new(), String::new(), entry, false, shortpaths);
     PathBuf::from(str_path)
 }
 
