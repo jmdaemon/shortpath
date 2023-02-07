@@ -9,7 +9,7 @@ name = "shortpaths"
 path = "test/lib.rs"
 
 [[bench]]
-name = "find_deps"
+name = "shortpaths"
 harness = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

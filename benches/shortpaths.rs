@@ -1,5 +1,5 @@
 use shortpaths::{
-    shortpaths::{Shortpath, ShortpathsBuilder, SP, populate_shortpaths},
+    shortpaths::{Shortpath, ShortpathsBuilder, SP, populate_expanded_paths},
     export::{Export, bash::BashExporter},
 };
 
@@ -13,7 +13,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 // Benchmarks
 fn bench_populate_dependencies(mut shortpaths: SP) -> SP {
-    populate_shortpaths(&mut shortpaths)
+    populate_expanded_paths(&mut shortpaths)
 }
 
 fn bench_nested_serialize_bash(shortpaths: SP) {
@@ -33,10 +33,10 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     // Initialization
     let sp_paths = indexmap!{
-        "d".to_owned() => Shortpath::new(PathBuf::from("$c/dddd"), None, vec![]),
-        "c".to_owned() => Shortpath::new(PathBuf::from("$b/cccc"), None, vec![]),
-        "b".to_owned() => Shortpath::new(PathBuf::from("$a/bbbb"), None, vec![]),
-        "a".to_owned() => Shortpath::new(PathBuf::from("aaaa"), None, vec![]),
+        "d".to_owned() => Shortpath::new(PathBuf::from("$c/dddd"), None),
+        "c".to_owned() => Shortpath::new(PathBuf::from("$b/cccc"), None),
+        "b".to_owned() => Shortpath::new(PathBuf::from("$a/bbbb"), None),
+        "a".to_owned() => Shortpath::new(PathBuf::from("aaaa"), None),
     };
 
     let mut sp_builder = ShortpathsBuilder::new(sp_paths);
@@ -44,6 +44,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("bench_populate_dependencies sp_paths",
         |b| b.iter(|| bench_populate_dependencies(black_box(shortpaths.clone()))));
+
     //c.bench_function("bench_nested_serialize_bash", |b| b.iter(|| bench_nested_serialize_bash(shortpaths.clone())));
 
     //c.bench_function("bench_nested_serialize_bash", |b| b.iter(|| bench_nested_serialize_bash(black_box())));
