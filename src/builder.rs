@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use serde::{Serialize, Deserialize};
 use crate::{
     shortpaths::{SP, Shortpath, expand_shortpath},
@@ -128,6 +130,15 @@ impl ShortpathsBuilder {
         assert!(sp.is_ok());
         let sp: Shortpaths = sp.unwrap();
         ShortpathsBuilder { cfg: Some(cfg), paths: Some(sp)}
+    }
+
+    pub fn shortpath(mut self, key: impl Into<String>, path: impl Into<String>) -> Self {
+        let mut shortpaths = self.paths.unwrap().shortpaths;
+        let path = PathBuf::from(path.into());
+        let sp = Shortpath::new(path, None);
+        shortpaths.insert(key.into(), sp);
+        self.paths = Some(Shortpaths { shortpaths, cfg: None});
+        self
     }
 }
 

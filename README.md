@@ -108,22 +108,16 @@ shortpaths export powershell
 
 - `expand_shortpath`, `fold_shortpath` are not fallible, which means
     that if there's a bad shortpath, then various bugs *could* occur.
-- `Shortpaths::to_disk()` as well as various other areas of the API are very messy::
-    - Be sure eliminate all unneeded clones especially in `app.rs`, and `bash.rs`.
-- Use `ShortpathsBuilder` as a common API for `Export`, and `app.rs`
-    with desired architecture methods outlined in `arch.rs`
+    This isn't so bad but it would be nice to have more readable errors,
+    in case it was either able not to read the path, or if the path was
+    not valid.
 - Leverage rustdoc to document library, and provide examples in `examples`
 - Create `powershell` exporter.
 - Write more unit tests, preferably after the builder api is finished.
-
-The api for both creating + serializing shortpaths is duplicated
-across `app.rs`, `bash.rs`, and `shortpaths.rs`.
-A common shared `builder.rs` module based on `ShortpathsBuilder` is the best solution going forward.
-
 Things that are nice to have but are not necessary:
-- Caching/Reusing `full_paths` from previous paths given that they
-    contain matching alias names.
-    - This could be a potential order of magnitude speedup.
+- Caching/Reusing `full_paths` from previous paths given they
+    contain matching aliases, could lead to a potential order of magnitude speedup.
+- Enable feature to expand and fold environment variables.
 
 ## Binary
 
