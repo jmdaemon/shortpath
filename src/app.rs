@@ -6,7 +6,7 @@ use crate::consts::{
     CONFIG_FILE_PATH,
 };
 use crate::config::{Config, read_config, write_config};
-use crate::shortpaths::{SP, populate_shortpaths, sort_shortpaths};
+use crate::shortpaths::{SP, populate_expanded_paths, sort_shortpaths};
 use crate::helpers::{expand_tilde, tab_align, find_longest_keyname};
 
 use serde::{Serialize, Deserialize};
@@ -33,7 +33,7 @@ impl Default for Shortpaths {
         let toml_conts = read_config(&cfg, CONFIG_FILE_PATH);
         let mut sp: Shortpaths = toml::from_str(&toml_conts).unwrap();
 
-        let shortpaths = populate_shortpaths(&mut sp.shortpaths);
+        let shortpaths = populate_expanded_paths(&mut sp.shortpaths);
         Shortpaths { shortpaths, cfg }
     }
 }

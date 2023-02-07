@@ -95,7 +95,7 @@ impl ShortpathsBuilder {
 
     pub fn build(&mut self) -> Option<SP> {
         if let Some(shortpaths) = &mut self.paths {
-            let shortpaths = populate_shortpaths(shortpaths);
+            let shortpaths = populate_expanded_paths(shortpaths);
             return Some(shortpaths);
         }
         None
@@ -150,19 +150,16 @@ pub fn sort_shortpaths(shortpaths: SP) -> SP {
 }
 
 // Input Parsing
+
+/// Expand shortpaths to full_paths at runtime
 pub fn populate_expanded_paths(shortpaths: &mut SP) -> SP {
     let shortpaths_copy = shortpaths.clone();
-    // Expand to full_path
     let shortpaths: SP = shortpaths.into_iter().map(|(k, sp)| {
         let full_path = expand_shortpath(sp, &shortpaths_copy);
         sp.full_path = Some(full_path);
         (k.to_owned(), sp.to_owned())
     }).collect();
     shortpaths
-}
-
-pub fn populate_shortpaths(shortpaths: &mut SP) -> SP {
-    populate_expanded_paths(shortpaths)
 }
 
 /** Return the type of a shortpath entry */
@@ -205,11 +202,12 @@ pub fn str_join_path(s1: &str, s2: &str) -> PathBuf {
   * is accessed here without the hashmap.
   */
 pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
+    info!("expand_shortpath()");
     pub fn f(alias_name: String, alias_path: String, entry: PathBuf, has_started: bool, shortpaths: &SP) -> String {
-        info!("\nSummary");
+        info!("Inputs ");
         debug!("alias_path  = {}", &alias_path);
         debug!("entry       = {}", &entry.display());
-        debug!("alias_name  = {}", &alias_name);
+        debug!("alias_name  = {}\n", &alias_name);
 
         let mut output = String::new();
 
@@ -251,7 +249,7 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
 
                 let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
                 debug!("depend_path = {}", &depend_path);
-                assert_ne!(String::new(), depend_path);
+                //assert_ne!(String::new(), depend_path);
 
                 info!("Starting recursion");
 
