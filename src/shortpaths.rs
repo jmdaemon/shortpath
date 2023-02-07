@@ -147,14 +147,12 @@ pub fn sort_shortpaths(shortpaths: SP) -> SP {
 // Input Parsing
 
 /// Expand shortpaths to full_paths at runtime
-pub fn populate_expanded_paths(shortpaths: &mut SP) -> SP {
-    let shortpaths_copy = shortpaths.clone();
-    let shortpaths: SP = shortpaths.into_iter().map(|(k, sp)| {
-        let full_path = expand_shortpath(sp, &shortpaths_copy);
-        sp.full_path = Some(full_path);
-        (k.to_owned(), sp.to_owned())
-    }).collect();
-    shortpaths
+pub fn populate_expanded_paths(shortpaths: &SP) -> SP {
+    shortpaths.iter().map(|(k, sp)| {
+        let full_path = expand_shortpath(sp, shortpaths);
+        let shortpath = Shortpath{ full_path: Some(full_path), ..sp.to_owned()};
+        (k.to_owned(), shortpath)
+    }).collect()
 }
 
 /** Return the type of a shortpath entry */
@@ -188,6 +186,16 @@ pub fn str_join_path(s1: &str, s2: &str) -> PathBuf {
     p1.join(p2)
 }
 
+pub fn get_sp_deps(alias_name: String, shortpaths: &SP) -> (String, String) {
+    let sp_depend_name = parse_alias(alias_name).unwrap();
+    debug!("sp_depend_name = {}", &sp_depend_name);
+
+    let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
+    let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
+    debug!("depend_path = {}", &depend_path);
+    (sp_depend_name, depend_path)
+}
+
 /**
   * Expand shortpath variants at runtime
   * 
@@ -198,10 +206,8 @@ pub fn str_join_path(s1: &str, s2: &str) -> PathBuf {
 pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
     info!("expand_shortpath()");
 
-    // Helper functions
-    fn get_sp_alias_name_base(comp: Component) -> String {
-        to_string(&comp)
-    }
+    // Helper functions for use in expand_shortpath_inner
+    fn get_sp_alias_name_base(comp: Component) -> String { to_string(&comp) }
 
     /// NOTE: This only works for the first component of a string
     /// and it's highly likely that in the future, this will have to change
@@ -209,16 +215,6 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
     fn get_sp_alias_name_recurse(alias_path: String) -> String {
         let pbuf = PathBuf::from(alias_path);
         to_string(&pbuf.components().next().unwrap())
-    }
-
-    fn get_sp_deps(alias_name: String, shortpaths: &SP) -> (String, String) {
-        let sp_depend_name = parse_alias(alias_name).unwrap();
-        debug!("sp_depend_name = {}", &sp_depend_name);
-
-        let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
-        let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
-        debug!("depend_path = {}", &depend_path);
-        (sp_depend_name, depend_path)
     }
 
     fn get_expanded_path(entry: PathBuf, sp_depend_name: &str, depend_path: &str) -> String {
@@ -240,14 +236,7 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         debug!("entry       = {}", &entry.display());
         debug!("alias_name  = {}\n", &alias_name);
 
-        let mut expanded = String::new();
-
-        if alias_name.is_empty() && has_started {
-            return alias_path;
-        }
-
-        // Return alias path if entry has nothing
-        if entry.components().peekable().peek().is_none() {
+        if has_started && (alias_name.is_empty() || entry.components().peekable().peek().is_none()) {
             return alias_path;
         }
         // Else Assume we can obtain a component
@@ -256,8 +245,14 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         let shortpath_type = get_shortpath_type(&comp_slice);
 
         // If we have nothing, exit early
-        if shortpath_type.is_none() {
-            return alias_path;
+        match &shortpath_type {
+            Some(var) => {
+                match var {
+                    ShortpathVariant::Environment | ShortpathVariant::Independent => return alias_path,
+                    _ => {}
+                }
+            }
+            None => return alias_path
         }
         // Else Assume we can obtain a variant
         let shortpath_variant = shortpath_type.unwrap();
@@ -267,8 +262,9 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
             }
             _ => {}
         };
-        
-        if ShortpathVariant::Alias == shortpath_variant {
+
+        let mut expanded = String::new();
+        if shortpath_variant == ShortpathVariant::Alias {
             if !has_started {
                 info!("Branch 1: Beginning recursive expansion");
                 let (sp_depend_name, depend_path)  = get_sp_deps(get_sp_alias_name_base(comp), shortpaths);
