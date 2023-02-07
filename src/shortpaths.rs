@@ -327,6 +327,11 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
     //    -> Return expand_path(entry='$c/dddd', alias_name='c', alias_path='aaaa/bbbb/cccc')
     // -> Store entry, send as PathBuf
     //pub fn f(mut alias_path: String, entry: PathBuf, alias_name, shortpaths: &SP) -> Option<String> {
+
+    // (String::new(), '$c/dddd', String::new(), sp)
+    // -> ('$b=cccc', '$c/dddd', "$c", sp)
+    //    -> ('$a/bbbb', '$b/dddd', "$a", sp)
+    //       -> ('aaaa', '$a/bbbb', "", sp)
     pub fn f(mut alias_path: String, entry: PathBuf, alias_name: String, shortpaths: &SP) -> String {
         //const msg: &str = "Summary";
         //dbg!(msg);
@@ -403,33 +408,42 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                 //let expanded = expand_path(&alias_path, &name, &alias_path);
 
                 // aaaa
-                if name.is_empty() {
-                    println!("In Recurse Statement:");
-                    //return alias_path;
-                    let expanded = expand_path(&alias_path, &name, &alias_path);
-                    //return expanded
-                    //return f(expanded, PathBuf::from(output), name, shortpaths);
-                    output = expanded.clone();
-                    //return f(expanded, PathBuf::from(output), name, shortpaths);
-                    let result = f(expanded, PathBuf::from(output), name, shortpaths);
-                    let other_msg = format!("Returned from f with : {}", &result);
-                    dbg!(other_msg);
-                    return result;
-                } else {
+                
+                // Terminating Case
+                // If alias_name is empty
+                // 
+                // If alias_path is not empty
+                //if !alias_path.is_empty() {
+                    //// Attempt to terminate
+                //} else {
+                    //// Assume alias_path is empty
+                    //// When alias_path is empty, this means we're at i=0
+                    //// Therefore, we will begin the recurse statement
+                //}
+                if let Some(sp) = shortpaths.get(&alias_name) {
                     println!("In Termination Statement");
-                    //let sp = shortpaths.get(&alias_name).unwrap();
-                    if let Some(sp) = shortpaths.get(&alias_name) {
-                        let this = sp.path.to_str().unwrap();
-                        //let expanded = expand_path(&alias_path, &name, &alias_path);
-                        //let expanded = expand_path(&alias_path, &name, &alias_name);
-                        //let this = alias_path;
-                        let expanded = expand_path(this, &name, &alias_name);
-                        println!("{}", &expanded);
-                        return expanded;
-                        //return alias_path;
+                    let this = sp.path.to_str().unwrap();
+                    let expanded = expand_path(this, &name, &alias_name);
+                    println!("{}", &expanded);
+                    return expanded;
+                } else {
+                    if name.is_empty() {
+                        println!("In Recurse Statement:");
+                        let expanded = expand_path(&alias_path, &name, &alias_path);
+                        output = expanded.clone();
+                        let result = f(expanded, PathBuf::from(output), name, shortpaths);
+                        let other_msg = format!("Returned from f with : {}", &result);
+                        dbg!(other_msg);
+                        return result;
                     }
-                    return alias_path;
+                    return alias_name;
                 }
+                //if name.is_empty() {
+                    
+                //} else {
+                    
+                    //return alias_path;
+                //}
                 //{
                 //}
                 //return result;
@@ -456,8 +470,9 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         }
     }
 
-    let alias_path = entry.to_str().unwrap().to_string();
-    let str_path = f(alias_path, entry, String::new(), shortpaths);
+    //let alias_path = entry.to_str().unwrap().to_string();
+    //let str_path = f(alias_path, entry, String::new(), shortpaths);
+    let str_path = f(String::new(), entry, String::new(), shortpaths);
     PathBuf::from(str_path)
 }
 
