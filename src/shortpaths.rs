@@ -348,8 +348,9 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         }
 
         // Return alias path if entry has nothing
-        //if entry.components().peekable().peek().is_none() {
-        if entry.components().next().is_none() {
+        if entry.components().peekable().peek().is_none() {
+        //if entry.components().next().is_none() {
+        //if has_started {
             return alias_path;
         }
         // Assume we can obtain a component
@@ -364,6 +365,15 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
 
         // Assume we can obtain a variant
         let shortpath_variant = shortpath_type.unwrap();
+
+        match shortpath_variant {
+            ShortpathVariant::Environment | ShortpathVariant::Independent => {
+                return alias_path;
+            }
+            _ => {}
+        };
+        //if (shortpath_variant == ShortpathVariant::Alias)
+            //|| (shortpath_variant == ShortpathVariant::Independent)
 
         if ShortpathVariant::Alias == shortpath_variant {
             if !has_started {
@@ -389,8 +399,9 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                 println!("Expanding all layers...");
                 let verbatim_depend_name = format!("${}", sp_depend_name);
                 let result = f(verbatim_depend_name, depend_path, PathBuf::from(output), true, shortpaths);
-                println!("Received result: {}", result);
+                println!("B1: Received result: {}", result);
                 println!();
+                output = result.clone();
                 return result
             } else {
                 println!("In recursive expansion");
@@ -416,29 +427,33 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                     println!("Expanding all layers...");
                     println!();
                     let result = f(sp_depend_name, expanded, PathBuf::from(output), true, shortpaths);
+                    println!("B2: Received result: {}", &result);
+                    output = result.clone();
                     return result;
 
+                } else {
+                    println!("Inside Termination Case");
+                    println!("Branch 3");
+                    println!("Alias Path: {}", &alias_path);
+                    println!();
+
+                    let pbuf = PathBuf::from(alias_path);
+                    let sp_depend_name = parse_alias(&to_string(&pbuf.components().next().unwrap())).unwrap();
+                    dbg!(&sp_depend_name);
+
+                    let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
+                    let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
+                    dbg!(&depend_path);
+
+                    let expanded = expand_path(entry.to_str().unwrap(), &sp_depend_name, &depend_path);
+                    println!("Expanding layer: {} -> {}", entry.display(), &expanded);
+
+                    println!("All Layers Expanded");
+                    return expanded;
                 }
-                println!("Inside Termination Case");
-                println!("Branch 3");
-                println!("Alias Path: {}", &alias_path);
-                println!();
-
-                let pbuf = PathBuf::from(alias_path);
-                let sp_depend_name = parse_alias(&to_string(&pbuf.components().next().unwrap())).unwrap();
-                dbg!(&sp_depend_name);
-
-                let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
-                let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
-                dbg!(&depend_path);
-
-                let expanded = expand_path(entry.to_str().unwrap(), &sp_depend_name, &depend_path);
-                println!("Expanding layer: {} -> {}", entry.display(), &expanded);
-
-                println!("All Layers Expanded");
-                return expanded;
             }
         }
+        println!("Output: {}", output);
         output
     }
 
