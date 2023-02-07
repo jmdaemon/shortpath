@@ -2,3 +2,4 @@
 completions
 *.svg
 *.dot
+perf.data
