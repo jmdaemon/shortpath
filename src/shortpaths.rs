@@ -12,7 +12,7 @@ use std::{
 use indexmap::IndexMap;
 #[allow(unused_imports)]
 use itertools::Itertools;
-use log::{trace, debug};
+use log::{trace, debug, info};
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use walkdir::DirEntry;
 
@@ -206,11 +206,10 @@ pub fn str_join_path(s1: &str, s2: &str) -> PathBuf {
   */
 pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
     pub fn f(alias_name: String, alias_path: String, entry: PathBuf, has_started: bool, shortpaths: &SP) -> String {
-        println!();
-        println!("Summary");
-        dbg!(&alias_path);
-        dbg!(&entry);
-        dbg!(&alias_name);
+        info!("\nSummary");
+        debug!("alias_path  = {}", &alias_path);
+        debug!("entry       = {}", &entry.display());
+        debug!("alias_name  = {}", &alias_name);
 
         let mut output = String::new();
 
@@ -244,10 +243,9 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
 
         if ShortpathVariant::Alias == shortpath_variant {
             if !has_started {
-                trace!("Beginning recursive expansion");
-                trace!("Branch 1");
+                info!("Branch 1: Beginning recursive expansion");
 
-                trace!("Setting Name");
+                info!("Setting Name");
                 let sp_depend_name = parse_alias(&to_string(&comp)).unwrap();
                 let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
 
@@ -255,10 +253,10 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                 debug!("depend_path = {}", &depend_path);
                 assert_ne!(String::new(), depend_path);
 
-                trace!("Starting recursion");
+                info!("Starting recursion");
 
                 let expanded = expand_path(entry.to_str().unwrap(), &sp_depend_name, &depend_path);
-                trace!("Expanding layer: {} -> {}", entry.display(), &expanded);
+                debug!("Expanding layer: {} -> {}", entry.display(), &expanded);
 
                 //output = expanded.clone();
                 output = expanded;
@@ -266,58 +264,48 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                 trace!("Expanding all layers...");
                 let verbatim_depend_name = format!("${}", sp_depend_name);
                 let result = f(verbatim_depend_name, depend_path, PathBuf::from(output), true, shortpaths);
-                trace!("B1: Received result: {}", result);
-                trace!("");
-                output = result.clone();
+                debug!("B1: Received result: {}\n", result);
                 return result
+            } else if let Some(parsed) = parse_alias(&alias_name) {
+                trace!("Branch 2: In recursive expansion");
+                trace!("Parsed alias_name: {}", parsed);
+
+                // Note that this only works for the first component of a string
+                let pbuf = PathBuf::from(alias_path);
+                let sp_depend_name = parse_alias(&to_string(&pbuf.components().next().unwrap())).unwrap();
+                
+                let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
+                debug!("sp_depend_name = {}", &sp_depend_name);
+
+                let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
+                debug!("sp_depend_path = {}", &depend_path);
+
+                let expanded = expand_path(entry.to_str().unwrap(), &sp_depend_name, &depend_path);
+                trace!("Expanding layer: {} -> {}", entry.display(), &expanded);
+
+                output = expanded.clone();
+
+                trace!("Expanding all layers...");
+                let result = f(sp_depend_name, expanded, PathBuf::from(output), true, shortpaths);
+                trace!("B2: Received result: {}", &result);
+                return result; 
             } else {
-                trace!("In recursive expansion");
-                trace!("Branch 2");
+                trace!("Branch 3: Inside Termination Case");
+                trace!("Alias Path: {}", &alias_path);
 
-                if let Some(parsed) = parse_alias(&alias_name) {
-                    trace!("Parsed alias_name: {}", parsed);
+                let pbuf = PathBuf::from(alias_path);
+                let sp_depend_name = parse_alias(&to_string(&pbuf.components().next().unwrap())).unwrap();
+                debug!("sp_depend_name = {}", &sp_depend_name);
 
-                    // Note that this only works for the first component of a string
-                    let pbuf = PathBuf::from(alias_path);
-                    let sp_depend_name = parse_alias(&to_string(&pbuf.components().next().unwrap())).unwrap();
-                    
-                    let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
-                    debug!("sp_depend_name = {}", &sp_depend_name);
-                    let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
-                    debug!("sp_depend_path = {}", &depend_path);
+                let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
+                let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
+                debug!("sp_depend_path = {}", &depend_path);
 
-                    let expanded = expand_path(entry.to_str().unwrap(), &sp_depend_name, &depend_path);
-                    trace!("Expanding layer: {} -> {}", entry.display(), &expanded);
+                let expanded = expand_path(entry.to_str().unwrap(), &sp_depend_name, &depend_path);
+                trace!("Expanding layer: {} -> {}", entry.display(), &expanded);
 
-                    output = expanded.clone();
-
-                    trace!("Expanding all layers...");
-                    trace!("");
-                    let result = f(sp_depend_name, expanded, PathBuf::from(output), true, shortpaths);
-                    trace!("B2: Received result: {}", &result);
-                    output = result.clone();
-                    return result;
-
-                } else {
-                    trace!("Inside Termination Case");
-                    trace!("Branch 3");
-                    trace!("Alias Path: {}", &alias_path);
-                    trace!("");
-
-                    let pbuf = PathBuf::from(alias_path);
-                    let sp_depend_name = parse_alias(&to_string(&pbuf.components().next().unwrap())).unwrap();
-                    debug!("sp_depend_name = {}", &sp_depend_name);
-
-                    let sp_depend_path = shortpaths.get(&sp_depend_name).unwrap();
-                    let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
-                    debug!("sp_depend_path = {}", &depend_path);
-
-                    let expanded = expand_path(entry.to_str().unwrap(), &sp_depend_name, &depend_path);
-                    trace!("Expanding layer: {} -> {}", entry.display(), &expanded);
-
-                    trace!("All Layers Expanded");
-                    return expanded;
-                }
+                trace!("All Layers Expanded");
+                return expanded;
             }
         }
         debug!("Output: {}", output);
