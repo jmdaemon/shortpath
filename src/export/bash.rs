@@ -10,7 +10,7 @@ use std::{
     fs::write,
 };
 
-use log::trace;
+use log::{trace, info};
 use const_format::formatcp;
 
 // Constant Strings
@@ -52,14 +52,15 @@ impl Export for BashExporter {
     }
 
     fn gen_completions(&self) -> String {
+        info!("gen_completions()");
         let mut output = String::from("#!/bin/bash\n\n");
         let cpy = self.shortpaths.clone();
         let shortpaths = sort_shortpaths(cpy.unwrap());
 
         //if let Some(shortpaths) = shortpaths {
             let serialized: Vec<String> = shortpaths.iter().map(|(name, sp)| {
-                println!("shortpaths: {}: {}", &name, sp.path.display());
-                println!("shortpaths: {}: {:?}", &name, sp.full_path);
+                trace!("shortpaths: {}: {}", &name, sp.path.display());
+                trace!("shortpaths: {}: {:?}", &name, sp.full_path);
                 let path = expand_tilde(&sp.path).unwrap();
                 fmt_bash_alias(name, &path)
             }).collect();
