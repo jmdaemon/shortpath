@@ -22,7 +22,7 @@ fn main() {
          formatted_timed_builder().filter_level(LevelFilter::Trace).init();
     }
 
-    let paths = ShortpathsBuilder::new()
+    let mut paths = ShortpathsBuilder::new()
         .with_config(CONFIG_FILE_PATH)
         .read_shortpaths()
         .build()
@@ -34,10 +34,12 @@ fn main() {
     match cli.command {
         Some(Commands::Add { name, path} ) => {
             add_shortpath(&mut shortpaths, name.clone(), path.clone());
+            paths.shortpaths = shortpaths;
             println!("Saved shortpath {}: {}", name, path.display());
         }
         Some(Commands::Remove { name }) => {
             let path = remove_shortpath(&mut shortpaths, &name);
+            paths.shortpaths = shortpaths;
             println!("Removed {}: {}", name, path.unwrap().path.display());
         }
         Some(Commands::Check {  }) => {
@@ -48,6 +50,7 @@ fn main() {
             let resolve_type = "matching";
             let automode = true;
             resolve(&mut shortpaths, resolve_type, automode);
+            paths.shortpaths = shortpaths;
         }
         Some(Commands::Export { export_type, output_file }) => {
             println!("{:?}", export_type);
@@ -60,6 +63,7 @@ fn main() {
                 exit(1);
             }
             update_shortpath(&mut shortpaths, &current_name, name, path);
+            paths.shortpaths = shortpaths;
         }
         _ => {}
     }
