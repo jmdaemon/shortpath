@@ -6,7 +6,7 @@ use crate::{
     config::Config,
     helpers::{expand_tilde, find_longest_keyname, tab_align, sort_shortpaths}
 };
-use log::{trace, info};
+use log::{trace, info, debug};
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct Shortpaths {
@@ -65,18 +65,29 @@ impl ShortpathsAlignExt for Shortpaths {
 
 impl ShortpathOperationsExt for SP {
     fn expand_special_characters(&self) -> SP {
+        info!("expand_special_characters()");
         let shortpaths: SP = self.iter().map(|(name, sp)| {
-            let path = expand_tilde(&sp.path).unwrap();
-            let shortpath = Shortpath { full_path: Some(path), ..sp.to_owned() };
+            let path = if let Some(full_path) = &sp.full_path {
+                full_path
+            } else {
+                &sp.path
+            };
+            let expanded = expand_tilde(path).unwrap();
+            debug!("{}: {} -> {}", &name, &path.display(), &expanded.display());
+            let shortpath = Shortpath { full_path: Some(expanded), ..sp.to_owned() };
             (name.to_owned(), shortpath)
+            
         }).collect();
+        debug!("");
         shortpaths
     }
 
     fn populate_expanded_paths(&self) -> SP {
+        info!("populate_expanded_paths()");
         self.iter().map(|(k, sp)| {
             let full_path = expand_shortpath(sp, self);
             let shortpath = Shortpath{ full_path: Some(full_path), ..sp.to_owned()};
+            info!("Final Shortpath {:?}", shortpath);
             (k.to_owned(), shortpath)
         }).collect()
     }
@@ -107,9 +118,9 @@ impl ShortpathsBuilder {
     pub fn build(mut self) -> Option<Shortpaths> {
         if let Some(paths) = &mut self.paths {
             let shortpaths = paths.shortpaths
+                .populate_expanded_paths()
                 .expand_special_characters()
-                .sort_paths_inplace()
-                .populate_expanded_paths();
+                .sort_paths_inplace();
             let paths = Shortpaths { shortpaths, cfg: self.cfg};
             return Some(paths);
         }
