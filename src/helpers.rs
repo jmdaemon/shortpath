@@ -80,48 +80,92 @@ pub fn expand_tilde<P: AsRef<Path>>(path_user_input: P) -> Option<PathBuf> {
 //}
 
 
-pub fn find_matching_name_in_dir(sp: &Shortpath, dir: WalkDir) -> Vec<DirEntry> {
-    //let search_for = sp.path.file_name().unwrap().to_str().unwrap();
-    //let search_for = sp.path.file_name().unwrap().to_string_lossy();
-    let file_name = sp.path.file_name().unwrap().to_str().unwrap();
-    dir.into_iter()
-        .filter_map(Result::ok)
-        .filter(|file| file.file_name() == file_name)
-        .collect()
-//    files
-}
+//pub fn find_matching_name_in_dir(sp: &Shortpath, dir: WalkDir) -> Vec<DirEntry> {
+    ////let search_for = sp.path.file_name().unwrap().to_str().unwrap();
+    ////let search_for = sp.path.file_name().unwrap().to_string_lossy();
+    //let file_name = sp.path.file_name().unwrap().to_str().unwrap();
+    //dir.into_iter()
+        //.filter_map(Result::ok)
+        //.filter(|file| file.file_name() == file_name)
+        //.collect()
+////    files
+//}
 
 //pub fn find_paths(sp: &Shortpath, find_by: impl Fn(&str, WalkDir) -> Vec<DirEntry>) -> Option<Vec<DirEntry>> {
 //pub fn find_by_matching_path(shortpaths: &SP) -> Vec<DirEntry> {
-pub fn search_parent_dir(sp: &Shortpath, search_fn: impl Fn (&Shortpath, WalkDir) -> Vec<DirEntry>) -> Vec<DirEntry> {
+//pub fn search_parent_dir(sp: &Shortpath, search_fn: impl Fn (&Shortpath, WalkDir) -> Vec<DirEntry>) -> Vec<DirEntry> {
+    //let search_term = sp.path.file_name().unwrap();
+    //let mut next = sp.path.parent();
+    
+    //let mut files = vec![];
+    //while let Some(dir) = next {
+        //debug!("In Directory {}", dir.display());
+        //let parent_files = WalkDir::new(dir).max_depth(1);
+
+        //debug!("Searching for files");
+        ////let files = find_by(search_term.to_str().unwrap(), parent_files);
+        //files = search_fn(sp, parent_files);
+        //files.iter().for_each(|f| trace!("File: {}", f.file_name().to_str().unwrap()));
+
+        //if files.is_empty() {
+            //return files;
+        //}
+        //next = dir.parent(); // Continue searching
+    //}
+    //return files;
+//}
+
+
+//pub fn find_by_matching_names(shortpaths: &SP) -> Vec<DirEntry> {
+//pub fn search_for(shortpaths: &SP) -> Vec<DirEntry> {
+pub type SearchResults = Vec<DirEntry>;
+pub type SearchFn = fn(&Shortpath, WalkDir) -> SearchResults;
+//type ScopeFn = fn(SearchFn) -> SearchResults;
+pub type ScopeFn = fn(&Shortpath, SearchFn) -> SearchResults;
+
+// Scope Functions
+
+/// Search for files in parent directories
+/// Returns the first set of matching results
+/// NOTE: This may be adjusted later to return more than just the first set of matching results
+/// if it is fast and efficient enough, for use in more complex functions
+pub fn in_parent_dir(sp: &Shortpath, search_fn: SearchFn) -> SearchResults {
     let search_term = sp.path.file_name().unwrap();
     let mut next = sp.path.parent();
     
-    let mut files = vec![];
+    let mut found = vec![];
     while let Some(dir) = next {
         debug!("In Directory {}", dir.display());
         let parent_files = WalkDir::new(dir).max_depth(1);
 
         debug!("Searching for files");
-        //let files = find_by(search_term.to_str().unwrap(), parent_files);
-        files = search_fn(sp, parent_files);
-        files.iter().for_each(|f| trace!("File: {}", f.file_name().to_str().unwrap()));
+        found = search_fn(sp, parent_files);
+        found.iter().for_each(|f| trace!("File: {}", f.file_name().to_str().unwrap()));
 
-        if files.is_empty() {
-            return files;
+        if found.is_empty() {
+            return found;
         }
         next = dir.parent(); // Continue searching
     }
-    return files;
+    found
 }
 
-pub fn find_by_matching_names(shortpaths: &SP) -> Vec<DirEntry> {
-//pub fn search_for(shortpaths: &SP) -> Vec<DirEntry> {
+// Search Functions
+pub fn matching_file_names(sp: &Shortpath, dir: WalkDir) -> Vec<DirEntry> {
+    let file_name = sp.path.file_name().unwrap().to_str().unwrap();
+    dir.into_iter()
+        .filter_map(Result::ok)
+        .filter(|file| file.file_name() == file_name)
+        .collect()
+}
+
+pub fn search_for(search_fn: SearchFn, scope_fn: ScopeFn, shortpaths: &SP) -> Vec<SearchResults> {
     let mut results = vec![];
-    for (name, sp) in shortpaths {
-        let mut matches = search_parent_dir(sp, find_matching_name_in_dir);
-        results.append(&mut matches);
-    }
+    shortpaths.iter().for_each(|(_, sp)| {
+        //let asdf = search_fn;
+        let found = scope_fn(sp, search_fn);
+        results.push(found);
+    });
     results
 }
 

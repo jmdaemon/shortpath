@@ -2,8 +2,7 @@ use crate::app::{ExportType, Mode, ResolveType};
 use crate::builder::{Shortpaths, ShortpathsAlignExt};
 use crate::export::{Export, get_exporter};
 use crate::helpers::{
-    //find_by_matching_path,
-    to_str_slice, find_by_matching_names,
+    to_str_slice, search_for, matching_file_names, in_parent_dir, SearchResults,
 };
 use std::path::Path;
 use std::{
@@ -373,9 +372,15 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
         //Mode::Manual => manualmode_fn,
     //};
 
-    let resolve_fn = match resolve_type {
-        Matching => find_by_matching_names,
+    //let resolve_fn = match resolve_type {
+        //Matching => find_by_matching_names,
+    //};
+
+    let search_fn = match resolve_type {
+        ResolveType::Matching => matching_file_names,
     };
+
+    let scope_fn = in_parent_dir;
 
     debug!("Parameters");
     debug!("resolve_type: {:?}", resolve_type);
@@ -383,7 +388,7 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
     debug!("dry_run     : {}", dry_run);
 
     // TODO: Do this later
-    let name = "".to_owned();
+    //let name = "".to_owned();
 
 
     // shortpaths.search_for(matching_file_names)
@@ -393,10 +398,53 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
     //let matches: Vec<(String, PathBuf)> = shortpaths.find_by();
     //let matches: Vec<(String, PathBuf)> = resolve_fn(shortpaths);
     //let matches: Vec<DirEntry> = resolve_fn(shortpaths);
-    let results: Vec<DirEntry> = resolve_fn(shortpaths);
+    //let results: Vec<DirEntry> = resolve_fn(shortpaths);
+    let results: Vec<SearchResults> = search_for(search_fn, scope_fn, shortpaths);
+    // Manual Mode:
+    // For every directory in SearchResults:
+    //      Show ~ 10 files from every directory as a summary
+    //      Show the directory path
+    //      Prompt: Search for files here? [y/n]: 
+    //      If yes:
+    //          For every search result in the directory
+    //          Update {shortpath_name} from {old_path} to {new_path} ? [update, skip, skip_all]  
+    //      If no:
+    //          Skip and move onto next directory
 
     debug!("Results");
-    results.iter().for_each(|d| trace!("d = {}", d.path().display()));
+    results.iter().for_each(|nested_entries| {
+        if !nested_entries.is_empty() {
+            let entry = nested_entries.iter().peekable().next().unwrap();
+            let dirpath = if entry.path().is_file() {
+                entry.path().parent().unwrap()
+            } else {
+                entry.path()
+            };
+                //}
+
+
+            //let dirpath = if let Some(entry) = directory {
+                //if entry.path().is_file() {
+                    //Some(entry.path().parent().unwrap())
+                //} else {
+                    //Some(directory.unwrap().path())
+                //}
+            //} else {
+
+                //None
+            //};
+            //if dirpath.is_none() {
+                //continue;
+            //}
+            debug!("Directory {}", dirpath.display());
+            debug!("Results");
+            nested_entries.iter().for_each(|file| {
+                debug!("{}", file.path().display());
+            });
+        }
+        //nested_directory.
+    });
+    //results.iter().for_each(|d| trace!("d = {}", d.path().display()));
 
     //let chosen = resolve_mode(shortpaths, );
     //for 

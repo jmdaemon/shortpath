@@ -1,3 +1,5 @@
+//#![feature(trait_alias)]
+//#![feature(type_alias_impl_trait)]
 pub mod app;
 pub mod builder;
 pub mod config;
