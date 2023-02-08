@@ -1,12 +1,14 @@
 use crate::app::ExportType;
+use crate::config::Config;
 use crate::export::{Export, get_exporter};
 use crate::helpers::{
     find_by_matching_path,
     find_paths,
     to_str_slice,
 };
+use std::path::Path;
 use std::{
-    path::{Path, PathBuf, Component},
+    path::{PathBuf, Component},
     cmp::Ordering,
 };
 
@@ -288,6 +290,38 @@ pub fn check_shortpaths(shortpaths: &mut SP) {
     unreachable.iter().for_each(|(alias_name, alias_path)|
         println!("{} shortpath is unreachable: {}", alias_name, alias_path.path.display()));
     println!("Check Complete");
+}
+
+/// Displays a shortpath
+/// NOTE: In the future this function could potentially accept another
+/// parameter 'pretty_print'
+pub fn display_shortpath(name: &str, path: &Path) {
+    println!("{}: {}", name, path.display());
+}
+
+/// List saved shortpaths
+pub fn list_shortpaths(shortpaths: &SP, cfg: Option<Config>, names: Option<Vec<String>>) {
+    if cfg.is_some() {
+        println!("Shortpaths in {}\n", cfg.unwrap().file.display());
+    } else {
+        println!("Shortpaths \n");
+    }
+    match names {
+        Some(names) => {
+            names.iter().for_each(|name| {
+                if let Some(valid_shortpath) = shortpaths.get(name) {
+                    display_shortpath(name, &valid_shortpath.path);
+                } else {
+                    println!("Could not find shortpath: {} in shortpaths.toml", name);
+                }
+            });
+        }
+        None => {
+            shortpaths.iter().for_each(|(name, sp)| {
+                display_shortpath(name, &sp.path);
+            });
+        }
+    }
 }
 
 /** Fix unreachable or broken paths

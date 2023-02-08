@@ -2,13 +2,11 @@ use std::path::PathBuf;
 
 use crate::consts::PROGRAM_DESCRIPTION;
 
-use clap::{Parser, arg, ArgAction, Subcommand, ValueEnum};
+use clap::{Parser, arg, Subcommand, ValueEnum};
  
-// Command Line Interface
 #[derive(Parser)]
 #[command(author, version, about, long_about = PROGRAM_DESCRIPTION)]
 pub struct CLI {
-    //#[arg(short, long, action = ArgAction::SetFalse, help = "Toggle verbose information")]
     #[arg(short, long, default_value_t = false, help = "Toggle verbose information")]
     pub verbose: bool,
 
@@ -30,6 +28,12 @@ pub enum Commands {
     Remove  {
         #[arg(value_name = "NAME")]
         name: String,
+    },
+
+    #[command(about = "Lists shortpath configurations.")]
+    List   {
+        #[arg(help = "Show one or more specific shortpaths")]
+        names: Option<Vec<String>>,
     },
 
     #[command(about = "Checks all shortpaths")]

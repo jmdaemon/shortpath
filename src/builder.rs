@@ -6,7 +6,7 @@ use crate::{
     config::Config,
     helpers::{expand_tilde, find_longest_keyname, tab_align, sort_shortpaths}
 };
-use log::trace;
+use log::{trace, info};
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct Shortpaths {
@@ -149,5 +149,5 @@ pub fn to_disk(paths: Shortpaths) {
     if let Err(e) = result {
         eprintln!("Failed to write shortpaths config to disk: {}", e);
     }
-    println!("Wrote shortpaths config to {}", cfg.file.display());
+    info!("Wrote shortpaths config to {}", cfg.file.display());
 }

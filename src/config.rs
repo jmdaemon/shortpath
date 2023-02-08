@@ -13,7 +13,7 @@ use derivative::Derivative;
 use directories::ProjectDirs;
 
 #[derive(Derivative)]
-#[derivative(Debug, Default)]
+#[derivative(Debug, Default, Clone)]
 pub struct Config {
     #[derivative(Default(value = "ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).expect(\"Could not initialize config\")"))]
     pub project_dirs: ProjectDirs,
