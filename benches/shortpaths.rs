@@ -39,7 +39,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let shortpaths = paths.shortpaths;
 
     // Benchmark
-    c.bench_function("bench_populdate_expanded_paths sp_paths",
+    c.bench_function("bench_populdate_expanded_paths",
         |b| b.iter(|| bench_populdate_expanded_paths(black_box(&shortpaths))));
 
     c.bench_function("bench_nested_serialize_bash",

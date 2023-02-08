@@ -227,12 +227,6 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         }
         // Else Assume we can obtain a variant
         let shortpath_variant = shortpath_type.unwrap();
-        match shortpath_variant {
-            ShortpathVariant::Environment | ShortpathVariant::Independent => {
-                return alias_path;
-            }
-            _ => {}
-        };
 
         let mut expanded = String::new();
         if shortpath_variant == ShortpathVariant::Alias {
