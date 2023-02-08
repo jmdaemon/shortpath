@@ -5,6 +5,7 @@ use crate::helpers::{
     to_str_slice, search_for, matching_file_names, in_parent_dir, SearchResults,
 };
 use std::path::Path;
+use std::process::exit;
 use std::{
     path::{PathBuf, Component},
     cmp::Ordering,
@@ -208,7 +209,12 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         debug!("entry       = {}", &entry.display());
         debug!("alias_name  = {}\n", &alias_name);
 
-        if has_started && (alias_name.is_empty() || entry.components().peekable().peek().is_none()) {
+        //if alias_path.is_empty() {
+            //return entry.to_str().unwrap().to_string();
+        //}
+        let peek_clone = entry.clone();
+        let mut peekable = peek_clone.components().peekable();
+        if has_started && (alias_name.is_empty() || peekable.peek().is_none()) {
             return alias_path;
         }
         // Else Assume we can obtain a component
@@ -236,7 +242,12 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                     info!("Branch 1: Beginning recursive expansion");
                     let (sp_depend_name, depend_path)  = get_sp_deps(get_sp_alias_name_base(comp), shortpaths);
                     expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
-                    return expand_layer(format!("${}", &sp_depend_name), depend_path, PathBuf::from(expanded), shortpaths);
+                    //if peekable.peek().is_none() {
+                        //return expanded;
+                    //} else {
+                        //return expand_layer(format!("${}", &sp_depend_name), depend_path, PathBuf::from(expanded), shortpaths);
+                    //}
+                    return expand_layer(format!("${}", &sp_depend_name), expanded.clone(), PathBuf::from(expanded), shortpaths);
                 } else if let Some(parsed) = parse_alias(alias_name) {
                     trace!("Branch 2: In recursive expansion");
                     trace!("Parsed alias_name: {}", &parsed);
@@ -261,8 +272,12 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         debug!("Expanded: {}", expanded);
         expanded
     }
+    let entry = sp.path.to_str().unwrap().to_string();
+    //let str_path = expand_shortpath_inner(entry, String::new(), sp.path.to_owned(), false, shortpaths);
+    let str_path = expand_shortpath_inner(String::new(), entry, sp.path.to_owned(), false, shortpaths);
 
-    let str_path = expand_shortpath_inner(String::new(), String::new(), sp.path.to_owned(), false, shortpaths);
+    //entry.replace(&str_path, to)
+
     PathBuf::from(str_path)
 }
 
@@ -339,7 +354,7 @@ pub fn list_shortpaths(shortpaths: &Shortpaths, names: Option<Vec<String>>) {
   * TODO: Create a data structure for the flags
   */
 //pub fn resolve(shortpaths: &mut SP, predicate: Option<String>, mode: ResolveType, dry_run: bool) {
-pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_run: bool) {
+pub fn resolve(shortpaths: &SP, resolve_type: ResolveType, mode: Mode, dry_run: bool) {
     info!("resolve()");
 //pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
     // Automode: Make the decision for the user
@@ -376,6 +391,26 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
         //Matching => find_by_matching_names,
     //};
 
+    //let unreachable = find_unreachable(shortpaths);
+    //pub fn find_unreachable(shortpaths: &SP) -> IndexMap<&String, &Shortpath> {
+        //let unreachable: IndexMap<&String, &Shortpath> = shortpaths.iter()
+            //.filter(|(_, path)| { !path.path.exists() || path.path.to_str().is_none() }).collect();
+        //unreachable
+    //}
+    let unreachable: IndexMap<&String, &Shortpath> = shortpaths.iter()
+        .filter(|(_, sp)| {
+            true
+            //let full_path = &sp.full_path;
+            //full_path.is_none() || !full_path.as_ref().unwrap().exists()
+            //full_path.is_none() || !full_path.as_ref().unwrap().exists()
+            //full_path.is_none() || full_path.as_ref().unwrap().exists()
+        }).collect();
+    dbg!(&unreachable);
+    if unreachable.is_empty() {
+        println!("No unreachable shortpaths found");
+    }
+    exit(0);
+
     let search_fn = match resolve_type {
         ResolveType::Matching => matching_file_names,
     };
@@ -410,6 +445,9 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
     //          Update {shortpath_name} from {old_path} to {new_path} ? [update, skip, skip_all]  
     //      If no:
     //          Skip and move onto next directory
+
+    // NOTE: If no unreachable shortpaths were found
+    // Then we do not do anything
 
     debug!("Results");
     results.iter().for_each(|nested_entries| {
