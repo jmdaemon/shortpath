@@ -118,6 +118,7 @@ Things that are nice to have but are not necessary:
 - Caching/Reusing `full_paths` from previous paths given they
     contain matching aliases, could lead to a potential order of magnitude speedup.
 - Enable feature to expand and fold environment variables.
+- Use custom GAT iterator to simplify expand_shortpath
 
 ## Binary
 
