@@ -1,4 +1,5 @@
 use crate::app::ExportType;
+use crate::builder::{Shortpaths, ShortpathsAlignExt};
 use crate::config::Config;
 use crate::export::{Export, get_exporter};
 use crate::helpers::{
@@ -300,26 +301,24 @@ pub fn display_shortpath(name: &str, path: &Path) {
 }
 
 /// List saved shortpaths
-pub fn list_shortpaths(shortpaths: &SP, cfg: Option<Config>, names: Option<Vec<String>>) {
-    if cfg.is_some() {
-        println!("Shortpaths in {}\n", cfg.unwrap().file.display());
-    } else {
-        println!("Shortpaths \n");
-    }
+pub fn list_shortpaths(shortpaths: &Shortpaths, cfg: Option<Config>, names: Option<Vec<String>>) {
     match names {
         Some(names) => {
+            // Print the names of all the desired shortpaths
             names.iter().for_each(|name| {
-                if let Some(valid_shortpath) = shortpaths.get(name) {
-                    display_shortpath(name, &valid_shortpath.path);
+                let shortpath_name = parse_alias(name.to_owned());
+                if let Some(key) = shortpath_name {
+                    let shortpath = shortpaths.shortpaths.get(&key).unwrap();
+                    println!("{} : {}", name, shortpath.path.display());
                 } else {
-                    println!("Could not find shortpath: {} in shortpaths.toml", name);
+                    println!("Could not find {}", name);
                 }
             });
         }
         None => {
-            shortpaths.iter().for_each(|(name, sp)| {
-                display_shortpath(name, &sp.path);
-            });
+            // Dump the pretty printed config
+            let config = shortpaths.tab_align_paths();
+            println!("{}", config);
         }
     }
 }
