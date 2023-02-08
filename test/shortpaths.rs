@@ -6,10 +6,11 @@ use crate::helpers::{
 };
 use shortpaths::{
     app::{ResolveType, Mode},
+    builder::ShortpathsBuilder,
     shortpaths::{
         FindKeyIndexMapExt,
         Shortpath, resolve,
-    }, builder::ShortpathsBuilder,
+    },
 };
 
 use std::path::PathBuf;
@@ -50,12 +51,5 @@ fn test_shortpaths_resolve() {
     let dry_run = true;
     
     resolve(&mut shortpaths, resolve_type, mode, dry_run);
-    assert_eq!(1, 2, "builder does not construct objects that don't work");
-
     //assert_eq!(1, 2, "builder does not construct objects that don't work");
-
-    //let sp_im = setup_shortpaths(shortpaths_default);
-    //sp_im.iter().for_each(|p| println!("{:?}", p));
-
-    // Test find_key
 }

@@ -9,7 +9,6 @@ use indexmap::indexmap;
 use log::LevelFilter;
 use pretty_env_logger::formatted_timed_builder;
 
-
 // Different shortpath configurations to choose from
 pub fn shortpaths_default() -> SP {
     let sp_paths = indexmap!{
@@ -40,11 +39,6 @@ pub fn enable_logging() {
             println!("Logger already initialized, skipping initialization.")
         }
     };
-    //formatted_timed_builder().filter_level(LevelFilter::Trace).is_test(true).init();
-    //formatted_timed_builder().filter_level(LevelFilter::Trace).default_format().is_test(true).init();
-    //formatted_timed_builder().filter_level(LevelFilter::Trace).default_format().is_test(true).init();
-    //formatted_timed_builder().filter_level(LevelFilter::Trace).is_test(true).init();
-    //formatted_timed_builder().filter_level(LevelFilter::Trace).init();
 }
 
 /// Initialize shortpaths
