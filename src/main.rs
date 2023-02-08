@@ -47,7 +47,7 @@ fn main() {
             check_shortpaths(&mut shortpaths);
         }
         Some(Commands::List { names }) => {
-            list_shortpaths(&paths, paths.cfg.clone(), names);
+            list_shortpaths(&paths, names);
         }
         Some(Commands::Resolve {  }) => {
             println!("Resolving any unreachable shortpaths");

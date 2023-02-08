@@ -301,24 +301,23 @@ pub fn display_shortpath(name: &str, path: &Path) {
 }
 
 /// List saved shortpaths
-pub fn list_shortpaths(shortpaths: &Shortpaths, cfg: Option<Config>, names: Option<Vec<String>>) {
+pub fn list_shortpaths(shortpaths: &Shortpaths, names: Option<Vec<String>>) {
     match names {
         Some(names) => {
             // Print the names of all the desired shortpaths
             names.iter().for_each(|name| {
-                let shortpath_name = parse_alias(name.to_owned());
-                if let Some(key) = shortpath_name {
-                    let shortpath = shortpaths.shortpaths.get(&key).unwrap();
+                if let Some(shortpath) = shortpaths.shortpaths.get(name) {
                     println!("{} : {}", name, shortpath.path.display());
                 } else {
                     println!("Could not find {}", name);
+                    // TODO: Print clap usage
                 }
             });
         }
         None => {
             // Dump the pretty printed config
             let config = shortpaths.tab_align_paths();
-            println!("{}", config);
+            print!("{}", config);
         }
     }
 }
