@@ -1,14 +1,17 @@
+#[allow(unused_imports)]
+use crate::helpers::enable_logging;
+
 use crate::helpers::{
     shortpaths_default,
     shortpaths_nested,
     setup_shortpaths,
-    //enable_logging,
 };
 
 use shortpaths::export::{Export, bash::BashExporter};
 
 #[test]
 fn test_serialize_bash() {
+    enable_logging();
     let shortpaths = setup_shortpaths(shortpaths_default);
 
     let exp = BashExporter::default()
@@ -22,7 +25,7 @@ fn test_serialize_bash() {
 
 #[test]
 fn test_nested_serialize_bash() {
-    //enable_logging();
+    enable_logging();
     let shortpaths = setup_shortpaths(shortpaths_nested);
     let exp = BashExporter::default()
         .set_shortpaths(&shortpaths);

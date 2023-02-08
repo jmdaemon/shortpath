@@ -33,8 +33,18 @@ pub fn shortpaths_nested() -> SP {
 
 /// This ensures that we always set the logger
 pub fn enable_logging() {
-    // Enable debug statements
-    formatted_timed_builder().filter_level(LevelFilter::Trace).init();
+    // Enable log statements
+    match formatted_timed_builder().filter_level(LevelFilter::Trace).is_test(true).try_init() {
+        Ok(_) => { },
+        Err(_) => {
+            println!("Logger already initialized, skipping initialization.")
+        }
+    };
+    //formatted_timed_builder().filter_level(LevelFilter::Trace).is_test(true).init();
+    //formatted_timed_builder().filter_level(LevelFilter::Trace).default_format().is_test(true).init();
+    //formatted_timed_builder().filter_level(LevelFilter::Trace).default_format().is_test(true).init();
+    //formatted_timed_builder().filter_level(LevelFilter::Trace).is_test(true).init();
+    //formatted_timed_builder().filter_level(LevelFilter::Trace).init();
 }
 
 /// Initialize shortpaths

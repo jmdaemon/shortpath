@@ -1,6 +1,9 @@
-use std::path::PathBuf;
-
-use indexmap::indexmap;
+#[allow(unused_imports)]
+use crate::helpers::enable_logging;
+use crate::helpers::{
+    shortpaths_default,
+    setup_shortpaths,
+};
 use shortpaths::{
     app::{ResolveType, Mode},
     shortpaths::{
@@ -8,17 +11,16 @@ use shortpaths::{
         Shortpath, resolve,
     }, builder::ShortpathsBuilder,
 };
-#[allow(unused_imports)]
-use crate::helpers::{
-    shortpaths_default,
-    setup_shortpaths,
-    enable_logging,
-};
+
+use std::path::PathBuf;
+
+use indexmap::indexmap;
 
 // Test the shortpath library internals
 
 #[test]
 fn test_shortpaths_find_key() {
+    enable_logging();
     let sp_im = setup_shortpaths(shortpaths_default);
     sp_im.iter().for_each(|p| println!("{:?}", p));
 
@@ -48,6 +50,7 @@ fn test_shortpaths_resolve() {
     let dry_run = true;
     
     resolve(&mut shortpaths, resolve_type, mode, dry_run);
+    assert_eq!(1, 2, "builder does not construct objects that don't work");
 
     //assert_eq!(1, 2, "builder does not construct objects that don't work");
 
