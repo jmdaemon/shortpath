@@ -1,11 +1,9 @@
-use crate::app::ExportType;
+use crate::app::{ExportType, Mode, ResolveType};
 use crate::builder::{Shortpaths, ShortpathsAlignExt};
-use crate::config::Config;
 use crate::export::{Export, get_exporter};
 use crate::helpers::{
-    find_by_matching_path,
-    find_paths,
-    to_str_slice,
+    //find_by_matching_path,
+    to_str_slice, find_by_matching_names,
 };
 use std::path::Path;
 use std::{
@@ -341,9 +339,14 @@ pub fn list_shortpaths(shortpaths: &Shortpaths, names: Option<Vec<String>>) {
   * TODO: Add overwrite_all, skip_all flags
   * TODO: Create a data structure for the flags
   */
-pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
+//pub fn resolve(shortpaths: &mut SP, predicate: Option<String>, mode: ResolveType, dry_run: bool) {
+pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_run: bool) {
+    info!("resolve()");
+//pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
     // Automode: Make the decision for the user
-    let automode_fn = |shortpaths: &SP, sp: &Shortpath, results: Vec<DirEntry>| {
+    //let automode_fn = |shortpaths: &SP, sp: &Shortpath, results: Vec<DirEntry>| {
+    /*
+    let automode_fn = |results: Vec<DirEntry>| {
         let first = results.first().unwrap();
         let path = first.path().to_owned();
         let name = shortpaths.find_key_for_value(path.to_str().unwrap()).unwrap();
@@ -351,7 +354,11 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
     };
 
     // Manual: Provide options at runtime for the user
-    let manualmode_fn = |shortpaths: &SP, sp: &Shortpath, results: Vec<DirEntry>| {
+    //let manualmode_fn = |shortpaths: &SP, sp: &Shortpath, results: Vec<DirEntry>| {
+    let manualmode_fn = |results: Vec<DirEntry>| {
+        results.iter().for_each(|entry| {
+        });
+
         let path = sp.path.to_owned();
         let name = shortpaths.find_key_for_value(path.to_str().unwrap()).unwrap();
         //let (name, path) = (sp.name.to_owned(), sp.path.to_owned());
@@ -359,33 +366,77 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
         println!("Not yet implemented"); // TODO
         (name.to_owned(), path)
     };
+    */
+
+    //let resolve_mode = match mode {
+        //Mode::Automatic => automode_fn,
+        //Mode::Manual => manualmode_fn,
+    //};
+
+    let resolve_fn = match resolve_type {
+        Matching => find_by_matching_names,
+    };
+
+    debug!("Parameters");
+    debug!("resolve_type: {:?}", resolve_type);
+    debug!("mode        : {:?}", mode);
+    debug!("dry_run     : {}", dry_run);
+
+    // TODO: Do this later
+    let name = "".to_owned();
+
+
+    // shortpaths.search_for(matching_file_names)
+    // max_depth parameter
+
+    // Get the potential matches
+    //let matches: Vec<(String, PathBuf)> = shortpaths.find_by();
+    //let matches: Vec<(String, PathBuf)> = resolve_fn(shortpaths);
+    //let matches: Vec<DirEntry> = resolve_fn(shortpaths);
+    let results: Vec<DirEntry> = resolve_fn(shortpaths);
+
+    debug!("Results");
+    results.iter().for_each(|d| trace!("d = {}", d.path().display()));
+
+    //let chosen = resolve_mode(shortpaths, );
+    //for 
+
+    // Now do the processing
+    
+    //matches.iter().for_each(|dir| {
+    //});
+
+        //.iter()
+
+    //match predicate {
+    //}
 
     // Feature Selection Closures
-    let find_by = match resolve_type {
-        "matching" => find_by_matching_path,
-        _ => find_by_matching_path,
-    };
+    //let find_by = match resolve_type {
+        //"matching" => find_by_matching_path,
+        //_ => find_by_matching_path,
+    //};
 
-    let resolve_fn = match automode {
-        true => automode_fn,
-        false => manualmode_fn, // We don't have a proper implementation yet for the other one
-    };
+    //let resolve_fn = match automode {
+        //true => automode_fn,
+        //false => manualmode_fn, // We don't have a proper implementation yet for the other one
+    //};
 
-    let updates: Vec<(String, PathBuf)> = shortpaths.iter().filter_map(|(_,sp)| {
-        if let Some(results) = find_paths(sp, find_by) {
-            let current_path = sp.path.to_owned();
-            let (name, path) = resolve_fn(shortpaths, sp, results);
+    //let updates: Vec<(String, PathBuf)> = shortpaths.iter().filter_map(|(_,sp)| {
+        //if let Some(results) = find_paths(sp, find_by) {
+            //let current_path = sp.path.to_owned();
+            //let (name, path) = resolve_fn(shortpaths, sp, results);
 
-            if path != current_path {
-                println!("Updating shortpath {} from {} to {}", name, current_path.display(), path.display());
-            } else {
-                println!("Keeping shortpath {}: {}", name, path.display());
-            }
-            Some((name, path))
-        } else {
-            None
-        }
-    }).collect();
+            //if path != current_path {
+                //println!("Updating shortpath {} from {} to {}", name, current_path.display(), path.display());
+            //} else {
+                //println!("Keeping shortpath {}: {}", name, path.display());
+            //}
+            //Some((name, path))
+        //} else {
+            //None
+        //}
+    //}).collect();
     
     // Perform the update
     //updates.into_iter().for_each(|(name, path)| {

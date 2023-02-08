@@ -129,11 +129,6 @@ The binary is still missing a few key features:
 - Create an optional `-y` parameter.
 - `shortpath remove --paths [shortpath1] [shortpath2]` command that can accept a vector of paths.
     - Use the `-y` parameter to skip prompting, and move on to deletion.
-- `shortpath list` and `shortpath lists`
-    - `shortpath list [shortpath]`
-        - Prints out the directory the Shortpath points to
-    - `shortpath list`
-        - Prints out all shortpaths
 - `shortpath refresh`: Platform specific.
     Unsets all shortpath variables for the platform (bash, powershell), sets them again, and then refreshes the current shell
     with the new definitions.

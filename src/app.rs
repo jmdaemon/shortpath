@@ -40,7 +40,16 @@ pub enum Commands {
     Check   {},
 
     #[command(about = "Fixes all shortpaths.")]
-    Resolve {},
+    Resolve {
+        #[arg(value_enum, default_value_t = ResolveType::Matching, help = "Find and automatically fix shortpaths using the resolve_type algorithm")]
+        resolve_type: ResolveType,
+
+        #[arg(short, long, value_enum, default_value_t = Mode::Automatic, help = "Toggle Resolve Mode")]
+        mode: Mode,
+
+        #[arg(short, long, default_value_t = false, help = "Show shortpath config changes, but do not execute them")]
+        dry_run: bool,
+    },
 
     #[command(about = "Export shortpaths to other applications")]
     Export  {
@@ -68,4 +77,15 @@ pub enum Commands {
 pub enum ExportType {
     Bash,
     Powershell,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+pub enum Mode {
+    Automatic,
+    Manual
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+pub enum ResolveType {
+    Matching
 }

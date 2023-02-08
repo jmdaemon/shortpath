@@ -49,11 +49,9 @@ fn main() {
         Some(Commands::List { names }) => {
             list_shortpaths(&paths, names);
         }
-        Some(Commands::Resolve {  }) => {
+        Some(Commands::Resolve { resolve_type, mode, dry_run }) => {
             println!("Resolving any unreachable shortpaths");
-            let resolve_type = "matching";
-            let automode = true;
-            resolve(&mut shortpaths, resolve_type, automode);
+            resolve(&mut shortpaths, resolve_type, mode, dry_run);
             paths.shortpaths = shortpaths;
         }
         Some(Commands::Export { export_type, output_file }) => {

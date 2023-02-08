@@ -42,33 +42,87 @@ pub fn expand_tilde<P: AsRef<Path>>(path_user_input: P) -> Option<PathBuf> {
     })
 }
 
-/// Attempt to find the a file in a dir
-pub fn find_by_matching_path(file_name: &str, dir: WalkDir) -> Vec<DirEntry> {
-    let files: Vec<DirEntry> = dir.into_iter()
+// Resolve predicates
+//pub fn is_matching(name: &str, entry: DirEntry) -> bool {
+    //entry.file_name() == name
+//}
+
+//pub fn levehstein() { }
+
+//pub fn is_similar_levehstein() {
+//}
+
+// Resolve traits
+//trait ResolveDirFindExt {
+    //fn find_by_matching_name(&self, name: &str) -> Vec<DirEntry>;
+    ////fn find_by_similar_name_levehstein(&self, name: &str) -> Vec<DirEntry>;
+//}
+
+//pub trait ShortpathsFindExt {
+    //fn find_by(resolve_fn: impl Fn(&SP) -> Vec<DirEntry>) -> Vec<DirEntry>;
+//}
+
+//impl ShortpathsFindExt for SP {
+    //fn find_by(resolve_fn: impl Fn(&SP) -> Vec<DirEntry>) -> Vec<DirEntry>;
+//}
+
+///// Attempt to find the a file in a dir
+//pub fn find_by_matching_path(file_name: &str, dir: WalkDir) -> Vec<DirEntry> {
+//    let files: Vec<DirEntry> = dir.into_iter()
+//        .filter_map(Result::ok)
+//        .filter(|file| file.file_name() == file_name)
+//        .collect();
+//    files
+//}
+
+//pub fn is_matching(name: &str, dir: DirEntry) -> bool {
+    //entry.file_name() == name
+//}
+
+
+pub fn find_matching_name_in_dir(sp: &Shortpath, dir: WalkDir) -> Vec<DirEntry> {
+    //let search_for = sp.path.file_name().unwrap().to_str().unwrap();
+    //let search_for = sp.path.file_name().unwrap().to_string_lossy();
+    let file_name = sp.path.file_name().unwrap().to_str().unwrap();
+    dir.into_iter()
         .filter_map(Result::ok)
         .filter(|file| file.file_name() == file_name)
-        .collect();
-    files
+        .collect()
+//    files
 }
 
-pub fn find_paths(sp: &Shortpath, find_by: impl Fn(&str, WalkDir) -> Vec<DirEntry>) -> Option<Vec<DirEntry>> {
+//pub fn find_paths(sp: &Shortpath, find_by: impl Fn(&str, WalkDir) -> Vec<DirEntry>) -> Option<Vec<DirEntry>> {
+//pub fn find_by_matching_path(shortpaths: &SP) -> Vec<DirEntry> {
+pub fn search_parent_dir(sp: &Shortpath, search_fn: impl Fn (&Shortpath, WalkDir) -> Vec<DirEntry>) -> Vec<DirEntry> {
     let search_term = sp.path.file_name().unwrap();
     let mut next = sp.path.parent();
     
+    let mut files = vec![];
     while let Some(dir) = next {
         debug!("In Directory {}", dir.display());
         let parent_files = WalkDir::new(dir).max_depth(1);
 
         debug!("Searching for files");
-        let files = find_by(search_term.to_str().unwrap(), parent_files);
+        //let files = find_by(search_term.to_str().unwrap(), parent_files);
+        files = search_fn(sp, parent_files);
         files.iter().for_each(|f| trace!("File: {}", f.file_name().to_str().unwrap()));
 
         if files.is_empty() {
-            return Some(files);
+            return files;
         }
         next = dir.parent(); // Continue searching
     }
-    None
+    return files;
+}
+
+pub fn find_by_matching_names(shortpaths: &SP) -> Vec<DirEntry> {
+//pub fn search_for(shortpaths: &SP) -> Vec<DirEntry> {
+    let mut results = vec![];
+    for (name, sp) in shortpaths {
+        let mut matches = search_parent_dir(sp, find_matching_name_in_dir);
+        results.append(&mut matches);
+    }
+    results
 }
 
 /** Tab align right strings
