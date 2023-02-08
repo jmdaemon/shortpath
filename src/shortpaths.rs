@@ -399,17 +399,27 @@ pub fn resolve(shortpaths: &SP, resolve_type: ResolveType, mode: Mode, dry_run: 
     //}
     let unreachable: IndexMap<&String, &Shortpath> = shortpaths.iter()
         .filter(|(_, sp)| {
-            true
-            //let full_path = &sp.full_path;
-            //full_path.is_none() || !full_path.as_ref().unwrap().exists()
+            //true
+            let full_path = &sp.full_path;
+            full_path.is_none() || !full_path.as_ref().unwrap().exists()
             //full_path.is_none() || !full_path.as_ref().unwrap().exists()
             //full_path.is_none() || full_path.as_ref().unwrap().exists()
         }).collect();
-    dbg!(&unreachable);
+    debug!("Unreachable Shortpaths: ");
     if unreachable.is_empty() {
-        println!("No unreachable shortpaths found");
+        debug!("None found");
+        println!("No unreachable paths found");
+        exit(0);
     }
-    exit(0);
+
+    // Debug information
+    unreachable.iter().for_each(|(k, sp)| {
+        if let Some(full_path) = &sp.full_path {
+            debug!("{}: path: {} full_path: {}", k, sp.path.display(), full_path.display());
+        } else {
+            debug!("{}: path: {} ", k, sp.path.display());
+        }
+    });
 
     let search_fn = match resolve_type {
         ResolveType::Matching => matching_file_names,
