@@ -1,3 +1,4 @@
+use crate::app::ExportType;
 use crate::export::{Export, get_exporter};
 use crate::helpers::{
     find_by_matching_path,
@@ -5,7 +6,7 @@ use crate::helpers::{
     to_str_slice,
 };
 use std::{
-    path::{PathBuf, Component},
+    path::{Path, PathBuf, Component},
     cmp::Ordering,
 };
 
@@ -229,28 +230,33 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         let shortpath_variant = shortpath_type.unwrap();
 
         let mut expanded = String::new();
-        if shortpath_variant == ShortpathVariant::Alias {
-            if !has_started {
-                info!("Branch 1: Beginning recursive expansion");
-                let (sp_depend_name, depend_path)  = get_sp_deps(get_sp_alias_name_base(comp), shortpaths);
-                expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
-                return expand_layer(format!("${}", &sp_depend_name), depend_path, PathBuf::from(expanded), shortpaths);
-            } else if let Some(parsed) = parse_alias(alias_name) {
-                trace!("Branch 2: In recursive expansion");
-                trace!("Parsed alias_name: {}", &parsed);
+        match shortpath_variant {
+            ShortpathVariant::Alias => {
+                if !has_started {
+                    info!("Branch 1: Beginning recursive expansion");
+                    let (sp_depend_name, depend_path)  = get_sp_deps(get_sp_alias_name_base(comp), shortpaths);
+                    expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
+                    return expand_layer(format!("${}", &sp_depend_name), depend_path, PathBuf::from(expanded), shortpaths);
+                } else if let Some(parsed) = parse_alias(alias_name) {
+                    trace!("Branch 2: In recursive expansion");
+                    trace!("Parsed alias_name: {}", &parsed);
 
-                let (sp_depend_name, depend_path) = get_sp_deps(get_sp_alias_name_recurse(alias_path), shortpaths);
-                expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
-                return expand_layer(sp_depend_name, expanded.clone(), PathBuf::from(expanded), shortpaths);
-            } else {
-                trace!("Branch 3: Inside Termination Case");
-                trace!("Alias Path: {}", &alias_path);
+                    let (sp_depend_name, depend_path) = get_sp_deps(get_sp_alias_name_recurse(alias_path), shortpaths);
+                    expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
+                    return expand_layer(sp_depend_name, expanded.clone(), PathBuf::from(expanded), shortpaths);
+                } else {
+                    trace!("Branch 3: Inside Termination Case");
+                    trace!("Alias Path: {}", &alias_path);
 
-                let (sp_depend_name, depend_path) = get_sp_deps(get_sp_alias_name_recurse(alias_path), shortpaths);
-                expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
-                trace!("All Layers Expanded");
-                return expanded;
+                    let (sp_depend_name, depend_path) = get_sp_deps(get_sp_alias_name_recurse(alias_path), shortpaths);
+                    expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
+                    trace!("All Layers Expanded");
+                    return expanded;
+                }
             }
+            ShortpathVariant::Environment => {
+            }
+            _ => {}
         }
         debug!("Expanded: {}", expanded);
         expanded
@@ -350,26 +356,26 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
     }).collect();
     
     // Perform the update
-    updates.into_iter().for_each(|(name, path)| {
-        update_shortpath(shortpaths, &name, None, Some(&path.to_str().unwrap().to_owned()));
-    });
+    //updates.into_iter().for_each(|(name, path)| {
+        //update_shortpath(shortpaths, &name, None, Some(&path.to_str().unwrap().to_owned()));
+    //});
 }
 
 /** Serialize shortpaths to other formats for use in other applications */
-pub fn export_shortpaths(shortpaths: &SP, export_type: &str, output_file: Option<&String>) -> PathBuf {
+pub fn export_shortpaths(shortpaths: &SP, export_type: ExportType, output_file: Option<PathBuf>) -> PathBuf {
     let exp = get_exporter(export_type)
         .set_shortpaths(shortpaths);
     let dest = exp.prepare_directory(output_file);
-    exp.write_completions(dest)
+    exp.write_completions(&dest)
 }
 
 /** Update a single shortpath's alias name or path
   * Changes the name or path if given and are unique */
-pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<&String>, path: Option<&String>) {
+pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<String>, path: Option<PathBuf>) {
     let entry_exists = || { shortpaths.get(current_name).is_some() }; 
 
-    let update_path = |new_path: String, shortpaths: &mut SP| {
-        let shortpath = Shortpath::new(PathBuf::from(new_path), None);
+    let update_path = |new_path: PathBuf, shortpaths: &mut SP| {
+        let shortpath = Shortpath::new(new_path, None);
         shortpaths.insert(current_name.to_owned(), shortpath);
     };
     let update_name = |new_name: String, shortpaths: &mut SP| {
@@ -378,8 +384,8 @@ pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<&S
     };
 
     match (entry_exists(), name, path) {
-        (true, Some(new_name), _) => { update_name(new_name.to_owned(), shortpaths); }
-        (true, _, Some(new_path)) => { update_path(new_path.to_owned(), shortpaths); }
+        (true, Some(new_name), _) => { update_name(new_name, shortpaths); }
+        (true, _, Some(new_path)) => { update_path(new_path, shortpaths); }
         (_, _, _)              => { println!("Nothing to do");}
     }
 }

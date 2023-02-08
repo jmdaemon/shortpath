@@ -6,7 +6,7 @@ use std::{
     fs::create_dir_all,
 };
 
-use crate::export::bash::BashExporter;
+use crate::{export::bash::BashExporter, app::ExportType};
 use crate::shortpaths::SP;
 
 /** 
@@ -29,9 +29,9 @@ use crate::shortpaths::SP;
   */
 pub trait Export {
     /** Ensure the directory exists at runtime */
-    fn prepare_directory(&self, output_file: Option<&String>) -> PathBuf {
+    fn prepare_directory(&self, output_file: Option<PathBuf>) -> PathBuf {
         let dest = match output_file {
-            Some(path)  => Path::new(path).to_path_buf(),
+            Some(path)  => path,
             None        => PathBuf::from(self.get_completions_path())
         };
 
@@ -59,13 +59,13 @@ pub trait Export {
 
     /** Write shell completions to disk .
       * If output_file is not None then the file is generated to output_file */
-    fn write_completions(&self, dest: PathBuf) -> PathBuf;
+    fn write_completions(&self, dest: &Path) -> PathBuf;
 }
 
 /** Returns the specific exporter */
-pub fn get_exporter(shell_type: &str) -> impl Export {
-    match shell_type.to_lowercase() {
-        keyword if keyword.contains("bash") => BashExporter::default(),
+pub fn get_exporter(export_type: ExportType) -> impl Export {
+    match export_type {
+        ExportType::Bash => BashExporter::default(),
         _ => BashExporter::default()
     }
 }

@@ -22,7 +22,8 @@ pub struct Config {
 
 impl Config {
     pub fn new(file: impl Into<String>) -> Config {
-        Config { file: PathBuf::from(file.into()), ..Default::default() }
+        let cfg = Config::default();
+        Config {file: cfg.format_config_path(file.into()), ..cfg}
     }
 
     pub fn make_config_directory(&self) {

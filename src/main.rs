@@ -1,4 +1,4 @@
-use shortpaths::app::{build_cli, toggle_logging};
+use shortpaths::app::{CLI, Commands};
 use shortpaths::builder::{ShortpathsBuilder, to_disk};
 use shortpaths::consts::CONFIG_FILE_PATH;
 use shortpaths::shortpaths::{
@@ -10,16 +10,17 @@ use shortpaths::shortpaths::{
     update_shortpath,
 };
 
-use std::{
-    path::PathBuf,
-    process::exit,
-};
+use std::process::exit;
 
-use log::info;
+use log::{info, LevelFilter};
+use pretty_env_logger::formatted_timed_builder;
+use clap::Parser;
 
 fn main() {
-    let matches = build_cli().get_matches();
-    toggle_logging(&matches);
+    let cli = CLI::parse();
+    if cli.verbose {
+         formatted_timed_builder().filter_level(LevelFilter::Trace).init();
+    }
 
     let paths = ShortpathsBuilder::new()
         .with_config(CONFIG_FILE_PATH)
@@ -30,50 +31,35 @@ fn main() {
     let mut shortpaths = paths.shortpaths.to_owned();
     info!("Current App Shortpaths:\n{}", toml::to_string_pretty(&shortpaths).expect("Could not serialize."));
 
-    match matches.subcommand() {
-        Some(("add", sub_matches)) => {
-            let (alias_name, alias_path) = (
-                sub_matches.get_one::<String>("NAME").unwrap().to_owned(),
-                sub_matches.get_one::<String>("PATH").unwrap()
-            );
-
-            add_shortpath(&mut shortpaths, alias_name.clone(), PathBuf::from(alias_path));
-            println!("Saved shortpath {}: {}", alias_name, alias_path);
+    match cli.command {
+        Some(Commands::Add { name, path} ) => {
+            add_shortpath(&mut shortpaths, name.clone(), path.clone());
+            println!("Saved shortpath {}: {}", name, path.display());
         }
-        Some(("remove", sub_matches)) => {
-            let current_name = sub_matches.get_one::<String>("NAME").unwrap();
-            let path = remove_shortpath(&mut shortpaths, current_name);
-            println!("Removed {}: {}", current_name.to_owned(), path.unwrap().path.display());
+        Some(Commands::Remove { name }) => {
+            let path = remove_shortpath(&mut shortpaths, &name);
+            println!("Removed {}: {}", name, path.unwrap().path.display());
         }
-        Some(("check", _)) => {
+        Some(Commands::Check {  }) => {
             check_shortpaths(&mut shortpaths);
         }
-        Some(("resolve", _)) => {
+        Some(Commands::Resolve {  }) => {
             println!("Resolving any unreachable shortpaths");
             let resolve_type = "matching";
             let automode = true;
             resolve(&mut shortpaths, resolve_type, automode);
         }
-        Some(("export", sub_matches)) => {
-            let (export_type, output_file) = (
-                sub_matches.get_one::<String>("EXPORT_TYPE").unwrap(),
-                sub_matches.get_one::<String>("OUTPUT_FILE"),
-            );
+        Some(Commands::Export { export_type, output_file }) => {
+            println!("{:?}", export_type);
             let dest = export_shortpaths(&shortpaths, export_type, output_file);
             println!("Exported shell completions to {}", dest.display());
         }
-        Some(("update", sub_matches)) => {
-            let (current_name, alias_name, alias_path) = (
-                sub_matches.get_one::<String>("CURRENT_NAME").unwrap(),
-                sub_matches.get_one::<String>("NAME"),
-                sub_matches.get_one::<String>("PATH"),
-            );
-
-            if alias_name.is_none() && alias_path.is_none() {
+        Some(Commands::Update { current_name, name, path }) => {
+            if name.is_none() && path.is_none() {
                 println!("Shortpath name or path must be provided");
                 exit(1);
             }
-            update_shortpath(&mut shortpaths, current_name, alias_name, alias_path);
+            update_shortpath(&mut shortpaths, &current_name, name, path);
         }
         _ => {}
     }

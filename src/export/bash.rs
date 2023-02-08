@@ -63,10 +63,10 @@ impl Export for BashExporter {
         output
     }
 
-    fn write_completions(&self, dest: PathBuf) -> PathBuf {
+    fn write_completions(&self, dest: &Path) -> PathBuf {
         let output = self.gen_completions();
-        write(&dest, output).expect("Unable to write to disk");
-        dest
+        write(dest, output).expect("Unable to write to disk");
+        dest.to_path_buf()
     }
 
     fn set_shortpaths(&mut self, shortpaths: &SP) -> Box<dyn Export> {
