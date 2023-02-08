@@ -354,7 +354,7 @@ pub fn list_shortpaths(shortpaths: &Shortpaths, names: Option<Vec<String>>) {
   * TODO: Create a data structure for the flags
   */
 //pub fn resolve(shortpaths: &mut SP, predicate: Option<String>, mode: ResolveType, dry_run: bool) {
-pub fn resolve(shortpaths: &SP, resolve_type: ResolveType, mode: Mode, dry_run: bool) {
+pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_run: bool) {
     info!("resolve()");
 //pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
     // Automode: Make the decision for the user
@@ -391,19 +391,11 @@ pub fn resolve(shortpaths: &SP, resolve_type: ResolveType, mode: Mode, dry_run: 
         //Matching => find_by_matching_names,
     //};
 
-    //let unreachable = find_unreachable(shortpaths);
-    //pub fn find_unreachable(shortpaths: &SP) -> IndexMap<&String, &Shortpath> {
-        //let unreachable: IndexMap<&String, &Shortpath> = shortpaths.iter()
-            //.filter(|(_, path)| { !path.path.exists() || path.path.to_str().is_none() }).collect();
-        //unreachable
-    //}
+    // Detect unreachable path
     let unreachable: IndexMap<&String, &Shortpath> = shortpaths.iter()
         .filter(|(_, sp)| {
-            //true
             let full_path = &sp.full_path;
             full_path.is_none() || !full_path.as_ref().unwrap().exists()
-            //full_path.is_none() || !full_path.as_ref().unwrap().exists()
-            //full_path.is_none() || full_path.as_ref().unwrap().exists()
         }).collect();
     debug!("Unreachable Shortpaths: ");
     if unreachable.is_empty() {
@@ -415,9 +407,12 @@ pub fn resolve(shortpaths: &SP, resolve_type: ResolveType, mode: Mode, dry_run: 
     // Debug information
     unreachable.iter().for_each(|(k, sp)| {
         if let Some(full_path) = &sp.full_path {
-            debug!("{}: path: {} full_path: {}", k, sp.path.display(), full_path.display());
+            debug!("\tname      : {}", k);
+            debug!("\tpath      : {}", sp.path.display());
+            debug!("\tfull_path : {}", full_path.display());
         } else {
-            debug!("{}: path: {} ", k, sp.path.display());
+            debug!("\tname      : {}", k);
+            debug!("\tpath      : {}", sp.path.display());
         }
     });
 
@@ -428,9 +423,9 @@ pub fn resolve(shortpaths: &SP, resolve_type: ResolveType, mode: Mode, dry_run: 
     let scope_fn = in_parent_dir;
 
     debug!("Parameters");
-    debug!("resolve_type: {:?}", resolve_type);
-    debug!("mode        : {:?}", mode);
-    debug!("dry_run     : {}", dry_run);
+    debug!("\tresolve_type: {:?}", resolve_type);
+    debug!("\tmode        : {:?}", mode);
+    debug!("\tdry_run     : {}", dry_run);
 
     // TODO: Do this later
     //let name = "".to_owned();
@@ -444,7 +439,9 @@ pub fn resolve(shortpaths: &SP, resolve_type: ResolveType, mode: Mode, dry_run: 
     //let matches: Vec<(String, PathBuf)> = resolve_fn(shortpaths);
     //let matches: Vec<DirEntry> = resolve_fn(shortpaths);
     //let results: Vec<DirEntry> = resolve_fn(shortpaths);
+    debug!("Attempting to search for files...");
     let results: Vec<SearchResults> = search_for(search_fn, scope_fn, shortpaths);
+
     // Manual Mode:
     // For every directory in SearchResults:
     //      Show ~ 10 files from every directory as a summary
