@@ -41,6 +41,11 @@ pub fn enable_logging() {
     };
 }
 
+/// Enables all log statements (with color) for a single test only
+pub fn enable_logging_single_test() {
+    formatted_timed_builder().filter_level(LevelFilter::Trace).init();
+}
+
 /// Initialize shortpaths
 pub fn setup_shortpaths(get_shortpaths: impl Fn() -> SP) -> SP {
     let sp_paths = get_shortpaths();

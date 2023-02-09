@@ -1,5 +1,5 @@
 #[allow(unused_imports)]
-use crate::helpers::enable_logging;
+use crate::helpers::{enable_logging, enable_logging_single_test};
 use crate::helpers::{
     shortpaths_default,
     setup_shortpaths,
@@ -37,6 +37,7 @@ fn test_shortpaths_find_key() {
 #[test]
 fn test_shortpaths_resolve() {
     enable_logging();
+    //enable_logging_single_test();
     let unreachable = indexmap! {
         "DNE".to_owned() => Shortpath::new(PathBuf::from("~/Workspace/test/DNE"), None),
     };
@@ -51,5 +52,6 @@ fn test_shortpaths_resolve() {
     let dry_run = true;
     
     resolve(&mut shortpaths, resolve_type, mode, dry_run);
+    //assert_eq!(1, 0, "Force show debug statements");
     //assert_eq!(1, 2, "builder does not construct objects that don't work");
 }
