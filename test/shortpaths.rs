@@ -39,7 +39,7 @@ fn test_shortpaths_resolve() {
     enable_logging();
     //enable_logging_single_test();
     let unreachable = indexmap! {
-        "DNE".to_owned() => Shortpath::new(PathBuf::from("~/Workspace/test/DNE"), None),
+        "DNE".to_owned() => Shortpath::new(PathBuf::from("~/Workspace/test/things"), None),
     };
     
     let builder = ShortpathsBuilder::from(unreachable);
@@ -53,5 +53,5 @@ fn test_shortpaths_resolve() {
     
     resolve(&mut shortpaths, resolve_type, mode, dry_run);
     //assert_eq!(1, 0, "Force show debug statements");
-    //assert_eq!(1, 2, "builder does not construct objects that don't work");
+    assert_eq!(1, 2, "builder does not construct objects that don't work");
 }

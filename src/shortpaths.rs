@@ -455,7 +455,7 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
     // NOTE: If no unreachable shortpaths were found
     // Then we do not do anything
 
-    debug!("Results");
+    debug!("Showing Results");
     results.iter().for_each(|nested_entries| {
         if !nested_entries.is_empty() {
             let entry = nested_entries.iter().peekable().next().unwrap();
@@ -464,30 +464,20 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
             } else {
                 entry.path()
             };
-                //}
-
-
-            //let dirpath = if let Some(entry) = directory {
-                //if entry.path().is_file() {
-                    //Some(entry.path().parent().unwrap())
-                //} else {
-                    //Some(directory.unwrap().path())
-                //}
-            //} else {
-
-                //None
-            //};
-            //if dirpath.is_none() {
-                //continue;
-            //}
+            
             debug!("Directory {}", dirpath.display());
-            debug!("Results");
+            debug!("Files Found:");
             nested_entries.iter().for_each(|file| {
-                debug!("{}", file.path().display());
+                debug!("\t{}", file.path().display());
             });
         }
-        //nested_directory.
     });
+
+    //let resolve_mode = match mode {
+        //Mode::Automatic => ,
+        //Mode::Manual => ,
+    //};
+    
     //results.iter().for_each(|d| trace!("d = {}", d.path().display()));
 
     //let chosen = resolve_mode(shortpaths, );

@@ -130,23 +130,33 @@ pub type ScopeFn = fn(&Shortpath, SearchFn) -> SearchResults;
 /// NOTE: This may be adjusted later to return more than just the first set of matching results
 /// if it is fast and efficient enough, for use in more complex functions
 pub fn in_parent_dir(sp: &Shortpath, search_fn: SearchFn) -> SearchResults {
-    let search_term = sp.path.file_name().unwrap();
-    let mut next = sp.path.parent();
+    //let mut next = sp.path.parent();
+    //let mut next = sp.full_path.clone().unwrap().as_path().parent();
+    let full_path = sp.full_path.clone().unwrap();
+    let mut next = full_path.parent();
     
     let mut found = vec![];
     while let Some(dir) = next {
-        debug!("In Directory {}", dir.display());
+        //debug!("Current Directory {}", dir.display());
+        debug!("Searching Directory {}", dir.display());
+        //debug!("In Directory {}", dir.display());
         let parent_files = WalkDir::new(dir).max_depth(1);
 
-        debug!("Searching for files");
-        found = search_fn(sp, parent_files);
-        found.iter().for_each(|f| trace!("File: {}", f.file_name().to_str().unwrap()));
+        //debug!("Searching for files");
+        //found = search_fn(sp, parent_files);
+        let mut matches = search_fn(sp, parent_files);
+        matches.iter().for_each(|f| trace!("Found: {}", &f.file_name().to_str().unwrap()));
+        found.append(&mut matches);
 
-        if found.is_empty() {
-            return found;
-        }
+        //println!("Found {:?}", &found);
+        //if found.is_empty() {
+            //return found;
+        //}
+        //println!("Next {:?}", &found);
         next = dir.parent(); // Continue searching
+        //next = next.unwrap().parent(); // Continue searching
     }
+    //debug!("{:?}", found);
     found
 }
 
