@@ -192,22 +192,21 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
 
     fn get_expanded_path(entry: PathBuf, sp_depend_name: &str, depend_path: &str) -> String {
         let expanded = expand_path(entry.to_str().unwrap(), sp_depend_name, depend_path);
-        debug!("Expanding layer: {} -> {}", entry.display(), &expanded);
+        debug!("\tExpand: {} -> {}", entry.display(), &expanded);
         expanded
     }
 
     fn expand_layer(alias_name: String, depend_path: String, entry: PathBuf, shortpaths: &SP) -> String {
-        trace!("Expanding all layers...");
         let result = expand_shortpath_inner(alias_name, depend_path, entry, true, shortpaths);
-        debug!("Received result: {}\n", result);
+        debug!("\tResult: {}\n", result);
         result
     }
 
     pub fn expand_shortpath_inner(alias_name: String, alias_path: String, entry: PathBuf, has_started: bool, shortpaths: &SP) -> String {
-        info!("Inputs ");
-        debug!("alias_path  = {}", &alias_path);
-        debug!("entry       = {}", &entry.display());
-        debug!("alias_name  = {}\n", &alias_name);
+        info!("Inputs");
+        debug!("\talias_path  = {}", &alias_path);
+        debug!("\tentry       = {}", &entry.display());
+        debug!("\talias_name  = {}\n", &alias_name);
 
         //if alias_path.is_empty() {
             //return entry.to_str().unwrap().to_string();

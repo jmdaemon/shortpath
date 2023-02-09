@@ -1,4 +1,4 @@
-use shortpaths::app::{CLI, Commands};
+use shortpaths::app::{create_logger, CLI, Commands};
 use shortpaths::builder::{ShortpathsBuilder, to_disk};
 use shortpaths::consts::CONFIG_FILE_PATH;
 use shortpaths::shortpaths::{
@@ -13,14 +13,16 @@ use shortpaths::shortpaths::{
 
 use std::process::exit;
 
-use log::{info, LevelFilter};
-use pretty_env_logger::formatted_timed_builder;
+use log::info;
+//use log::{info, LevelFilter};
+//use pretty_env_logger::formatted_timed_builder;
 use clap::Parser;
 
 fn main() {
     let cli = CLI::parse();
     if cli.verbose {
-         formatted_timed_builder().filter_level(LevelFilter::Trace).init();
+        create_logger();
+         //formatted_timed_builder().filter_level(LevelFilter::Trace).init();
     }
 
     let mut paths = ShortpathsBuilder::new()
