@@ -16,7 +16,6 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 use log::{trace, debug, info};
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
-use walkdir::DirEntry;
 
 // Data Types
 pub type SP = IndexMap<String, Shortpath>;
@@ -355,42 +354,9 @@ pub fn list_shortpaths(shortpaths: &Shortpaths, names: Option<Vec<String>>) {
 //pub fn resolve(shortpaths: &mut SP, predicate: Option<String>, mode: ResolveType, dry_run: bool) {
 pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_run: bool) {
     info!("resolve()");
-//pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
-    // Automode: Make the decision for the user
-    //let automode_fn = |shortpaths: &SP, sp: &Shortpath, results: Vec<DirEntry>| {
-    /*
-    let automode_fn = |results: Vec<DirEntry>| {
-        let first = results.first().unwrap();
-        let path = first.path().to_owned();
-        let name = shortpaths.find_key_for_value(path.to_str().unwrap()).unwrap();
-        (name.to_owned(), path)
-    };
-
-    // Manual: Provide options at runtime for the user
-    //let manualmode_fn = |shortpaths: &SP, sp: &Shortpath, results: Vec<DirEntry>| {
-    let manualmode_fn = |results: Vec<DirEntry>| {
-        results.iter().for_each(|entry| {
-        });
-
-        let path = sp.path.to_owned();
-        let name = shortpaths.find_key_for_value(path.to_str().unwrap()).unwrap();
-        //let (name, path) = (sp.name.to_owned(), sp.path.to_owned());
-        // TODO Wait for the user to make a decision
-        println!("Not yet implemented"); // TODO
-        (name.to_owned(), path)
-    };
-    */
-
-    //let resolve_mode = match mode {
-        //Mode::Automatic => automode_fn,
-        //Mode::Manual => manualmode_fn,
-    //};
-
-    //let resolve_fn = match resolve_type {
-        //Matching => find_by_matching_names,
-    //};
 
     // Detect unreachable path
+    // TODO: Make into separate function
     let unreachable: IndexMap<String, Shortpath> = shortpaths.into_iter()
         .filter(|(_, sp)| {
             let full_path = &sp.full_path;
@@ -404,6 +370,8 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
     }
 
     // Debug information
+    // TODO: Make into separate function
+    // TODO: Create Display for Unreachable type
     unreachable.iter().for_each(|(k, sp)| {
         if let Some(full_path) = &sp.full_path {
             debug!("\tname      : {}", k);
@@ -421,45 +389,14 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
 
     let scope_fn = in_parent_dir;
 
+    // TODO: Wrap in another function
     debug!("Parameters");
     debug!("\tresolve_type: {:?}", resolve_type);
     debug!("\tmode        : {:?}", mode);
     debug!("\tdry_run     : {}", dry_run);
 
-    // TODO: Do this later
-    //let name = "".to_owned();
-
-
-    // shortpaths.search_for(matching_file_names)
-    // max_depth parameter
-
-    // Get the potential matches
-    //let matches: Vec<(String, PathBuf)> = shortpaths.find_by();
-    //let matches: Vec<(String, PathBuf)> = resolve_fn(shortpaths);
-    //let matches: Vec<DirEntry> = resolve_fn(shortpaths);
-    //let results: Vec<DirEntry> = resolve_fn(shortpaths);
     debug!("Attempting to search for files...");
-    //let results: Vec<SearchResults> = search_for(search_fn, scope_fn, shortpaths);
-    //let results: Vec<(String, SearchResults)> = search_for(search_fn, scope_fn, shortpaths);
-    
-    //let unreachable: IndexMap<String, Shortpath>;
-    //let results: IndexMap<String, Vec<SearchResults>>;
-    //let results: IndexMap<String, Vec<SearchResults>> = search_for(search_fn, scope_fn, &unreachable);
     let results: IndexMap<String, ScopeResults> = search_for(search_fn, scope_fn, &unreachable);
-
-    // Manual Mode:
-    // For every directory in SearchResults:
-    //      Show ~ 10 files from every directory as a summary
-    //      Show the directory path
-    //      Prompt: Search for files here? [y/n]: 
-    //      If yes:
-    //          For every search result in the directory
-    //          Update {shortpath_name} from {old_path} to {new_path} ? [update, skip, skip_all]  
-    //      If no:
-    //          Skip and move onto next directory
-
-    // NOTE: If no unreachable shortpaths were found
-    // Then we do not do anything
 
     // TODO: Make this output less noisy when they are no paths found
     debug!("Showing Results");
@@ -518,67 +455,7 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
                 let choices = manual_resolve(name.to_owned(), &previous, nested_entries.to_owned());
             }
         };
-        //};
-
-        //let chosen = match mode {
-            //Mode::Automatic => auto_resolve(nested_entries),
-            //Mode::Manual => manual_resolve(results, &mut shortpaths, &unreachable),
-        //};
     });
-
-    //let chosen = resolve_mode(shortpaths, );
-
-    //let resolve_mode = match mode {
-        //Mode::Automatic => auto_resolve,
-        //Mode::Manual => manual_resolve,
-    //};
-    
-    //results.iter().for_each(|d| trace!("d = {}", d.path().display()));
-
-    //let chosen = resolve_mode(shortpaths, );
-    //for 
-
-    // Now do the processing
-    
-    //matches.iter().for_each(|dir| {
-    //});
-
-        //.iter()
-
-    //match predicate {
-    //}
-
-    // Feature Selection Closures
-    //let find_by = match resolve_type {
-        //"matching" => find_by_matching_path,
-        //_ => find_by_matching_path,
-    //};
-
-    //let resolve_fn = match automode {
-        //true => automode_fn,
-        //false => manualmode_fn, // We don't have a proper implementation yet for the other one
-    //};
-
-    //let updates: Vec<(String, PathBuf)> = shortpaths.iter().filter_map(|(_,sp)| {
-        //if let Some(results) = find_paths(sp, find_by) {
-            //let current_path = sp.path.to_owned();
-            //let (name, path) = resolve_fn(shortpaths, sp, results);
-
-            //if path != current_path {
-                //println!("Updating shortpath {} from {} to {}", name, current_path.display(), path.display());
-            //} else {
-                //println!("Keeping shortpath {}: {}", name, path.display());
-            //}
-            //Some((name, path))
-        //} else {
-            //None
-        //}
-    //}).collect();
-    
-    // Perform the update
-    //updates.into_iter().for_each(|(name, path)| {
-        //update_shortpath(shortpaths, &name, None, Some(&path.to_str().unwrap().to_owned()));
-    //});
 }
 
 /** Serialize shortpaths to other formats for use in other applications */
