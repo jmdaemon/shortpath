@@ -2,7 +2,7 @@ use crate::app::{ExportType, Mode, ResolveType};
 use crate::builder::{Shortpaths, ShortpathsAlignExt};
 use crate::export::{Export, get_exporter};
 use crate::helpers::{
-    to_str_slice, search_for, matching_file_names, in_parent_dir, SearchResults,
+    to_str_slice, search_for, matching_file_names, in_parent_dir, SearchResults, auto_resolve, manual_resolve, ScopeResults,
 };
 use std::path::Path;
 use std::process::exit;
@@ -353,7 +353,7 @@ pub fn list_shortpaths(shortpaths: &Shortpaths, names: Option<Vec<String>>) {
   * TODO: Create a data structure for the flags
   */
 //pub fn resolve(shortpaths: &mut SP, predicate: Option<String>, mode: ResolveType, dry_run: bool) {
-pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_run: bool) {
+pub fn resolve(shortpaths: SP, resolve_type: ResolveType, mode: Mode, dry_run: bool) {
     info!("resolve()");
 //pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
     // Automode: Make the decision for the user
@@ -391,7 +391,7 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
     //};
 
     // Detect unreachable path
-    let unreachable: IndexMap<&String, &Shortpath> = shortpaths.iter()
+    let unreachable: IndexMap<String, Shortpath> = shortpaths.into_iter()
         .filter(|(_, sp)| {
             let full_path = &sp.full_path;
             full_path.is_none() || !full_path.as_ref().unwrap().exists()
@@ -439,7 +439,13 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
     //let matches: Vec<DirEntry> = resolve_fn(shortpaths);
     //let results: Vec<DirEntry> = resolve_fn(shortpaths);
     debug!("Attempting to search for files...");
-    let results: Vec<SearchResults> = search_for(search_fn, scope_fn, shortpaths);
+    //let results: Vec<SearchResults> = search_for(search_fn, scope_fn, shortpaths);
+    //let results: Vec<(String, SearchResults)> = search_for(search_fn, scope_fn, shortpaths);
+    
+    //let unreachable: IndexMap<String, Shortpath>;
+    //let results: IndexMap<String, Vec<SearchResults>>;
+    //let results: IndexMap<String, Vec<SearchResults>> = search_for(search_fn, scope_fn, &unreachable);
+    let results: IndexMap<String, ScopeResults> = search_for(search_fn, scope_fn, &unreachable);
 
     // Manual Mode:
     // For every directory in SearchResults:
@@ -456,7 +462,25 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
     // Then we do not do anything
 
     debug!("Showing Results");
+    results.iter().for_each(|(name, nested_entries)| {
+        //let mut search_results_peek = nested_entries.iter().peekable();
+        //let next_peek = search_results_peek.peek().unwrap();
+        //let entry_peek = &next_peek.1;
+        //if !entry_peek.is_empty() {
+            debug!("Unreachable Path: {}", name);
+            nested_entries.iter().for_each(|(dirname, search_results)| {
+                debug!("Directory {}", dirname.display());
+                debug!("Files Found:");
+                search_results.iter().for_each(|file| {
+                    debug!("\t{}", file.path().display());
+                });
+            });
+        //}
+    });
+    /*
     results.iter().for_each(|nested_entries| {
+        // Show results with their directory name
+        // TODO: In the future just collect the directory names directly.
         if !nested_entries.is_empty() {
             let entry = nested_entries.iter().peekable().next().unwrap();
             let dirpath = if entry.path().is_file() {
@@ -472,10 +496,16 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
             });
         }
     });
+    */
+
+    if results.is_empty() {
+        println!("No matches found.");
+        exit(0);
+    }
 
     //let resolve_mode = match mode {
-        //Mode::Automatic => ,
-        //Mode::Manual => ,
+        //Mode::Automatic => auto_resolve,
+        //Mode::Manual => manual_resolve,
     //};
     
     //results.iter().for_each(|d| trace!("d = {}", d.path().display()));

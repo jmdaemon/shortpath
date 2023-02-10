@@ -119,9 +119,10 @@ pub fn expand_tilde<P: AsRef<Path>>(path_user_input: P) -> Option<PathBuf> {
 //pub fn find_by_matching_names(shortpaths: &SP) -> Vec<DirEntry> {
 //pub fn search_for(shortpaths: &SP) -> Vec<DirEntry> {
 pub type SearchResults = Vec<DirEntry>;
+pub type ScopeResults = Vec<(PathBuf, SearchResults)>;
 pub type SearchFn = fn(&Shortpath, WalkDir) -> SearchResults;
 //type ScopeFn = fn(SearchFn) -> SearchResults;
-pub type ScopeFn = fn(&Shortpath, SearchFn) -> SearchResults;
+pub type ScopeFn = fn(&Shortpath, SearchFn) -> ScopeResults;
 
 // Scope Functions
 
@@ -129,34 +130,25 @@ pub type ScopeFn = fn(&Shortpath, SearchFn) -> SearchResults;
 /// Returns the first set of matching results
 /// NOTE: This may be adjusted later to return more than just the first set of matching results
 /// if it is fast and efficient enough, for use in more complex functions
-pub fn in_parent_dir(sp: &Shortpath, search_fn: SearchFn) -> SearchResults {
-    //let mut next = sp.path.parent();
-    //let mut next = sp.full_path.clone().unwrap().as_path().parent();
+//pub fn in_parent_dir(sp: &Shortpath, search_fn: SearchFn) -> SearchResults {
+//pub fn in_parent_dir(sp: &Shortpath, search_fn: SearchFn) -> Vec<SearchResults> {
+pub fn in_parent_dir(sp: &Shortpath, search_fn: SearchFn) -> ScopeResults {
     let full_path = sp.full_path.clone().unwrap();
     let mut next = full_path.parent();
     
     let mut found = vec![];
     while let Some(dir) = next {
-        //debug!("Current Directory {}", dir.display());
         debug!("Searching Directory {}", dir.display());
-        //debug!("In Directory {}", dir.display());
         let parent_files = WalkDir::new(dir).max_depth(1);
 
-        //debug!("Searching for files");
-        //found = search_fn(sp, parent_files);
         let mut matches = search_fn(sp, parent_files);
         matches.iter().for_each(|f| trace!("Found: {}", &f.file_name().to_str().unwrap()));
-        found.append(&mut matches);
+        //found.append(&mut matches);
+        //found.push(&mut matches);
+        found.push((dir.to_path_buf(), matches));
 
-        //println!("Found {:?}", &found);
-        //if found.is_empty() {
-            //return found;
-        //}
-        //println!("Next {:?}", &found);
         next = dir.parent(); // Continue searching
-        //next = next.unwrap().parent(); // Continue searching
     }
-    //debug!("{:?}", found);
     found
 }
 
@@ -169,7 +161,41 @@ pub fn matching_file_names(sp: &Shortpath, dir: WalkDir) -> Vec<DirEntry> {
         .collect()
 }
 
-pub fn search_for(search_fn: SearchFn, scope_fn: ScopeFn, shortpaths: &SP) -> Vec<SearchResults> {
+// Resolve Mode
+
+/// Automatically chooses the best candidate to resolve the shortpath to
+pub fn auto_resolve(results: SearchResults) -> Option<DirEntry> {
+    Some(results.first().unwrap().to_owned())
+    //if let Some(entry) = results.first() {
+        //entry
+    //}
+    //results.as_ref
+    //Some(results.first().map(|f| f.to_owned()))
+}
+
+/// Manually prompts user to
+pub fn manual_resolve(results: SearchResults, shortpaths: &mut SP, unreachable: &SP) -> Option<DirEntry> {
+    None
+    //for 
+    //results.iter().for_each(|file| {
+        //println!("Update {}");
+    //});
+}
+
+//pub fn search_for(search_fn: SearchFn, scope_fn: ScopeFn, shortpaths: &SP) -> Vec<SearchResults> {
+//pub fn search_for(search_fn: SearchFn, scope_fn: ScopeFn, shortpaths: &SP) -> IndexMap<String, Vec<SearchResults>> {
+//pub fn search_for(search_fn: SearchFn, scope_fn: ScopeFn, shortpaths: &SP) -> IndexMap<String, Vec<SearchResults>> {
+pub fn search_for(search_fn: SearchFn, scope_fn: ScopeFn, shortpaths: &SP) -> IndexMap<String, ScopeResults> {
+    //let search_results = vec![];
+    let results = shortpaths.iter().map(|(name, sp)| {
+        let found = scope_fn(sp, search_fn);
+        //search_results.push(found);
+        //(name.to_owned(), sp.to_owned())
+        //(name.to_owned(), sp.to_owned())
+        (name.to_owned(), found)
+    }).collect();
+    results
+    /*
     let mut results = vec![];
     shortpaths.iter().for_each(|(_, sp)| {
         //let asdf = search_fn;
@@ -177,6 +203,7 @@ pub fn search_for(search_fn: SearchFn, scope_fn: ScopeFn, shortpaths: &SP) -> Ve
         results.push(found);
     });
     results
+    */
 }
 
 /** Tab align right strings

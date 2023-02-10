@@ -60,9 +60,6 @@ pub fn create_logger() {
 
             // Set custom time format
             let time = chrono::Local::now().format("%H:%M:%S");
-            //let time = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
-            
-            //let time = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
             //let time = buf.timestamp_millis();
 
             // Dim line numbers
