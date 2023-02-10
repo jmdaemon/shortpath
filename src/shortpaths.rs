@@ -353,7 +353,7 @@ pub fn list_shortpaths(shortpaths: &Shortpaths, names: Option<Vec<String>>) {
   * TODO: Create a data structure for the flags
   */
 //pub fn resolve(shortpaths: &mut SP, predicate: Option<String>, mode: ResolveType, dry_run: bool) {
-pub fn resolve(shortpaths: SP, resolve_type: ResolveType, mode: Mode, dry_run: bool) {
+pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_run: bool) {
     info!("resolve()");
 //pub fn resolve(shortpaths: &mut SP, resolve_type: &str, automode: bool) {
     // Automode: Make the decision for the user
@@ -395,7 +395,7 @@ pub fn resolve(shortpaths: SP, resolve_type: ResolveType, mode: Mode, dry_run: b
         .filter(|(_, sp)| {
             let full_path = &sp.full_path;
             full_path.is_none() || !full_path.as_ref().unwrap().exists()
-        }).collect();
+        }).into_iter().map(|(name, sp)| (name.to_owned(), sp.to_owned())).collect();
     debug!("Unreachable Shortpaths: ");
     if unreachable.is_empty() {
         debug!("None found");
@@ -461,6 +461,7 @@ pub fn resolve(shortpaths: SP, resolve_type: ResolveType, mode: Mode, dry_run: b
     // NOTE: If no unreachable shortpaths were found
     // Then we do not do anything
 
+    // TODO: Make this output less noisy when they are no paths found
     debug!("Showing Results");
     results.iter().for_each(|(name, nested_entries)| {
         //let mut search_results_peek = nested_entries.iter().peekable();
@@ -502,6 +503,30 @@ pub fn resolve(shortpaths: SP, resolve_type: ResolveType, mode: Mode, dry_run: b
         println!("No matches found.");
         exit(0);
     }
+    results.iter().for_each(|(name, nested_entries)| {
+        match mode {
+            Mode::Automatic => {
+                let choice = auto_resolve(name.to_owned(), nested_entries.to_owned());
+                if let Some(updated) = choice {
+                    let old_path = remove_shortpath(shortpaths, name);
+                    add_shortpath(shortpaths, updated.0, updated.1.clone());
+                    println!("Updated {} from {} to {}", name, old_path.unwrap().path.display(), updated.1.display());
+                }
+            }
+            Mode::Manual => {
+                let previous = &unreachable.get(name).unwrap().path;
+                let choices = manual_resolve(name.to_owned(), &previous, nested_entries.to_owned());
+            }
+        };
+        //};
+
+        //let chosen = match mode {
+            //Mode::Automatic => auto_resolve(nested_entries),
+            //Mode::Manual => manual_resolve(results, &mut shortpaths, &unreachable),
+        //};
+    });
+
+    //let chosen = resolve_mode(shortpaths, );
 
     //let resolve_mode = match mode {
         //Mode::Automatic => auto_resolve,

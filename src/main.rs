@@ -53,7 +53,8 @@ fn main() {
         }
         Some(Commands::Resolve { resolve_type, mode, dry_run }) => {
             println!("Resolving any unreachable shortpaths");
-            resolve(shortpaths.clone(), resolve_type, mode, dry_run);
+            //resolve(shortpaths.clone(), resolve_type, mode, dry_run);
+            resolve(&mut shortpaths, resolve_type, mode, dry_run);
             paths.shortpaths = shortpaths;
         }
         Some(Commands::Export { export_type, output_file }) => {

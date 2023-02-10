@@ -51,7 +51,7 @@ fn test_shortpaths_resolve() {
     let mode = Mode::Automatic;
     let dry_run = true;
     
-    resolve(shortpaths, resolve_type, mode, dry_run);
+    resolve(&mut shortpaths, resolve_type, mode, dry_run);
     //assert_eq!(1, 0, "Force show debug statements");
     assert_eq!(1, 2, "builder does not construct objects that don't work");
 }

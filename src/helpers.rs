@@ -2,7 +2,7 @@ use crate::shortpaths::{Shortpath, SP};
 
 use std::{
     env::var,
-    path::{Path, PathBuf},
+    path::{Path, PathBuf}, io,
 };
 
 use indexmap::IndexMap;
@@ -164,8 +164,39 @@ pub fn matching_file_names(sp: &Shortpath, dir: WalkDir) -> Vec<DirEntry> {
 // Resolve Mode
 
 /// Automatically chooses the best candidate to resolve the shortpath to
-pub fn auto_resolve(results: SearchResults) -> Option<DirEntry> {
-    Some(results.first().unwrap().to_owned())
+//pub fn auto_resolve(results: (PathBuf, SearchResults)) -> Option<DirEntry> {
+//pub fn auto_resolve(name: String, results: ScopeResults) -> Option<DirEntry> {
+pub fn auto_resolve(name: String, results: ScopeResults) -> Option<(String, PathBuf)> {
+    let results: Vec<Vec<DirEntry>> = results.into_iter()
+        .filter(|(_, nested_entries)| !nested_entries.to_owned().is_empty())
+        .into_iter()
+        .map(|(_,nested_entries)| nested_entries)
+        .collect();
+
+    if !results.is_empty() {
+        let path = results.first().unwrap().first().unwrap().to_owned();
+        Some((name, path.path().to_path_buf()))
+    } else {
+        None
+    }
+
+    //results.iter().for_each(|(dirname, nested_entries)| {
+        //nested_entries.iter().filter_map(|file| {
+            //return Some((name, file.to_owned()));
+
+        //});
+
+    //});  
+    //let search_results = results.first().unwrap();
+    //let path = search_results.1.first().unwrap().to_owned();
+    //Some((name, path))
+
+    /*
+    let search_results = results.first().unwrap();
+    let path = search_results.1.first().unwrap().to_owned();
+    Some((name, path))
+    */
+    //Some(results.1.first().unwrap().to_owned())
     //if let Some(entry) = results.first() {
         //entry
     //}
@@ -173,21 +204,85 @@ pub fn auto_resolve(results: SearchResults) -> Option<DirEntry> {
     //Some(results.first().map(|f| f.to_owned()))
 }
 
-/// Manually prompts user to
-pub fn manual_resolve(results: SearchResults, shortpaths: &mut SP, unreachable: &SP) -> Option<DirEntry> {
-    None
+pub fn prompt(message: String) -> Option<String> {
+    println!("{}", message);
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).expect("Failed to get user input");
+    if !input.is_empty() {
+        Some(input)
+    } else {
+        None
+    }
+}
+
+#[derive(PartialEq, Eq, Clone, Copy)]
+pub enum ResolveChoices {
+    Overwrite,
+    OverwriteAll,
+    Skip,
+    SkipAll,
+}
+
+// /// Manually prompts user to
+//pub fn manual_resolve(results: (PathBuf, SearchResults), shortpaths: &mut SP, unreachable: &SP) -> Option<DirEntry> {
+//pub fn manual_resolve(results: (PathBuf, SearchResults),  unreachable: mut SP) -> Option<DirEntry> {
+//pub fn manual_resolve(name: String, results: ScopeResults) -> Option<DirEntry> {
+pub fn manual_resolve(name: String, previous: &Path, results: ScopeResults) -> Vec<(String, PathBuf)> {
+    //None
     //for 
-    //results.iter().for_each(|file| {
-        //println!("Update {}");
-    //});
+    let get_input = |name: &str, file: &DirEntry| {
+        let mut input: Option<String> = None;
+        while input.is_none() {
+            let message = format!("Update {} from {} to {}? [overwrite, overwrite_all, skip, skip_all]",
+                name, &previous.display(), &file.path().display());
+            input = prompt(message)
+        }
+        input.unwrap()
+    };
+
+    let get_choice = |input: String| {
+        let mut choice: Option<ResolveChoices> = None;
+        while choice.is_none() {
+            choice = match input.to_lowercase().as_str() {
+                "overwrite"     => Some(ResolveChoices::Overwrite),
+                "overwrite_all" => Some(ResolveChoices::OverwriteAll),
+                "skip"          => Some(ResolveChoices::Skip),
+                "skip_all"      => Some(ResolveChoices::SkipAll),
+                _               => None,
+            }
+        }
+        choice.unwrap()
+    };
+
+    let mut updates: Vec<(String, PathBuf)> = vec![];
+
+    let mut choice: Option<ResolveChoices> = None;
+    results.iter().for_each(|(_, search_results)| {
+        //search_results.iter().for_each(|file| {
+        for file in search_results {
+            let input = get_input(&name, file);
+            if (choice.is_some()) && (choice.as_ref() == Some(&ResolveChoices::OverwriteAll)) {
+                updates.push((name.clone(), file.path().to_path_buf()));
+                break;
+            } else {
+                choice = Some(get_choice(input));
+            }
+            match choice.unwrap() {
+                ResolveChoices::Skip    => break,
+                ResolveChoices::SkipAll => break,
+                _                       => updates.push((name.to_owned(), file.path().to_path_buf())),
+            }
+        };
+    });
+    updates
 }
 
 //pub fn search_for(search_fn: SearchFn, scope_fn: ScopeFn, shortpaths: &SP) -> Vec<SearchResults> {
 //pub fn search_for(search_fn: SearchFn, scope_fn: ScopeFn, shortpaths: &SP) -> IndexMap<String, Vec<SearchResults>> {
 //pub fn search_for(search_fn: SearchFn, scope_fn: ScopeFn, shortpaths: &SP) -> IndexMap<String, Vec<SearchResults>> {
-pub fn search_for(search_fn: SearchFn, scope_fn: ScopeFn, shortpaths: &SP) -> IndexMap<String, ScopeResults> {
+pub fn search_for(search_fn: SearchFn, scope_fn: ScopeFn, unreachable: &SP) -> IndexMap<String, ScopeResults> {
     //let search_results = vec![];
-    let results = shortpaths.iter().map(|(name, sp)| {
+    let results = unreachable.iter().map(|(name, sp)| {
         let found = scope_fn(sp, search_fn);
         //search_results.push(found);
         //(name.to_owned(), sp.to_owned())
