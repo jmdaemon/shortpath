@@ -289,9 +289,12 @@ pub fn remove_shortpath(shortpaths: &mut SP, current_name: &str) -> Option<Short
     shortpaths.remove(current_name)
 }
 
-pub fn find_unreachable(shortpaths: &SP) -> IndexMap<&String, &Shortpath> {
-    let unreachable: IndexMap<&String, &Shortpath> = shortpaths.iter()
-        .filter(|(_, path)| { !path.path.exists() || path.path.to_str().is_none() }).collect();
+pub fn find_unreachable(shortpaths: &SP) -> IndexMap<String, Shortpath> {
+    let unreachable: IndexMap<String, Shortpath> = shortpaths.into_iter()
+        .filter(|(_, sp)| {
+            let full_path = &sp.full_path;
+            full_path.is_none() || !full_path.as_ref().unwrap().exists()
+        }).into_iter().map(|(name, sp)| (name.to_owned(), sp.to_owned())).collect();
     unreachable
 }
 
@@ -332,6 +335,20 @@ pub fn list_shortpaths(shortpaths: &Shortpaths, names: Option<Vec<String>>) {
     }
 }
 
+pub fn show_unreachable(unreachable: &SP) {
+    debug!("Unreachable Shortpaths: ");
+    unreachable.iter().for_each(|(k, sp)| {
+        if let Some(full_path) = &sp.full_path {
+            debug!("\tname      : {}", k);
+            debug!("\tpath      : {}", sp.path.display());
+            debug!("\tfull_path : {}", full_path.display());
+        } else {
+            debug!("\tname      : {}", k);
+            debug!("\tpath      : {}", sp.path.display());
+        }
+    });
+}
+
 /** Fix unreachable or broken paths
   * 
   * There are a few different resolve types to select from:
@@ -351,45 +368,26 @@ pub fn list_shortpaths(shortpaths: &Shortpaths, names: Option<Vec<String>>) {
   * TODO: Add overwrite_all, skip_all flags
   * TODO: Create a data structure for the flags
   */
-//pub fn resolve(shortpaths: &mut SP, predicate: Option<String>, mode: ResolveType, dry_run: bool) {
 pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_run: bool) {
     info!("resolve()");
 
-    // Detect unreachable path
-    // TODO: Make into separate function
-    let unreachable: IndexMap<String, Shortpath> = shortpaths.into_iter()
-        .filter(|(_, sp)| {
-            let full_path = &sp.full_path;
-            full_path.is_none() || !full_path.as_ref().unwrap().exists()
-        }).into_iter().map(|(name, sp)| (name.to_owned(), sp.to_owned())).collect();
-    debug!("Unreachable Shortpaths: ");
+    let unreachable = find_unreachable(shortpaths);
     if unreachable.is_empty() {
         debug!("None found");
         println!("No unreachable paths found");
         exit(0);
     }
 
-    // Debug information
-    // TODO: Make into separate function
     // TODO: Create Display for Unreachable type
-    unreachable.iter().for_each(|(k, sp)| {
-        if let Some(full_path) = &sp.full_path {
-            debug!("\tname      : {}", k);
-            debug!("\tpath      : {}", sp.path.display());
-            debug!("\tfull_path : {}", full_path.display());
-        } else {
-            debug!("\tname      : {}", k);
-            debug!("\tpath      : {}", sp.path.display());
-        }
-    });
-
+    show_unreachable(&unreachable);
+    
+    // Select search & scope functions
     let search_fn = match resolve_type {
         ResolveType::Matching => matching_file_names,
     };
 
     let scope_fn = in_parent_dir;
 
-    // TODO: Wrap in another function
     debug!("Parameters");
     debug!("\tresolve_type: {:?}", resolve_type);
     debug!("\tmode        : {:?}", mode);
@@ -398,6 +396,13 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
     debug!("Attempting to search for files...");
     let results: IndexMap<String, ScopeResults> = search_for(search_fn, scope_fn, &unreachable);
 
+    // Exit early if no matches found
+    if results.is_empty() {
+        println!("No matches found.");
+        exit(0);
+    }
+
+    // Show output
     // TODO: Make this output less noisy when they are no paths found
     debug!("Showing Results");
     results.iter().for_each(|(name, nested_entries)| {
@@ -415,31 +420,7 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
             });
         //}
     });
-    /*
-    results.iter().for_each(|nested_entries| {
-        // Show results with their directory name
-        // TODO: In the future just collect the directory names directly.
-        if !nested_entries.is_empty() {
-            let entry = nested_entries.iter().peekable().next().unwrap();
-            let dirpath = if entry.path().is_file() {
-                entry.path().parent().unwrap()
-            } else {
-                entry.path()
-            };
-            
-            debug!("Directory {}", dirpath.display());
-            debug!("Files Found:");
-            nested_entries.iter().for_each(|file| {
-                debug!("\t{}", file.path().display());
-            });
-        }
-    });
-    */
 
-    if results.is_empty() {
-        println!("No matches found.");
-        exit(0);
-    }
     results.iter().for_each(|(name, nested_entries)| {
         match mode {
             Mode::Automatic => {
