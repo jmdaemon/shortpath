@@ -349,6 +349,27 @@ pub fn show_unreachable(unreachable: &SP) {
     });
 }
 
+pub fn show_search_results(results: &IndexMap<String, ScopeResults>) {
+    // Show output
+    // TODO: Make this output less noisy when they are no paths found
+    debug!("Showing Results");
+    results.iter().for_each(|(name, nested_entries)| {
+        //let mut search_results_peek = nested_entries.iter().peekable();
+        //let next_peek = search_results_peek.peek().unwrap();
+        //let entry_peek = &next_peek.1;
+        //if !entry_peek.is_empty() {
+            debug!("Unreachable Path: {}", name);
+            nested_entries.iter().for_each(|(dirname, search_results)| {
+                debug!("Directory {}", dirname.display());
+                debug!("Files Found:");
+                search_results.iter().for_each(|file| {
+                    debug!("\t{}", file.path().display());
+                });
+            });
+        //}
+    });
+}
+
 /** Fix unreachable or broken paths
   * 
   * There are a few different resolve types to select from:
@@ -401,25 +422,7 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
         println!("No matches found.");
         exit(0);
     }
-
-    // Show output
-    // TODO: Make this output less noisy when they are no paths found
-    debug!("Showing Results");
-    results.iter().for_each(|(name, nested_entries)| {
-        //let mut search_results_peek = nested_entries.iter().peekable();
-        //let next_peek = search_results_peek.peek().unwrap();
-        //let entry_peek = &next_peek.1;
-        //if !entry_peek.is_empty() {
-            debug!("Unreachable Path: {}", name);
-            nested_entries.iter().for_each(|(dirname, search_results)| {
-                debug!("Directory {}", dirname.display());
-                debug!("Files Found:");
-                search_results.iter().for_each(|file| {
-                    debug!("\t{}", file.path().display());
-                });
-            });
-        //}
-    });
+    show_search_results(&results);
 
     results.iter().for_each(|(name, nested_entries)| {
         match mode {
@@ -433,7 +436,7 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
             }
             Mode::Manual => {
                 let previous = &unreachable.get(name).unwrap().path;
-                let choices = manual_resolve(name.to_owned(), &previous, nested_entries.to_owned());
+                let choices = manual_resolve(name.to_owned(), previous, nested_entries.to_owned());
             }
         };
     });
