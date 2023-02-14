@@ -116,38 +116,38 @@ pub enum ResolveChoices {
     SkipAll,
 }
 
+pub fn get_input(name: &str, previous: &Path, file: &DirEntry) -> String {
+    let mut input: Option<String> = None;
+    while input.is_none() {
+        let message = format!("Update {} from {} to {}? [overwrite, overwrite_all, skip, skip_all]",
+            name, &previous.display(), &file.path().display());
+        input = prompt(message)
+    }
+    input.unwrap()
+}
+
+pub fn get_choice(input: String) -> ResolveChoices {
+    let mut choice: Option<ResolveChoices> = None;
+    while choice.is_none() {
+        choice = match input.to_lowercase().as_str() {
+            "overwrite"     => Some(ResolveChoices::Overwrite),
+            "overwrite_all" => Some(ResolveChoices::OverwriteAll),
+            "skip"          => Some(ResolveChoices::Skip),
+            "skip_all"      => Some(ResolveChoices::SkipAll),
+            _               => None,
+        }
+    }
+    choice.unwrap()
+}
+
 // /// Manually prompts user to
 pub fn manual_resolve(name: String, previous: &Path, results: ScopeResults) -> Vec<(String, PathBuf)> {
-    let get_input = |name: &str, file: &DirEntry| {
-        let mut input: Option<String> = None;
-        while input.is_none() {
-            let message = format!("Update {} from {} to {}? [overwrite, overwrite_all, skip, skip_all]",
-                name, &previous.display(), &file.path().display());
-            input = prompt(message)
-        }
-        input.unwrap()
-    };
-
-    let get_choice = |input: String| {
-        let mut choice: Option<ResolveChoices> = None;
-        while choice.is_none() {
-            choice = match input.to_lowercase().as_str() {
-                "overwrite"     => Some(ResolveChoices::Overwrite),
-                "overwrite_all" => Some(ResolveChoices::OverwriteAll),
-                "skip"          => Some(ResolveChoices::Skip),
-                "skip_all"      => Some(ResolveChoices::SkipAll),
-                _               => None,
-            }
-        }
-        choice.unwrap()
-    };
-
     let mut updates: Vec<(String, PathBuf)> = vec![];
 
     let mut choice: Option<ResolveChoices> = None;
     results.iter().for_each(|(_, search_results)| {
         for file in search_results {
-            let input = get_input(&name, file);
+            let input = get_input(&name, previous, file);
             if (choice.is_some()) && (choice.as_ref() == Some(&ResolveChoices::OverwriteAll)) {
                 updates.push((name.clone(), file.path().to_path_buf()));
                 break;
