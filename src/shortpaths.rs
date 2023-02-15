@@ -314,7 +314,7 @@ pub fn display_shortpath(name: &str, path: &Path) {
 }
 
 /// List saved shortpaths
-pub fn list_shortpaths(shortpaths: &Shortpaths, names: Option<Vec<String>>) {
+pub fn show_shortpaths(shortpaths: &Shortpaths, names: Option<Vec<String>>) {
     match names {
         Some(names) => {
             // Print the names of all the desired shortpaths

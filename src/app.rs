@@ -116,7 +116,7 @@ pub enum Commands {
     },
 
     #[command(about = "Lists shortpath configurations.")]
-    List   {
+    Show   {
         #[arg(help = "Show one or more specific shortpaths")]
         names: Option<Vec<String>>,
     },

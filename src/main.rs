@@ -8,7 +8,7 @@ use shortpaths::shortpaths::{
     resolve,
     export_shortpaths,
     update_shortpath,
-    list_shortpaths,
+    show_shortpaths,
 };
 
 use std::process::exit;
@@ -48,8 +48,8 @@ fn main() {
         Some(Commands::Check {  }) => {
             check_shortpaths(&mut shortpaths);
         }
-        Some(Commands::List { names }) => {
-            list_shortpaths(&paths, names);
+        Some(Commands::Show { names }) => {
+            show_shortpaths(&paths, names);
         }
         Some(Commands::Resolve { resolve_type, mode, dry_run }) => {
             println!("Resolving any unreachable shortpaths");
