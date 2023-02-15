@@ -140,31 +140,25 @@ pub fn get_choice(input: String) -> ResolveChoices {
     choice.unwrap()
 }
 
-// /// Manually prompts user to
+/// Manually prompt user to resolve unreachable Shortpath
 pub fn manual_resolve(name: String, previous: &Path, results: ScopeResults) -> Option<(String, PathBuf)> {
     let mut choice: Option<ResolveChoices> = None;
-    //results.iter().for_each(|(_, search_results)| {
-    //results.iter().fold(None, |(_, search_results)| {
     for (_, search_results) in results.iter() {
         for file in search_results {
             let input = get_input(&name, previous, file);
-            //if (choice.is_some()) && (choice.as_ref() == Some(&ResolveChoices::OverwriteAll)) {
-                //Some((name.clone(), file.path().to_path_buf()))
-            //} else {
-            //if choice.is_none() {
             if (choice.is_some()) && (choice.as_ref() == Some(&ResolveChoices::OverwriteAll)) {
-                return Some((name.clone(), file.path().to_path_buf()))
+                return Some((name, file.path().to_path_buf()))
             } else {
                 choice = Some(get_choice(input));
             }
             match choice.unwrap() {
-                ResolveChoices::Skip    => return None,
-                ResolveChoices::SkipAll => return None,
-                _                       => return Some((name.to_owned(), file.path().to_path_buf())),
+                ResolveChoices::Skip    => continue,
+                ResolveChoices::SkipAll => continue,
+                _                       => return Some((name, file.path().to_path_buf())),
             }
         }
     }
-    return None
+    None
 }
 
 pub fn search_for(search_fn: SearchFn, scope_fn: ScopeFn, unreachable: &SP) -> IndexMap<String, ScopeResults> {

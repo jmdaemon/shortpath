@@ -430,19 +430,13 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
     for (name, sp) in unreachable.iter() {
         let previous = sp.to_owned().full_path.unwrap();
         for (_, nested_entries) in &results {
-            match mode {
-                Mode::Automatic => {
-                    let choice = auto_resolve(name.to_owned(), nested_entries.to_owned());
-                    if let Some(updated) = choice {
-                        updates.push((name.to_owned(), previous.clone(), updated.1));
-                    }
-                }
-                Mode::Manual => {
-                    let choice = manual_resolve(name.to_owned(), &previous.clone(), nested_entries.to_owned());
-                    if let Some(updated) = choice {
-                        updates.push((name.to_owned(), previous.clone(), updated.1));
-                    }
-                }
+            let choice = match mode {
+                Mode::Automatic => auto_resolve(name.to_owned(), nested_entries.to_owned()),
+                Mode::Manual => manual_resolve(name.to_owned(), &previous.clone(), nested_entries.to_owned()),
+            };
+
+            if let Some(updated) = choice {
+                updates.push((name.to_owned(), previous.clone(), updated.1));
             }
         }
     }
