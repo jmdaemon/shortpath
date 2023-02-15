@@ -440,7 +440,12 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
             }
         }
     }
-    // TODO: Perform the update
+
+    for (name, _, updated) in updates.into_iter() {
+        debug!("Name    : {name}");
+        debug!("Updated : {}", updated.display());
+        update_shortpath(shortpaths, &name, None, Some(updated))
+    }
 }
 
 /** Serialize shortpaths to other formats for use in other applications */
