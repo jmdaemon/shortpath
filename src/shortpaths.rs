@@ -424,57 +424,29 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
     }
     show_search_results(&results);
 
+    // Store the updates to make
     let mut updates: Vec<(String, PathBuf, PathBuf)> = Vec::new();
 
     for (name, sp) in unreachable.iter() {
-    //let updates: Vec<(String, PathBuf, PathBuf)> = unreachable
-        //.into_iter()
-        //.for_each(|(name, sp)| {
-
-
         let previous = sp.to_owned().full_path.unwrap();
         for (_, nested_entries) in &results {
             match mode {
                 Mode::Automatic => {
-
-                    //let choice = auto_resolve(name.to_owned(), nested_entries.to_owned());
                     let choice = auto_resolve(name.to_owned(), nested_entries.to_owned());
                     if let Some(updated) = choice {
-                        //let path = shortpaths.get(&name).unwrap();
-                        //return Some((name, path.path, updated.1))
                         updates.push((name.to_owned(), previous.clone(), updated.1));
                     }
                 }
                 Mode::Manual => {
-                    //let choices = manual_resolve(name.to_owned(), &previous, nested_entries.to_owned());
-                    //updates.push((name, previous, path));
+                    let choice = manual_resolve(name.to_owned(), &previous.clone(), nested_entries.to_owned());
+                    if let Some(updated) = choice {
+                        updates.push((name.to_owned(), previous.clone(), updated.1));
+                    }
                 }
             }
         }
-
-        /*
-        let previous = sp.full_path.unwrap();
-
-        results.into_iter().for_each(move |(_, nested_entries)| {
-            match mode {
-                Mode::Automatic => {
-
-                    let choice = auto_resolve(name.to_owned(), nested_entries.to_owned());
-                    if let Some(updated) = choice {
-                        //let path = shortpaths.get(&name).unwrap();
-                        //return Some((name, path.path, updated.1))
-                        //updates.push((name, previous, updated.1));
-                    }
-                }
-                Mode::Manual => {
-                    //let choices = manual_resolve(name.to_owned(), &previous, nested_entries.to_owned());
-                    //updates.push((name, previous, path));
-                }
-            }
-        });
-        */
     }
-
+    // TODO: Perform the update
 }
 
 /** Serialize shortpaths to other formats for use in other applications */

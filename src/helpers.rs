@@ -141,27 +141,30 @@ pub fn get_choice(input: String) -> ResolveChoices {
 }
 
 // /// Manually prompts user to
-pub fn manual_resolve(name: String, previous: &Path, results: ScopeResults) -> Vec<(String, PathBuf)> {
-    let mut updates: Vec<(String, PathBuf)> = vec![];
-
+pub fn manual_resolve(name: String, previous: &Path, results: ScopeResults) -> Option<(String, PathBuf)> {
     let mut choice: Option<ResolveChoices> = None;
-    results.iter().for_each(|(_, search_results)| {
+    //results.iter().for_each(|(_, search_results)| {
+    //results.iter().fold(None, |(_, search_results)| {
+    for (_, search_results) in results.iter() {
         for file in search_results {
             let input = get_input(&name, previous, file);
+            //if (choice.is_some()) && (choice.as_ref() == Some(&ResolveChoices::OverwriteAll)) {
+                //Some((name.clone(), file.path().to_path_buf()))
+            //} else {
+            //if choice.is_none() {
             if (choice.is_some()) && (choice.as_ref() == Some(&ResolveChoices::OverwriteAll)) {
-                updates.push((name.clone(), file.path().to_path_buf()));
-                break;
+                return Some((name.clone(), file.path().to_path_buf()))
             } else {
                 choice = Some(get_choice(input));
             }
             match choice.unwrap() {
-                ResolveChoices::Skip    => break,
-                ResolveChoices::SkipAll => break,
-                _                       => updates.push((name.to_owned(), file.path().to_path_buf())),
+                ResolveChoices::Skip    => return None,
+                ResolveChoices::SkipAll => return None,
+                _                       => return Some((name.to_owned(), file.path().to_path_buf())),
             }
-        };
-    });
-    updates
+        }
+    }
+    return None
 }
 
 pub fn search_for(search_fn: SearchFn, scope_fn: ScopeFn, unreachable: &SP) -> IndexMap<String, ScopeResults> {
