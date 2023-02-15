@@ -1,9 +1,8 @@
 use crate::shortpaths::{Shortpath, SP};
-
 use std::{
     env::var,
     path::{Path, PathBuf},
-    io::{self, Write, Read},
+    io::{stdin, stdout, Write},
 };
 
 use indexmap::IndexMap;
@@ -97,14 +96,14 @@ pub fn auto_resolve(name: String, results: ScopeResults) -> Option<(String, Path
     None
 }
 
-pub fn prompt(message: String) -> Option<String> {
+pub fn prompt(message: &str) -> Option<String> {
     info!("prompt()");
     // Show the prompt
     print!("{}", message);
-    io::stdout().lock().flush().expect("Unable to write prompt to STDOUT");
+    stdout().lock().flush().expect("Unable to write prompt to STDOUT");
+    // Get the input
     let mut input = String::new();
-    io::stdin().read_line(&mut input).expect("Failed to get user input");
-    //io::stdin().lock().read_to_string(&mut input).expect("Failed to get user input");
+    stdin().read_line(&mut input).expect("Failed to get user input");
     debug!("Input Received: {}", &input);
     if !input.is_empty() {
         Some(input)
@@ -121,17 +120,21 @@ pub enum ResolveChoices {
     SkipAll,
 }
 
-pub fn get_input(name: &str, previous: &Path, file: &DirEntry) -> String {
+pub fn manual_prompt(name: &str, previous: &Path, file: &DirEntry) -> String {
+    let message = format!("Update {} from {} to {}? [overwrite, overwrite_all, skip, skip_all]: ",
+        name, &previous.display(), &file.path().display());
+    message
+}
+
+pub fn get_input(message: &str) -> String {
     let mut input: Option<String> = None;
     while input.is_none() {
-        let message = format!("Update {} from {} to {}? [overwrite, overwrite_all, skip, skip_all]: ",
-            name, &previous.display(), &file.path().display());
         input = prompt(message)
     }
     input.unwrap()
 }
 
-pub fn get_choice(input: String) -> ResolveChoices {
+pub fn get_choice(mut input: String, message: &str) -> ResolveChoices {
     let mut choice: Option<ResolveChoices> = None;
     while choice.is_none() {
         choice = match input.to_lowercase().as_str().trim_end() {
@@ -139,7 +142,10 @@ pub fn get_choice(input: String) -> ResolveChoices {
             "overwrite_all" => Some(ResolveChoices::OverwriteAll),
             "skip"          => Some(ResolveChoices::Skip),
             "skip_all"      => Some(ResolveChoices::SkipAll),
-            _               => None,
+            _               => {
+                input = get_input(message);
+                None
+            }
         }
     }
     choice.unwrap()
@@ -150,11 +156,12 @@ pub fn manual_resolve(name: String, previous: &Path, results: ScopeResults) -> O
     let mut choice: Option<ResolveChoices> = None;
     for (_, search_results) in results.iter() {
         for file in search_results {
-            let input = get_input(&name, previous, file);
+            let prompt = manual_prompt(&name, previous, file);
+            let input = get_input(&prompt);
             if (choice.is_some()) && (choice.as_ref() == Some(&ResolveChoices::OverwriteAll)) {
                 return Some((name, file.path().to_path_buf()))
             } else {
-                choice = Some(get_choice(input));
+                choice = Some(get_choice(input, &prompt));
             }
             match choice.unwrap() {
                 ResolveChoices::Skip    => continue,
