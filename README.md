@@ -106,6 +106,8 @@ shortpaths export powershell
 
 ### API
 
+- Note: There's a small bug in `resolve_shortpath` where the newly updated shortpath
+    won't be folded after being updated.
 - `expand_shortpath`, `fold_shortpath` are not fallible, which means
     that if there's a bad shortpath, then various bugs *could* occur.
     This isn't so bad but it would be nice to have more readable errors,
@@ -114,7 +116,9 @@ shortpaths export powershell
 - Leverage rustdoc to document library, and provide examples in `examples`
 - Create `powershell` exporter.
 - Write more unit tests, preferably after the builder api is finished.
+
 Things that are nice to have but are not necessary:
+
 - Caching/Reusing `full_paths` from previous paths given they
     contain matching aliases, could lead to a potential order of magnitude speedup.
 - Enable feature to expand and fold environment variables.
@@ -123,6 +127,7 @@ Things that are nice to have but are not necessary:
 ## Binary
 
 The binary is still missing a few key features:
+
 - Ability to prompt users for a path.
 - For the command line interface, prefer using clap-derive over clap-builder for
     better reuseability and composibility.
@@ -132,8 +137,6 @@ The binary is still missing a few key features:
 - `shortpath refresh`: Platform specific.
     Unsets all shortpath variables for the platform (bash, powershell), sets them again, and then refreshes the current shell
     with the new definitions.
-- `shortpath resolve [resolve_type] [options]`: Needs to have a few more additional options, and be written
-    to be more modular. This function will be featureful and needs to play loose to support lots of options.
 - `shortpath update_hook [args]`
     or `shortpath hook update [args]`
     or `shortpath update_hook [src] [dest]`:
