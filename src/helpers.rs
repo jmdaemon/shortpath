@@ -104,7 +104,7 @@ pub fn prompt(message: &str) -> Option<String> {
     // Get the input
     let mut input = String::new();
     stdin().read_line(&mut input).expect("Failed to get user input");
-    debug!("Input Received: {}", &input);
+    debug!("Input Received: {}", &input.trim_end());
     if !input.is_empty() {
         Some(input)
     } else {

@@ -20,7 +20,6 @@ fn main() {
     let cli = CLI::parse();
     if cli.verbose {
         create_logger();
-         //formatted_timed_builder().filter_level(LevelFilter::Trace).init();
     }
 
     let mut paths = ShortpathsBuilder::new()
@@ -38,8 +37,8 @@ fn main() {
             paths.shortpaths = shortpaths;
             println!("Saved shortpath {}: {}", name, path.display());
         }
-        Some(Commands::Remove { names }) => {
-            let removed = remove_shortpath(&mut shortpaths, names.as_slice());
+        Some(Commands::Remove { names, yes}) => {
+            let removed = remove_shortpath(&mut shortpaths, names.as_slice(), yes);
             paths.shortpaths = shortpaths;
             for (name, sp) in names.iter().zip(removed.into_iter()) {
                 let sp = sp.unwrap();
