@@ -14,8 +14,6 @@ use shortpaths::shortpaths::{
 use std::process::exit;
 
 use log::info;
-//use log::{info, LevelFilter};
-//use pretty_env_logger::formatted_timed_builder;
 use clap::Parser;
 
 fn main() {
@@ -40,10 +38,13 @@ fn main() {
             paths.shortpaths = shortpaths;
             println!("Saved shortpath {}: {}", name, path.display());
         }
-        Some(Commands::Remove { name }) => {
-            let path = remove_shortpath(&mut shortpaths, &name);
+        Some(Commands::Remove { names }) => {
+            let removed = remove_shortpath(&mut shortpaths, names.as_slice());
             paths.shortpaths = shortpaths;
-            println!("Removed {}: {}", name, path.unwrap().path.display());
+            for (name, sp) in names.iter().zip(removed.into_iter()) {
+                let sp = sp.unwrap();
+                println!("Removed {}: {}", name, sp.path.display());
+            }
         }
         Some(Commands::Check {  }) => {
             check_shortpaths(&mut shortpaths);
@@ -52,8 +53,6 @@ fn main() {
             show_shortpaths(&paths, names);
         }
         Some(Commands::Resolve { resolve_type, mode, dry_run }) => {
-            println!("Resolving any unreachable shortpaths");
-            //resolve(shortpaths.clone(), resolve_type, mode, dry_run);
             resolve(&mut shortpaths, resolve_type, mode, dry_run);
             paths.shortpaths = shortpaths;
         }

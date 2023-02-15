@@ -285,8 +285,13 @@ pub fn add_shortpath(shortpaths: &mut SP, name: String, path: PathBuf) {
     shortpaths.insert(name, shortpath);
 }
 
-pub fn remove_shortpath(shortpaths: &mut SP, current_name: &str) -> Option<Shortpath> {
-    shortpaths.remove(current_name)
+pub fn remove_shortpath(shortpaths: &mut SP, names: &[String]) -> Vec<Option<Shortpath>> {
+    let mut removed = vec![];
+    for name in names {
+        let sp = shortpaths.remove(name);
+        removed.push(sp);
+    }
+    removed
 }
 
 pub fn find_unreachable(shortpaths: &SP) -> IndexMap<String, Shortpath> {

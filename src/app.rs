@@ -111,8 +111,8 @@ pub enum Commands {
 
     #[command(about = "Remove a shortpath")]
     Remove  {
-        #[arg(value_name = "NAME")]
-        name: String,
+        #[arg(value_name = "NAMES")]
+        names: Vec<String>,
     },
 
     #[command(about = "Lists shortpath configurations.")]
