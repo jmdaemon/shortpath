@@ -2,11 +2,12 @@ use crate::shortpaths::{Shortpath, SP};
 
 use std::{
     env::var,
-    path::{Path, PathBuf}, io,
+    path::{Path, PathBuf},
+    io::{self, Write, Read},
 };
 
 use indexmap::IndexMap;
-use log::{debug, trace};
+use log::{debug, trace, info};
 use walkdir::{DirEntry, WalkDir};
 
 /// Convert strings into a vector of characters
@@ -91,16 +92,20 @@ pub fn auto_resolve(name: String, results: ScopeResults) -> Option<(String, Path
 
     if !results.is_empty() {
         let path = results.first().unwrap().first().unwrap().to_owned();
-        Some((name, path.path().to_path_buf()))
-    } else {
-        None
+        return Some((name, path.path().to_path_buf()))
     }
+    None
 }
 
 pub fn prompt(message: String) -> Option<String> {
-    println!("{}", message);
+    info!("prompt()");
+    // Show the prompt
+    print!("{}", message);
+    io::stdout().lock().flush().expect("Unable to write prompt to STDOUT");
     let mut input = String::new();
     io::stdin().read_line(&mut input).expect("Failed to get user input");
+    //io::stdin().lock().read_to_string(&mut input).expect("Failed to get user input");
+    debug!("Input Received: {}", &input);
     if !input.is_empty() {
         Some(input)
     } else {
@@ -119,7 +124,7 @@ pub enum ResolveChoices {
 pub fn get_input(name: &str, previous: &Path, file: &DirEntry) -> String {
     let mut input: Option<String> = None;
     while input.is_none() {
-        let message = format!("Update {} from {} to {}? [overwrite, overwrite_all, skip, skip_all]",
+        let message = format!("Update {} from {} to {}? [overwrite, overwrite_all, skip, skip_all]: ",
             name, &previous.display(), &file.path().display());
         input = prompt(message)
     }
@@ -129,7 +134,7 @@ pub fn get_input(name: &str, previous: &Path, file: &DirEntry) -> String {
 pub fn get_choice(input: String) -> ResolveChoices {
     let mut choice: Option<ResolveChoices> = None;
     while choice.is_none() {
-        choice = match input.to_lowercase().as_str() {
+        choice = match input.to_lowercase().as_str().trim_end() {
             "overwrite"     => Some(ResolveChoices::Overwrite),
             "overwrite_all" => Some(ResolveChoices::OverwriteAll),
             "skip"          => Some(ResolveChoices::Skip),
