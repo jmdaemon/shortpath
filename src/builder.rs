@@ -105,7 +105,6 @@ impl ShortpathOperationsExt for SP {
 
 impl From<SP> for ShortpathsBuilder {
     fn from(item: SP) -> Self {
-        //Number { value: item }
         let shortpaths = Shortpaths { shortpaths: item, cfg: None };
         ShortpathsBuilder { paths: Some(shortpaths), cfg: None }
     }

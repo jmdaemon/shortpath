@@ -393,22 +393,19 @@ pub fn show_search_results(results: &IndexMap<String, ScopeResults>) {
 
 /** Fix unreachable or broken paths
   * 
-  * There are a few different resolve types to select from:
-  * - Exact Matching Path in Parent directory
-  * - Exact Matching Path in Nearest Neighbours
-  * - Most Similar Names in Parent Directory
-  * - Most Similar Names in Nearest Neighbours
-  * - Find names using locatedb
-  *
-  * In addition there are also a few options:
-  * - Automode: Automatically selects and updates the best candidate shortpath, given the selected resolve_type
-  * - Manual: The user is given the option to: (overwrite, overwrite_all, skip, skipall)
-  *
-  * TODO: How to implement additional search modes?
-  * TODO: When implementing matching by nearest neighbours, think about how to 
-  * encode the scope as a function parameter
-  * TODO: Add overwrite_all, skip_all flags
-  * TODO: Create a data structure for the flags
+  * `resolve` makes use of search and scope functions to provide more
+  *     fine grained searching functionality.
+  * 
+  * The currently supported execution modes are:
+  * Search Functions: 
+  *     - matching_file_names 
+  *     - similar_file_names (TODO NOT IMPLEMENTED).
+  * Scope Functions: 
+  *     - in_parent_dir 
+  *     - nearest_neighbours (TODO NOT IMPLEMENTED).
+  * Resolve Modes:
+  *     - Automode  : Selects the first/best possible candidate, 
+  *     - Manual    : Defer resolve choice to the user.
   */
 pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_run: bool) {
     info!("resolve()");
