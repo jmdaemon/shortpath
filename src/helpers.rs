@@ -111,6 +111,18 @@ pub fn prompt(message: &str) -> Option<String> {
         None
     }
 }
+pub fn prompt_until_valid(message: &str, input: String, is_valid: impl Fn(String) -> bool) -> String {
+//pub fn prompt_until_valid(message: &str, is_valid: impl Fn(&str) -> bool) -> String {
+    let mut input = Some(input);
+
+    //let mut input = Some(String::new());
+    //while !is_valid(&input.unwrap()) {
+    while !is_valid(input.clone().unwrap()) {
+        input = prompt(message);
+    }
+    //input.unwrap().to_string()
+    input.unwrap()
+}
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum ResolveChoices {

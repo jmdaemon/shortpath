@@ -2,7 +2,7 @@ use crate::app::{ExportType, Mode, ResolveType};
 use crate::builder::{Shortpaths, ShortpathsAlignExt};
 use crate::export::{Export, get_exporter};
 use crate::helpers::{
-    to_str_slice, search_for, matching_file_names, in_parent_dir, SearchResults, auto_resolve, manual_resolve, ScopeResults, prompt,
+    to_str_slice, search_for, matching_file_names, in_parent_dir, SearchResults, auto_resolve, manual_resolve, ScopeResults, prompt, prompt_until_valid,
 };
 use std::path::Path;
 use std::process::exit;
@@ -285,41 +285,25 @@ pub fn add_shortpath(shortpaths: &mut SP, name: String, path: PathBuf) {
     shortpaths.insert(name, shortpath);
 }
 
+pub fn is_valid<T>(input: &str, valid_fn: impl Fn(&str) -> T) -> T {
+    valid_fn(input)
+}
+
 pub fn remove_shortpath(shortpaths: &mut SP, names: &[String], yes: bool) -> Vec<Option<Shortpath>> {
     let mut removed = vec![];
-
-    //let remove_path = |shortpaths: &mut SP, removed: Vec<Option<Shortpath>>, name: &str| {
-        //let sp = shortpaths.remove(name);
-        //removed.push(sp);
-    //};
-
     let is_valid_input = |input: String| {
-        match input.as_str().trim_end() {
-            "yes" => true,
-            "no" => true,
-            _ => false,
-        }
+        matches!(input.as_str().trim_end(), "yes" |  "no")
     };
-
-    //println!("Size : {}", names.len());
 
     for name in names.iter() {
         if !yes {
             let sp = shortpaths.get(name).unwrap();
             let path = sp.path.display();
             let message = format!("Remove {} : {}? [yes/no]: ", name, path);
-            let mut input = prompt(&message);
 
-            //while input.is_none() || !is_valid_input(input.clone().unwrap()) {
-                //input = prompt(&message);
-            //}
-
-            while !is_valid_input(input.clone().unwrap()) {
-                input = prompt(&message);
-            }
-            //let choice = is_valid_input(input.unwrap());
-            //match choice {
-            match input.unwrap().as_str().trim_end() {
+            let input = prompt(&message);
+            let input = prompt_until_valid(&message, input.unwrap(), is_valid_input);
+            match input.as_str() {
                 "yes" => {
                     let sp = shortpaths.remove(name);
                     removed.push(sp);
