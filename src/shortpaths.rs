@@ -2,18 +2,24 @@ use crate::app::{ExportType, Mode, ResolveType};
 use crate::builder::{Shortpaths, ShortpathsAlignExt};
 use crate::export::{Export, get_exporter};
 use crate::helpers::{
-    to_str_slice, search_for, matching_file_names, in_parent_dir, SearchResults, auto_resolve, manual_resolve, ScopeResults, prompt, prompt_until_valid,
-};
-use std::path::Path;
-use std::process::exit;
-use std::{
-    path::{PathBuf, Component},
-    cmp::Ordering,
+    to_str_slice,
+    search_for,
+    matching_file_names,
+    in_parent_dir,
+    auto_resolve,
+    manual_resolve, ScopeResults,
+    prompt_until_valid,
 };
 
-use indexmap::IndexMap;
+use std::{
+    path::{Path, PathBuf, Component},
+    cmp::Ordering,
+    process::exit,
+};
+
 #[allow(unused_imports)]
 use itertools::Itertools;
+use indexmap::IndexMap;
 use log::{trace, debug, info};
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
@@ -207,9 +213,6 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         debug!("\tentry       = {}", &entry.display());
         debug!("\talias_name  = {}\n", &alias_name);
 
-        //if alias_path.is_empty() {
-            //return entry.to_str().unwrap().to_string();
-        //}
         let peek_clone = entry.clone();
         let mut peekable = peek_clone.components().peekable();
         if has_started && (alias_name.is_empty() || peekable.peek().is_none()) {
@@ -240,11 +243,7 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                     info!("Branch 1: Beginning recursive expansion");
                     let (sp_depend_name, depend_path)  = get_sp_deps(get_sp_alias_name_base(comp), shortpaths);
                     expanded = get_expanded_path(entry, &sp_depend_name, &depend_path);
-                    //if peekable.peek().is_none() {
-                        //return expanded;
-                    //} else {
-                        //return expand_layer(format!("${}", &sp_depend_name), depend_path, PathBuf::from(expanded), shortpaths);
-                    //}
+
                     return expand_layer(format!("${}", &sp_depend_name), expanded.clone(), PathBuf::from(expanded), shortpaths);
                 } else if let Some(parsed) = parse_alias(alias_name) {
                     trace!("Branch 2: In recursive expansion");
@@ -271,10 +270,7 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
         expanded
     }
     let entry = sp.path.to_str().unwrap().to_string();
-    //let str_path = expand_shortpath_inner(entry, String::new(), sp.path.to_owned(), false, shortpaths);
     let str_path = expand_shortpath_inner(String::new(), entry, sp.path.to_owned(), false, shortpaths);
-
-    //entry.replace(&str_path, to)
 
     PathBuf::from(str_path)
 }
@@ -283,10 +279,6 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
 pub fn add_shortpath(shortpaths: &mut SP, name: String, path: PathBuf) {
     let shortpath = Shortpath::new(path, None);
     shortpaths.insert(name, shortpath);
-}
-
-pub fn is_valid<T>(input: &str, valid_fn: impl Fn(&str) -> T) -> T {
-    valid_fn(input)
 }
 
 pub fn remove_shortpath(shortpaths: &mut SP, names: &[String], yes: bool) -> Vec<Option<Shortpath>> {

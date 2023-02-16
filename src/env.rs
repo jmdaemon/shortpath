@@ -1,4 +1,4 @@
-use std::env;
+use std::env::vars;
 use indexmap::IndexMap;
 
 use crate::shortpaths::SP;
@@ -13,7 +13,7 @@ pub struct EnvVars {
 /// Get the hashmap of every environment variable available
 pub fn env_vars() -> EP {
     let mut ep: EP = IndexMap::new();
-    env::vars().into_iter().for_each(|(var_name, var_path)| {
+    vars().into_iter().for_each(|(var_name, var_path)| {
         ep.insert(var_name, var_path);
     });
     ep

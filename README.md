@@ -131,9 +131,6 @@ The binary is still missing a few key features:
 - Ability to prompt users for a path.
 - For the command line interface, prefer using clap-derive over clap-builder for
     better reuseability and composibility.
-- Create an optional `-y` parameter.
-- `shortpath remove --paths [shortpath1] [shortpath2]` command that can accept a vector of paths.
-    - Use the `-y` parameter to skip prompting, and move on to deletion.
 - `shortpath refresh`: Platform specific.
     Unsets all shortpath variables for the platform (bash, powershell), sets them again, and then refreshes the current shell
     with the new definitions.
