@@ -111,16 +111,12 @@ pub fn prompt(message: &str) -> Option<String> {
         None
     }
 }
-pub fn prompt_until_valid(message: &str, input: String, is_valid: impl Fn(String) -> bool) -> String {
-//pub fn prompt_until_valid(message: &str, is_valid: impl Fn(&str) -> bool) -> String {
-    let mut input = Some(input);
 
-    //let mut input = Some(String::new());
-    //while !is_valid(&input.unwrap()) {
+pub fn prompt_until_valid(message: &str, is_valid: impl Fn(String) -> bool) -> String {
+    let mut input = prompt(message);
     while !is_valid(input.clone().unwrap()) {
         input = prompt(message);
     }
-    //input.unwrap().to_string()
     input.unwrap()
 }
 
@@ -132,49 +128,34 @@ pub enum ResolveChoices {
     SkipAll,
 }
 
-pub fn manual_prompt(name: &str, previous: &Path, file: &DirEntry) -> String {
-    let message = format!("Update {} from {} to {}? [overwrite, overwrite_all, skip, skip_all]: ",
-        name, &previous.display(), &file.path().display());
-    message
-}
-
-pub fn get_input(message: &str) -> String {
-    let mut input: Option<String> = None;
-    while input.is_none() {
-        input = prompt(message)
+pub fn get_choice(input: String) -> Option<ResolveChoices> {
+    match input.to_lowercase().as_str().trim_end() {
+        "overwrite"     => Some(ResolveChoices::Overwrite),
+        "overwrite_all" => Some(ResolveChoices::OverwriteAll),
+        "skip"          => Some(ResolveChoices::Skip),
+        "skip_all"      => Some(ResolveChoices::SkipAll),
+        _               => None
     }
-    input.unwrap()
-}
-
-pub fn get_choice(mut input: String, message: &str) -> ResolveChoices {
-    let mut choice: Option<ResolveChoices> = None;
-    while choice.is_none() {
-        choice = match input.to_lowercase().as_str().trim_end() {
-            "overwrite"     => Some(ResolveChoices::Overwrite),
-            "overwrite_all" => Some(ResolveChoices::OverwriteAll),
-            "skip"          => Some(ResolveChoices::Skip),
-            "skip_all"      => Some(ResolveChoices::SkipAll),
-            _               => {
-                input = get_input(message);
-                None
-            }
-        }
-    }
-    choice.unwrap()
 }
 
 /// Manually prompt user to resolve unreachable Shortpath
 pub fn manual_resolve(name: String, previous: &Path, results: ScopeResults) -> Option<(String, PathBuf)> {
     let mut choice: Option<ResolveChoices> = None;
+    let is_valid_input = |input: String| {
+        matches!(input.to_lowercase().trim_end(), "overwrite" | "overwrite_all" | "skip" | "skip_all")
+    };
     for (_, search_results) in results.iter() {
         for file in search_results {
-            let prompt = manual_prompt(&name, previous, file);
-            let input = get_input(&prompt);
+
             if (choice.is_some()) && (choice.as_ref() == Some(&ResolveChoices::OverwriteAll)) {
                 return Some((name, file.path().to_path_buf()))
-            } else {
-                choice = Some(get_choice(input, &prompt));
             }
+
+            let message = format!("Update {} from {} to {}? [overwrite, overwrite_all, skip, skip_all]: ",
+    name, &previous.display(), &file.path().display());
+            let input = prompt_until_valid(&message, is_valid_input);
+            choice = get_choice(input);
+
             match choice.unwrap() {
                 ResolveChoices::Skip    => continue,
                 ResolveChoices::SkipAll => continue,

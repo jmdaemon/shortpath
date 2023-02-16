@@ -301,8 +301,7 @@ pub fn remove_shortpath(shortpaths: &mut SP, names: &[String], yes: bool) -> Vec
             let path = sp.path.display();
             let message = format!("Remove {} : {}? [yes/no]: ", name, path);
 
-            let input = prompt(&message);
-            let input = prompt_until_valid(&message, input.unwrap(), is_valid_input);
+            let input = prompt_until_valid(&message, is_valid_input);
             match input.as_str() {
                 "yes" => {
                     let sp = shortpaths.remove(name);
