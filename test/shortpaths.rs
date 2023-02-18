@@ -35,7 +35,7 @@ fn test_shortpaths_find_key() {
 }
 
 #[test]
-fn test_shortpaths_resolve() {
+fn test_shortpaths_resolve_auto() {
     enable_logging();
     //enable_logging_single_test();
     let unreachable = indexmap! {
@@ -52,14 +52,28 @@ fn test_shortpaths_resolve() {
     let dry_run = true;
     
     resolve(&mut shortpaths, resolve_type, mode, dry_run);
-    //assert_eq!(1, 0, "Force show debug statements");
-    //assert_eq!(1, 2, "builder does not construct objects that don't work");
+    //assert_eq!(1, 0, "Show debug output");
+}
+
+
+#[test]
+fn test_shortpaths_resolve_manual() {
+    // Note for this test to work you must type in one of the valid inputs
+    // This would be a lot better if a input was piped into it
+    enable_logging();
+
+    let unreachable = indexmap! {
+        "DNE".to_owned() => Shortpath::new(PathBuf::from("~/Workspace/test/things"), None),
+    };
+    
+    let builder = ShortpathsBuilder::from(unreachable);
+    let paths = builder.build().unwrap();
+    let mut shortpaths = paths.shortpaths;
 
     let resolve_type = ResolveType::Matching;
     let mode = Mode::Manual;
     let dry_run = true;
     
     resolve(&mut shortpaths, resolve_type, mode, dry_run);
-    //assert_eq!(1, 0, "Force show debug statements");
-    assert_eq!(1, 2, "builder does not construct objects that don't work");
+    //assert_eq!(1, 0, "Show debug output");
 }

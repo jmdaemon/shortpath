@@ -112,6 +112,7 @@ pub fn sort_shortpaths(shortpaths: SP) -> SP {
 
 /// Find files for unreachable shortpaths
 pub fn search_for(search_fn: SearchFn, scope_fn: ScopeFn, unreachable: &SP) -> IndexMap<String, ScopeResults> {
+    info!("search_for()");
     unreachable.iter().map(|(name, sp)| {
         let found = scope_fn(sp, search_fn);
         (name.to_owned(), found)
