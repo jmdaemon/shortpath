@@ -15,7 +15,7 @@ Shortpaths is a Rust program for providing better path aliases to files or direc
 ## Problem
 
 When an application relies on a directory path, the moment that directory is moved elsewhere,
-the path breaks the application functionality.With `shortpaths` its possible for your
+the path breaks the application functionality. With `shortpaths` its possible for your
 path to still be usable even if the directory was moved elsewhere.
 
 ## How It Works
@@ -30,7 +30,7 @@ work without having to worry about updating aliases again. **(Not Yet Implemente
 > What happens if I one of my paths is still broken?
 
 If the path is breakable, then you can make use of `shortpaths` additional feature:
-- `shortpath resolve`: Lets you manually/automatically find and fix unreachable or broken shortpaths. **(Partially Implemented)**
+- `shortpath resolve`: Lets you manually/automatically find and fix unreachable or broken shortpaths.
 
 If you would prefer to work through your paths manually then `shortpaths` has you covered:
 - `shortpath list`: Displays your current configuration
@@ -67,7 +67,7 @@ shortpath export powershell # Powershell completions
 - **Environment Variable Support:** Make use of environment variables as path names using the `${env:my_env_var}` syntax.
 - **Nested Definitions:** Embed one shortpath inside of another with the `$alias_path` syntax.
 - **Shell Completions:** Shortpaths can export shell completions for paths. Supported shells are: bash, powershell.
-    - **(Not Yet Implemented)**
+    - **(Powershell Not Yet Implemented)**
 - **Easy Alias Path Management:** Adding new shortpaths is as easy as `shortpath add [name] [path]`
 - **Centralization:** One configuration available for use in many applications.
 - **Slightly Better Security:** The permissions set for your shortpath config is editable only by the current user.
@@ -106,6 +106,9 @@ shortpaths export powershell
 
 ### API
 
+- Eliminate as many duplicate and overlapping paths as possible.
+    One big issue currently is that if there are many shortpaths with overlapping paths,
+    there will be more breakages than if they relied on their respective GCD paths.
 - Note: There's a small bug in `resolve_shortpath` where the newly updated shortpath
     won't be folded after being updated.
 - `expand_shortpath`, `fold_shortpath` are not fallible, which means
