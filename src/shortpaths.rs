@@ -1,5 +1,6 @@
 use crate::app::{ExportType, Mode, ResolveType};
 use crate::builder::{Shortpaths, ShortpathsAlignExt};
+use crate::env::{env_vars, EnvPathOperationsExt, EnvVars};
 use crate::export::{Export, get_exporter};
 use crate::helpers::{
     to_str_slice,
@@ -8,7 +9,7 @@ use crate::helpers::{
     in_parent_dir,
     auto_resolve,
     manual_resolve, ScopeResults,
-    prompt_until_valid,
+    prompt_until_valid, getenv,
 };
 
 use std::{
@@ -125,6 +126,12 @@ pub fn fold_path(src: &str, key_name: &str, key_path: &str) -> String {
     src.replace(this, &with)
 }
 
+pub fn substitute_env_path(src: &str, env_name: &str, env_path: &str) -> String {
+    let this = format!("${{env:{}}}", env_name);
+    let with = env_path;
+    src.replace(&this, with)
+}
+
 pub fn sort_shortpaths(shortpaths: SP) -> SP {
     shortpaths.sorted_by(|_, v1, _, v2| {
         v1.cmp(v2)
@@ -135,12 +142,12 @@ pub fn sort_shortpaths(shortpaths: SP) -> SP {
 
 /** Return the type of a shortpath entry */
 pub fn get_shortpath_type(comp: &[char]) -> Option<ShortpathVariant> {
-    let _env_prefix = to_str_slice("$env:");
+    let _env_prefix = to_str_slice("${env:");
     let is_not_empty = |path: &[char]| { !path.is_empty() };
 
     match (is_not_empty(comp), comp) {
-        (true, ['$', ..])               => Some(ShortpathVariant::Alias),
         (true, [ _env_prefix, .., '}']) => Some(ShortpathVariant::Environment),
+        (true, ['$', ..])               => Some(ShortpathVariant::Alias),
         (true, [ .. ])                  => Some(ShortpathVariant::Independent),
         (false, _)                      => None
     }
@@ -153,6 +160,38 @@ pub fn parse_alias(comp: String) -> Option<String> {
     } else {
         None
     }
+}
+
+/// Parse a component of an environment path, and returns it
+pub fn parse_env_alias(comp: String) -> Option<String> {
+    if comp.starts_with("${env:") {
+        let mut envname = comp.strip_prefix("${env:").unwrap().to_owned();
+        envname.pop();
+        Some(envname)
+    } else {
+        None
+    }
+}
+
+pub fn substitute_env_paths(shorpaths: SP) -> SP {
+    shorpaths.into_iter().map(|(name, mut sp)| {
+        //let path = sp.path.to_str().unwrap().to_owned();
+        let mut path = sp.path.to_str().unwrap().to_owned();
+        sp.path.components().for_each(|comp| {
+            let compstr = comp.as_os_str().to_str().unwrap().to_owned();
+            let alias = parse_env_alias(compstr);
+            if let Some(env_name) = alias {
+                let env_path = getenv(env_name.clone());
+                path = substitute_env_path(&path, &env_name, &env_path);
+            }
+        });
+        sp.path = PathBuf::from(path);
+        //if path.contains("${env:") {
+        //}
+        // If the shortpath contains ${env:}
+        // Substitute it with the real env path name
+        (name, sp)
+    }).collect()
 }
 
 pub fn to_string(comp: &Component) -> String {
@@ -238,6 +277,9 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
 
         let mut expanded = String::new();
         match shortpath_variant {
+            ShortpathVariant::Environment => {
+                trace!("Environment Variable Detected");
+            }
             ShortpathVariant::Alias => {
                 if !has_started {
                     info!("Branch 1: Beginning recursive expansion");
@@ -261,8 +303,6 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
                     trace!("All Layers Expanded");
                     return expanded;
                 }
-            }
-            ShortpathVariant::Environment => {
             }
             _ => {}
         }
@@ -468,8 +508,14 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
 
 /** Serialize shortpaths to other formats for use in other applications */
 pub fn export_shortpaths(shortpaths: &SP, export_type: ExportType, output_file: Option<PathBuf>) -> PathBuf {
+    // Sets environment variables
+    let mut evars = EnvVars::new();
+    let vars = evars.vars.non_null().unique(shortpaths);
+    evars.vars = vars;
+
     let exp = get_exporter(export_type)
-        .set_shortpaths(shortpaths);
+        .set_shortpaths(shortpaths)
+        .set_env_vars(&evars);
     let dest = exp.prepare_directory(output_file);
     exp.write_completions(&dest)
 }

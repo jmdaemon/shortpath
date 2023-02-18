@@ -1,7 +1,7 @@
 use crate::{
     consts::PROGRAM_NAME,
     export::Export,
-    shortpaths::{SP, sort_shortpaths},
+    shortpaths::{SP, sort_shortpaths, substitute_env_paths}, env::EnvVars,
 };
 
 use std::{
@@ -20,6 +20,7 @@ pub const BASH_SYSTEM: &str     = formatcp!("/usr/share/bash-completion/completi
    file instead of just generating the aliases script. */
 pub struct BashExporter {
     shortpaths: Option<SP>,
+    env_vars: Option<EnvVars>,
 }
 
 pub fn fmt_bash_alias(name: &str, path: &Path) -> String {
@@ -28,13 +29,13 @@ pub fn fmt_bash_alias(name: &str, path: &Path) -> String {
 
 impl Default for BashExporter {
     fn default() -> Self {
-        BashExporter::new(None)
+        BashExporter::new(None, None)
     }
 }
 
 impl BashExporter {
-    pub fn new(shortpaths: Option<SP>) -> BashExporter {
-        BashExporter { shortpaths }
+    pub fn new(shortpaths: Option<SP>, env_vars: Option<EnvVars>) -> BashExporter {
+        BashExporter { shortpaths, env_vars }
     }
 }
 
@@ -53,7 +54,8 @@ impl Export for BashExporter {
     fn gen_completions(&self) -> String {
         info!("gen_completions()");
         let mut output = String::from("#!/bin/bash\n\n");
-        self.shortpaths.to_owned().unwrap()
+        let shortpaths = substitute_env_paths(self.shortpaths.to_owned().unwrap());
+        shortpaths
             .iter().for_each(|(name, sp)| {
                 trace!("shortpaths: {}: {}", &name, sp.path.display());
                 trace!("shortpaths: {}: {:?}", &name, sp.full_path);
@@ -70,7 +72,14 @@ impl Export for BashExporter {
     }
 
     fn set_shortpaths(&mut self, shortpaths: &SP) -> Box<dyn Export> {
-        let bexp = BashExporter { shortpaths: Some(sort_shortpaths(shortpaths.to_owned()) ) };
+        let env_vars = self.env_vars.clone();
+        let bexp = BashExporter { shortpaths: Some(sort_shortpaths(shortpaths.to_owned()) ), env_vars };
+        Box::new(bexp)
+    }
+
+    fn set_env_vars(&mut self, env_vars: &EnvVars) -> Box<dyn Export> {
+        let shortpaths = self.shortpaths.clone();
+        let bexp = BashExporter { env_vars: Some(env_vars.to_owned()), shortpaths};
         Box::new(bexp)
     }
 }

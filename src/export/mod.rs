@@ -6,7 +6,7 @@ use std::{
     fs::create_dir_all,
 };
 
-use crate::{export::bash::BashExporter, app::ExportType};
+use crate::{export::bash::BashExporter, app::ExportType, env::EnvVars};
 use crate::shortpaths::SP;
 
 /** 
@@ -53,6 +53,8 @@ pub trait Export {
     fn set_completions_fileperms(&self) -> String;
 
     fn set_shortpaths(&mut self, shortpaths: &SP) -> Box<dyn Export>;
+
+    fn set_env_vars(&mut self, env_vars: &EnvVars) -> Box<dyn Export>;
 
     /** Generate shell completions */
     fn gen_completions(&self) -> String;

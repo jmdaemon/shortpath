@@ -6,6 +6,7 @@ use crate::shortpaths::SP;
 // We have a set of environment variables
 pub type EP = IndexMap<String, String>;
 
+#[derive(Clone, Debug)]
 pub struct EnvVars {
     pub vars: EP,
 }
@@ -33,11 +34,19 @@ pub fn unique_vars(shortpaths: &SP, envpaths: &EP) -> EP {
 
 pub trait EnvPathOperationsExt{
     fn unique(&self, shortpaths: &SP) -> EP;
+    fn non_null(self) -> EP;
 }
 
 impl EnvPathOperationsExt for EP {
     fn unique(&self, shortpaths: &SP) -> EP {
         unique_vars(shortpaths, self)
+    }
+
+    fn non_null(self) -> EP {
+        let envpaths: EP = self.into_iter().filter(|(_, envpath)| {
+            !envpath.is_empty()
+        }).collect();
+        envpaths
     }
 }
 

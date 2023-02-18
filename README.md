@@ -126,11 +126,8 @@ Things that are nice to have but are not necessary:
 
 ## Binary
 
-The binary is still missing a few key features:
+The binary is still missing one key feature, namely the update and remove hooks:
 
-- Ability to prompt users for a path.
-- For the command line interface, prefer using clap-derive over clap-builder for
-    better reuseability and composibility.
 - `shortpath refresh`: Platform specific.
     Unsets all shortpath variables for the platform (bash, powershell), sets them again, and then refreshes the current shell
     with the new definitions.
