@@ -132,6 +132,12 @@ pub fn substitute_env_path(src: &str, env_name: &str, env_path: &str) -> String 
     src.replace(&this, with)
 }
 
+pub fn substitute_env_alias_name(src: &str, env_name: &str) -> String {
+    let this = format!("${{env:{}}}", env_name);
+    let with = format!("${}", env_name);
+    src.replace(&this, &with)
+}
+
 pub fn sort_shortpaths(shortpaths: SP) -> SP {
     shortpaths.sorted_by(|_, v1, _, v2| {
         v1.cmp(v2)
@@ -173,23 +179,18 @@ pub fn parse_env_alias(comp: String) -> Option<String> {
     }
 }
 
+/// Replaces ${env:PATH} -> $PATHs
 pub fn substitute_env_paths(shorpaths: SP) -> SP {
     shorpaths.into_iter().map(|(name, mut sp)| {
-        //let path = sp.path.to_str().unwrap().to_owned();
         let mut path = sp.path.to_str().unwrap().to_owned();
         sp.path.components().for_each(|comp| {
             let compstr = comp.as_os_str().to_str().unwrap().to_owned();
             let alias = parse_env_alias(compstr);
             if let Some(env_name) = alias {
-                let env_path = getenv(env_name.clone());
-                path = substitute_env_path(&path, &env_name, &env_path);
+                path = substitute_env_alias_name(&path, &env_name);
             }
         });
         sp.path = PathBuf::from(path);
-        //if path.contains("${env:") {
-        //}
-        // If the shortpath contains ${env:}
-        // Substitute it with the real env path name
         (name, sp)
     }).collect()
 }

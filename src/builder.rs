@@ -42,9 +42,6 @@ pub trait ShortpathOperationsExt {
 
     /// Same as sort_paths but without creating a copy
     fn sort_paths_inplace(&mut self) -> SP;
-
-    ///// Replaces ${env:PATH} -> $PATHs
-    //fn substitute_env_paths(self) -> SP;
 }
 
 impl ShortpathsAlignExt for Shortpaths {
@@ -70,7 +67,6 @@ impl ShortpathsAlignExt for Shortpaths {
 
     fn fold_env_paths(self) -> Shortpaths {
         let evars = self.env_vars.unwrap();
-        //self.shortpaths.into_iter().map(|(name, sp)| {
         let shortpaths: SP = self.shortpaths.into_iter().map(|(name, mut sp)| {
             let mut path = sp.path.to_str().unwrap().to_owned();
             evars.vars.iter().for_each(|(envname, envpath)| {
@@ -89,15 +85,6 @@ impl ShortpathsAlignExt for Shortpaths {
         }).collect();
 
         Shortpaths { shortpaths, env_vars: Some(evars), ..self}
-
-        //let shortpaths_iter = self.shortpaths.into_iter();
-        //let env_vars_iter = self.env_vars.unwrap().vars.into_iter();
-
-        //shortpaths_iter.zip(env_vars_iter).for_each(|((spname, sp), (envname, envpath))| {
-        //});
-        
-        //self.env_vars.unwrap().vars.into_iter().for_each(|(envname, envpath)| {
-        //});
     }
 }
 
@@ -138,28 +125,6 @@ impl ShortpathOperationsExt for SP {
         });
         self.to_owned()
     }
-
-    //fn substitute_env_paths(self) -> SP {
-        //self.into_iter().map(|(name, mut sp)| {
-            ////let path = sp.path.to_str().unwrap().to_owned();
-            //let mut path = sp.path.to_str().unwrap().to_owned();
-            //sp.path.components().for_each(|comp| {
-                //let compstr = comp.as_os_str().to_str().unwrap().to_owned();
-                //let alias = parse_env_alias(compstr);
-                //if let Some(env_name) = alias {
-                    //let env_path = getenv(env_name.clone());
-                    //path = substitute_env_path(&path, &env_name, &env_path);
-                //}
-            //});
-            //sp.path = PathBuf::from(path);
-            ////if path.contains("${env:") {
-            ////}
-            //// If the shortpath contains ${env:}
-            //// Substitute it with the real env path name
-            //(name, sp)
-        //}).collect()
-    //}
-
 }
 
 impl From<SP> for ShortpathsBuilder {
