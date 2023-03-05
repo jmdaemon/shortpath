@@ -1,7 +1,7 @@
 use crate::app::{ExportType, Mode, ResolveType};
 use crate::builder::{Shortpaths, ShortpathsAlignExt};
-use crate::env::{env_vars, EnvPathOperationsExt, EnvVars};
-use crate::export::{Export, get_exporter};
+use crate::env::{EnvPathOperationsExt, EnvVars};
+use crate::export::get_exporter;
 use crate::helpers::{
     to_str_slice,
     search_for,
@@ -9,7 +9,7 @@ use crate::helpers::{
     in_parent_dir,
     auto_resolve,
     manual_resolve, ScopeResults,
-    prompt_until_valid, getenv,
+    prompt_until_valid,
 };
 
 use std::{
