@@ -50,7 +50,7 @@ pub trait Export {
     fn get_completions_sys_path(&self) -> String;
 
     /** Make exported completions file read + user executable only */
-    fn set_completions_fileperms(&self) -> String;
+    fn set_completions_fileperms(&self, dest: &Path);
 
     fn set_shortpaths(&mut self, shortpaths: &SP) -> Box<dyn Export>;
 

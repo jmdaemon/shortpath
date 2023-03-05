@@ -24,8 +24,8 @@ Shortpath's key feature is being able to nest themselves as aliases inside other
 This allows you to expand the shortpath at runtime, leading to a more resilient directory link
 at the expense of the cost to expand.
 
-Combined with the shell update hooks, its possible for the user to define a path and seamlessly
-work without having to worry about updating aliases again. **(Not Yet Implemented)**
+Combined with the shell update hooks **(Not Yet Implemented)**, its possible for the user to define a path and seamlessly
+work without having to worry about updating aliases again.
 
 > What happens if I one of my paths is still broken?
 
@@ -70,9 +70,7 @@ shortpath export powershell # Powershell completions
     - **(Powershell Not Yet Implemented)**
 - **Easy Alias Path Management:** Adding new shortpaths is as easy as `shortpath add [name] [path]`
 - **Centralization:** One configuration available for use in many applications.
-- **Slightly Better Security:** The permissions set for your shortpath config is editable only by the current user.
-    The shell completions file is read + user executable only.
-    - **(Not Yet Implemented)**
+- **Slightly Better Security:** Exported variable configs are `rwx` only by the current user and readonly for everyone else.
 
 ## Shell Completions
 

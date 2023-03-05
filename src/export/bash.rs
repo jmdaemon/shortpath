@@ -6,7 +6,8 @@ use crate::{
 
 use std::{
     path::{Path, PathBuf},
-    fs::write,
+    fs::{write, set_permissions},
+    os::unix::prelude::PermissionsExt,
 };
 
 use log::{trace, info};
@@ -47,8 +48,10 @@ impl Export for BashExporter {
         format!("{}/bash-completion/completions/{}", data_dir.unwrap().to_str().unwrap(), PROGRAM_NAME)
     }
 
-    fn set_completions_fileperms(&self) -> String {
-        todo!("Set user completion file perms");
+    fn set_completions_fileperms(&self, dest: &Path) {
+        let mut perms = dest.metadata().unwrap().permissions();
+        perms.set_mode(0o744);
+        set_permissions(dest, perms).unwrap_or_else(|_| panic!("Could not set permissions for {}", dest.display()));
     }
 
     fn gen_completions(&self) -> String {
@@ -68,6 +71,7 @@ impl Export for BashExporter {
     fn write_completions(&self, dest: &Path) -> PathBuf {
         let output = self.gen_completions();
         write(dest, output).expect("Unable to write to disk");
+        self.set_completions_fileperms(dest);
         dest.to_path_buf()
     }
 
