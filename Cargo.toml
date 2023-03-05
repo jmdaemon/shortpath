@@ -1,5 +1,5 @@
 [package]
-name = "shortpaths"
+name = "shortpath"
 version = "0.1.0"
 edition = "2021"
 autotests = false
@@ -18,7 +18,6 @@ harness = false
 chrono = "0.4.23"
 clap = { version = "4.1.1", features = ["derive"] }
 const_format = "0.2.30"
-criterion = { version = "0.4.0", features = ["real_blackbox"] }
 derivative = "2.2.0"
 directories = "4.0.1"
 dirs = "4.0.0"
@@ -26,11 +25,11 @@ env_logger = "0.10.0"
 indexmap = { version = "1.9.2", features = ["serde", "serde-1"] }
 itertools = "0.10.5"
 log = "0.4.17"
-pretty_env_logger = "0.4.0"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_derive = "1.0.152"
 toml = { version = "0.5.10", features = ["preserve_order", "indexmap"] }
 walkdir = "2.3.2"
 
 [dev-dependencies]
-criterion = { version = "0.4.0", features = ["html_reports"] }
+pretty_env_logger = "0.4.0"
+criterion = { version = "0.4.0", features = ["html_reports", "real_blackbox"] }

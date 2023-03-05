@@ -1,7 +1,7 @@
-use shortpaths::app::{create_logger, CLI, Commands};
-use shortpaths::builder::{ShortpathsBuilder, to_disk};
-use shortpaths::consts::CONFIG_FILE_PATH;
-use shortpaths::shortpaths::{
+use shortpath::app::{create_logger, CLI, Commands};
+use shortpath::builder::{ShortpathsBuilder, to_disk};
+use shortpath::consts::CONFIG_FILE_PATH;
+use shortpath::shortpaths::{
     add_shortpath,
     remove_shortpath,
     check_shortpaths,
