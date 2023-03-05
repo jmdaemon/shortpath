@@ -67,18 +67,15 @@ shortpath export powershell # Powershell completions
 - **Environment Variable Support:** Make use of environment variables as path names using the `${env:my_env_var}` syntax.
 - **Nested Definitions:** Embed one shortpath inside of another with the `$alias_path` syntax.
 - **Shell Completions:** Shortpaths can export shell completions for paths. Supported shells are: bash, powershell.
-    - **(Powershell Not Yet Implemented)**
 - **Easy Alias Path Management:** Adding new shortpaths is as easy as `shortpath add [name] [path]`
 - **Centralization:** One configuration available for use in many applications.
 - **Slightly Better Security:** Exported variable configs are `rwx` only by the current user and readonly for everyone else.
 
 ## Shell Completions
 
-**Not Yet Implemented**
-
 If you want shortpaths to automatically update your shortpaths config when
 you're working with files and/or folders in the shell, then load the
-helper scripts in `hooks`.
+helper scripts in `hooks` **Not Yet Implemented**.
 
 ### Bash
 
@@ -115,6 +112,12 @@ Environment variables are not as supported and are somewhat buggy.
     This should be modified to allow only specific customizable env vars such as
     `$profile`, the `XDG` variables, etc.
 
+#### Export
+
+- The `bash` and `powershell` exporter code has too much similarity with each other.
+    Removing the trait and including a simpler method of dynamic dispatch will
+    reduce code duplication between them.
+
 #### Folding
 
 - In `resolve_shortpath` the newly updated shortpath won't be folded after being updated.
@@ -132,7 +135,6 @@ Environment variables are not as supported and are somewhat buggy.
     - The config file strings aren't checked for correctness before they are used,
         thereby allowing for more undefined behavior at runtime.
 - Leverage rustdoc to document library, and provide examples in `examples`
-- Create `powershell` exporter.
 - Write more unit tests.
 
 Things that are nice to have but are not necessary:

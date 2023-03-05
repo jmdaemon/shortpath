@@ -6,7 +6,14 @@ use std::{
     fs::create_dir_all,
 };
 
-use crate::{export::bash::BashExporter, app::ExportType, env::EnvVars};
+use crate::{
+    app::ExportType,
+    env::EnvVars,
+    export::{
+        bash::BashExporter,
+        powershell::PowershellExporter,
+    },
+};
 use crate::shortpaths::SP;
 
 /** 
@@ -65,9 +72,10 @@ pub trait Export {
 }
 
 /** Returns the specific exporter */
-pub fn get_exporter(export_type: ExportType) -> impl Export {
+pub fn get_exporter(export_type: ExportType) -> Box<dyn Export> {
     match export_type {
-        ExportType::Bash => BashExporter::default(),
-        _ => BashExporter::default()
+        ExportType::Bash => Box::new(BashExporter::default()),
+        ExportType::Powershell => Box::new(PowershellExporter::default()),
+        _ => Box::new(BashExporter::default()),
     }
 }
