@@ -1,5 +1,5 @@
 use shortpath::app::{create_logger, CLI, Commands};
-use shortpath::builder::{ShortpathsBuilder, to_disk};
+use shortpath::builder::{ShortpathsBuilder, ShortpathOperationsExt, to_disk};
 use shortpath::consts::CONFIG_FILE_PATH;
 use shortpath::shortpaths::{
     add_shortpath,
@@ -70,5 +70,6 @@ fn main() {
         }
         _ => {}
     }
+    paths.shortpaths.sort_paths_inplace();
     to_disk(paths);
 }

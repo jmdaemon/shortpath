@@ -112,17 +112,7 @@ Environment variables are not as supported and are somewhat buggy.
     This should be modified to allow only specific customizable env vars such as
     `$profile`, the `XDG` variables, etc.
 
-#### Export
-
-- The `bash` and `powershell` exporter code has too much similarity with each other.
-    Removing the trait and including a simpler method of dynamic dispatch will
-    reduce code duplication between them.
-
 #### Folding
-
-- In `resolve_shortpath` the newly updated shortpath won't be folded after being updated.
-- The shortpaths file isn't sorted after running add/remove/update commands.
-
 - Eliminate as many duplicate and overlapping paths as possible.
     One big issue currently is that if there are many shortpaths with overlapping paths,
     there will be more breakages than if they relied on their respective GCD paths.
