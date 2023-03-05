@@ -78,21 +78,21 @@ fn main() {
                     if filepaths.is_none() {
                         exit(1);
                     }
-                    println!("Given: {:?}", filepaths);
+                    debug!("Given: {:?}", filepaths);
 
                     // Get the fully qualified file paths for the inputs
                     let filepaths = filepaths.unwrap();
                     let filepaths: Vec<PathBuf> = filepaths.into_iter().map(|path| {
                         path.canonicalize().unwrap()
                     }).collect();
-                    println!("Canonicalized Paths: {:?}", filepaths);
+                    debug!("Canonicalized Paths: {:?}", filepaths);
 
                     // Filter only shortpath definitions
                     let filepaths: Vec<PathBuf> = filepaths.into_iter().filter(|path| {
                         let path = path.to_str().unwrap();
                         shortpaths.find_key_for_value(path).is_none()
                     }).collect();
-                    println!("Filtered Shortpaths: {:?}", filepaths);
+                    debug!("Filtered Shortpaths: {:?}", filepaths);
 
                     // Fold the resulting shortpaths
                     let filepaths: Vec<String> = filepaths.into_iter().map(|p| {
@@ -100,21 +100,21 @@ fn main() {
                         let folded = folded.to_str().unwrap();
                         String::from(folded)
                     }).collect();
-                    println!("Folded Shortpaths: {:?}", filepaths);
+                    debug!("Folded Shortpaths: {:?}", filepaths);
 
                     // Remove shortpath definitions
                     let names: Vec<String> = filepaths.into_iter().filter_map(|path| {
                         let key = shortpaths.find_key_for_value(path);
-                        println!("{:?}", key);
+                        debug!("{:?}", key);
                         if let Some(key) = key {
                             return Some(key.to_owned())
                         }
                         None
                     }).collect();
-                    println!("Key Names of Shortpaths: {:?}", names);
+                    debug!("Key Names of Shortpaths: {:?}", names);
                     let removed = remove_shortpath(&mut shortpaths, names.as_slice(), true);
                     paths.shortpaths = shortpaths;
-                    println!("{:?}", removed);
+                    debug!("Removed: {:?}", removed);
 
                     // Display results to user
                     for (name, sp) in names.iter().zip(removed.into_iter()) {

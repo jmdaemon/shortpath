@@ -24,7 +24,7 @@ Shortpath's key feature is being able to nest themselves as aliases inside other
 This allows you to expand the shortpath at runtime, leading to a more resilient directory link
 at the expense of the cost to expand.
 
-Combined with the shell update hooks **(Not Yet Implemented)**, its possible for the user to define a path and seamlessly
+Combined with the shell update hooks, its possible for the user to define a path and seamlessly
 work without having to worry about updating aliases again.
 
 > What happens if I one of my paths is still broken?
@@ -75,17 +75,13 @@ shortpath export powershell # Powershell completions
 
 If you want shortpaths to automatically update your shortpaths config when
 you're working with files and/or folders in the shell, then load the
-helper scripts in `hooks` **Not Yet Implemented**.
+helper scripts in `hooks`.
 
 ### Bash
 
-**Not Yet Implemented**
-
-Source `hooks/shortpaths_hooks.sh` in your `.bashrc`. Or if you'd prefer to generate these manually:
-
-```bash
-shortpaths export bash
-```
+Source `hooks/shortpaths_hooks.sh` in your `.bashrc` or add its contents to your `.bashrc`.
+These hooks wrap the `mv` and `rm` utilities to call `shortpaths hook {move/remove}` respectively.
+The hook checks if a given path is also a shortpath, and attempts to update or remove it.
 
 ### Powershell
 
@@ -114,9 +110,12 @@ shortpaths export powershell
     - Shortpath aliases have higher priority than environment variables
     - All shortpath aliases are folded exhaustively
 
+#### Library
+
 - Shortpaths config isn't sanitized before it is used in `expand_shortpath` and `fold_shortpath`.
     - The config file strings aren't checked for correctness before they are used,
         thereby allowing for more undefined behavior at runtime.
+
 - Leverage rustdoc to document library, and provide examples in `examples`
 - Write more unit tests.
 
@@ -127,35 +126,35 @@ Things that are nice to have but are not necessary:
 - Enable feature to expand and fold environment variables.
 - Use custom GAT iterator to simplify expand_shortpath
 
+- More unit tests, more refactoring.
+
 ## Binary
 
 The binary is still missing one key feature, namely the update and remove hooks:
 
+For the shell hooks:
+
+- The code is slightly messy and/or fragile at the moment and
+    should be refactored in the future to be more robust.
+- There are some problems with moving/removing files that are found across symlinks.
+    The file isn't correctly detected across symlinks and thus isn't removed properly.
+
 - `shortpath refresh`: Platform specific.
     Unsets all shortpath variables for the platform (bash, powershell), sets them again, and then refreshes the current shell
     with the new definitions.
-- `shortpath update_hook [args]`
-    or `shortpath hook update [args]`
-    or `shortpath update_hook [src] [dest]`:
-    Check if the shortpath exists in our config, and runs the command to update and save our updated path.
-- `shortpath remove_hook [args]`
-    or `shortpath hook remove [args]`
-    or `shortpath remove_hook --paths [shortpaths]`:
-    Check if the shortpath exists in our config, and runs the command to remove the path.
-- Note for the hooks:
-    - If parsing is done in the binary then clap argument parsing must be disabled for these hooks.
-        - This is because if there are binary specific arguments given, like `mv src dest -p`,
-            then the flags will break clap parsing when it detects that those options are missing
-    - If parsing is not done in the binary, and the script hooks are successful, then
-        we can make use of clap argument parsing.
-    - Alternative Solutions:
-        - Since you cannot alias functions in `powershell`,
-            shortpaths could provide `mv` and/or `rm` commands that implement similar bare minimum
-            functionality that wrap the native platform commands instead of providing an update hook.
-            These would be like: `sp mv`, `sp rm`.
-    - The hooks would make use of `FindKeyIndexMapExt` to get the value from the key provided.
-        **NOTE** Be sure to attempt it with the path itself, and the path expanded (if its an alias).
 
 - Detailed manpage file for Linux users.
 
-- Consider `tracing` crate.
+## Consider
+
+For the shell hooks, consider:
+
+- Should the majority of the logic moved into into the shortpaths binary instead,
+    of in the shell scripts themselves?
+    - Doing so may provide better cross platform functionality and/or performance.
+    - If done, all clap arg parsing must be disabled and handled manually.
+- Shortpaths could alternatively provide `mv` and/or `rm` commands that wrap
+    native platform commands instead of providing an update hook.
+    Examples: `sp mv`, `sp rm`.
+
+- Consider using the `tracing` crate for logging.

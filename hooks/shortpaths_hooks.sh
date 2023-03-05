@@ -1,10 +1,6 @@
 #!/bin/bash
 
-# Thoughts:
-# Should all the arg parsing logic be moved into into the shortpaths binary instead?
-# - If so, all clap argument formatting/parsing must be disabled and handled manually.
-
-# Find and update any entry in the shortpaths config that contains "$src"
+# Find and update any entry in the shortpaths config containing "$src"
 mv() {
     src_was_set=0
     dest_was_set=0
@@ -37,13 +33,11 @@ mv() {
     done
 }
 
-# Find and remove any entry in the shortpaths config that contains "$src"
+# Find and remove any entry in the shortpaths config containing the filepath
 rm() {
     removed=()
     for var in $@; do
-        # Set dest
         if [[ (! "$var" =~ "^-") && (! -z "$var") ]]; then
-            src="$var"
             removed += "$var"
         fi
     done
