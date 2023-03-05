@@ -14,7 +14,7 @@ use shortpath::shortpaths::{
 use std::path::PathBuf;
 use std::process::exit;
 
-use log::info;
+use log::{info, debug};
 use clap::Parser;
 
 fn main() {
@@ -95,37 +95,29 @@ fn main() {
                     }
                 }
                 Some(Hooks::Move { src, dest }) => {
-                    println!("Given: {}", src.display());
-                    println!("Given: {}", dest.display());
-                    // Use the fully qualified paths
+                    debug!("Given: {}", src.display());
+                    debug!("Given: {}", dest.display());
+                    // Get the fully qualified file paths
                     let src = src.canonicalize().unwrap();
-                    println!("{}", src.display());
+                    debug!("{}", src.display());
 
                     let mut new_dest = src.clone();
                     new_dest.pop();
                     new_dest.push(dest);
                     let dest = new_dest;
-                    //let dest = dest.canonicalize().unwrap();
-                    println!("{}", dest.display());
+                    debug!("{}", dest.display());
 
+                    // Check if the path exists in the shortpaths config
+                    // Requires the folded variant of the full_path
                     let spclone = shortpaths.clone(); 
-                    // Expand all the shortpaths
-                    //let p = fold_shortpath(PathBuf::from(src), &shortpaths);
                     let folded = fold_shortpath(src, &shortpaths);
                     let folded = folded.to_str().unwrap();
-                    println!("folded: {}", folded);
-                    //let folded = {
-                        //let p = fold_shortpath(PathBuf::from(src), &shortpaths);
-                        //p.to_str().unwrap().to_owned()
-                    //};
-                    //let folded = {
-                        //p.to_str().unwrap()
-                    //};
+                    debug!("folded: {}", folded);
+
+                    // Update the shortpath definition
                     let key = spclone.find_key_for_value(folded);
-                    println!("key: {:?}", key);
+                    debug!("key: {:?}", key);
                     if let Some(key) = key {
-                        //update_shortpath(&mut shortpaths, key, Some(key.to_owned()), Some(PathBuf::from(dest)));
-                        //update_shortpath(&mut shortpaths, key, Some(key.to_owned()), Some(dest));
                         let folded = fold_shortpath(dest.clone(), &shortpaths);
                         update_shortpath_path(key, folded, Some(dest), &mut shortpaths);
                         paths.shortpaths = shortpaths;
@@ -138,4 +130,5 @@ fn main() {
     }
     paths.shortpaths.sort_paths_inplace();
     to_disk(paths);
+    exit(0);
 }

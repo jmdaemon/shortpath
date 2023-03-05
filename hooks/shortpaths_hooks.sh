@@ -11,37 +11,28 @@ mv() {
     src=""
     dest=""
 
-    echo $@
     for var in $@; do
-        echo $var
-        # Set dest
-        # If the variable 
+        # Get the valid src path
         if [[ (! "$var" =~ "^-") && (! -z "$var") && (src_was_set -eq 0) ]]; then
             src_was_set=1
             src="$var"
             unset var
-            echo "Setting src: $src"
-            #shift
-            #shift
         fi
 
-        # Set source
+        # Get the valid dest path
         if [[ (! "$var" =~ "^-") && (! -z "$var") && (dest_was_set -eq 0) ]]; then
             dest_was_set=1
             dest="$var"
-            #shift
             unset var
-            echo "Setting dest: $dest"
         fi
 
-        # Do the move
-        #if [[ (src_was_set == 1) && (dest_was_set == 1) ]]; then
+        # Move the files
         if [[ (src_was_set -eq 1) && (dest_was_set -eq 1) ]]; then
             shortpath -v hook move "$src" "$dest"
-            #echo "shortpaths -v hook move \"$src\" \"$dest\""
-
-            # Pass all the arguments
-            /usr/bin/mv "$src" "$dest"
+            # Move the files only if the shortpath hook passed
+            if [[ $? -eq 0 ]]; then
+                /usr/bin/mv "$src" "$dest"
+            fi
         fi
     done
 }
