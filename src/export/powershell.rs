@@ -1,35 +1,24 @@
 use crate::{
     consts::{PROGRAM_NAME, ORGANIZATION, APPLICATION, QUALIFIER},
-    export::Export,
-    shortpaths::{SP, sort_shortpaths, substitute_env_paths}, env::EnvVars,
+    export::{Export, ShellExporter},
+    shortpaths::{SP, sort_shortpaths},
+    env::EnvVars,
 };
 
-use std::{
-    path::{Path, PathBuf},
-    fs::{write, set_permissions},
-    os::unix::prelude::PermissionsExt,
-};
+use std::path::Path;
 
 use directories::ProjectDirs;
-use log::{trace, info};
 use const_format::formatcp;
+
+use super::gen_completions;
 
 // Constant Strings
 pub const POWERSHELL_DEFAULT: &str  = formatcp!("completions/{PROGRAM_NAME}.ps1");
 
+#[derive(Default)]
 pub struct PowershellExporter {
     shortpaths: Option<SP>,
     env_vars: Option<EnvVars>,
-}
-
-pub fn fmt_powershell_alias(name: &str, path: &Path) -> String {
-    format!("$Env:{} = \"{}\"\n", name, path.display())
-}
-
-impl Default for PowershellExporter {
-    fn default() -> Self {
-        PowershellExporter::new(None, None)
-    }
 }
 
 impl PowershellExporter {
@@ -38,40 +27,30 @@ impl PowershellExporter {
     }
 }
 
-impl Export for PowershellExporter {
-    fn get_completions_path(&self) -> String { POWERSHELL_DEFAULT.to_owned() }
+impl ShellExporter for PowershellExporter {
     fn get_completions_sys_path(&self) -> String { self.get_completions_user_path() }
     fn get_completions_user_path(&self) -> String {
         let proj_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
         let data_dir = proj_dirs.config_dir();
         format!("{}/completions/powershell/{}.ps1", data_dir.to_path_buf().to_str().unwrap(), PROGRAM_NAME)
     }
+}
 
-    fn set_completions_fileperms(&self, dest: &Path) {
-        let mut perms = dest.metadata().unwrap().permissions();
-        perms.set_mode(0o744);
-        set_permissions(dest, perms).unwrap_or_else(|_| panic!("Could not set permissions for {}", dest.display()));
+impl Export for PowershellExporter {
+    fn get_completions_path(&self) -> String { POWERSHELL_DEFAULT.to_owned() }
+
+    fn format_alias(&self, name: &str, path: &Path) -> String {
+        format!("$Env:{} = \"{}\"\n", name, path.display())
     }
 
     fn gen_completions(&self) -> String {
-        info!("gen_completions()");
-        let mut output = String::new();
-        let shortpaths = substitute_env_paths(self.shortpaths.to_owned().unwrap());
-        shortpaths
-            .iter().for_each(|(name, sp)| {
-                trace!("shortpaths: {}: {}", &name, sp.path.display());
-                trace!("shortpaths: {}: {:?}", &name, sp.full_path);
-                output += &fmt_powershell_alias(name, &sp.path);
-        });
-        trace!("output: {}", output);
-        output
-    }
-
-    fn write_completions(&self, dest: &Path) -> PathBuf {
-        let output = self.gen_completions();
-        write(dest, output).expect("Unable to write to disk");
-        self.set_completions_fileperms(dest);
-        dest.to_path_buf()
+        if let Some(shortpaths) = &self.shortpaths {
+            let init_fn = || self.init_completions();
+            let transpile_fn = |name: &str, path: &Path| self.format_alias(name, path);
+            gen_completions(shortpaths.to_owned(), init_fn, transpile_fn)
+        } else {
+            panic!("shortpaths was None in PowershellExporter");
+        }
     }
 
     fn set_shortpaths(&mut self, shortpaths: &SP) -> Box<dyn Export> {

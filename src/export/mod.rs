@@ -3,7 +3,8 @@ pub mod powershell;
 
 use std::{
     path::{PathBuf, Path},
-    fs::create_dir_all,
+    fs::{create_dir_all, write, set_permissions},
+    os::unix::prelude::PermissionsExt,
 };
 
 use crate::{
@@ -13,8 +14,45 @@ use crate::{
         bash::BashExporter,
         powershell::PowershellExporter,
     },
+    shortpaths::{SP, substitute_env_paths}
 };
-use crate::shortpaths::SP;
+
+use log::{trace, info};
+
+/** Make exported completions file rwx by the current only */
+fn set_completions_fileperms(dest: &Path) {
+    let mut perms = dest.metadata().unwrap().permissions();
+    perms.set_mode(0o744);
+    set_permissions(dest, perms).unwrap_or_else(|_| panic!("Could not set permissions for {}", dest.display()));
+}
+
+/** Write shell completions to disk */
+fn write_completions(dest: &Path, output: &str) -> PathBuf {
+    write(dest, output).expect("Unable to write to disk");
+    set_completions_fileperms(dest);
+    dest.to_path_buf()
+}
+
+fn gen_completions(shortpaths: SP, init_fn: impl Fn() -> String, transpile_fn: impl Fn(&str, &Path) -> String) -> String {
+    info!("gen_completions()");
+    let mut output = init_fn();
+    let shortpaths = substitute_env_paths(shortpaths);
+    shortpaths
+        .iter().for_each(|(name, sp)| {
+            trace!("shortpaths: {}: {}", &name, sp.path.display());
+            trace!("shortpaths: {}: {:?}", &name, sp.full_path);
+            output += &transpile_fn(name, &sp.path);
+    });
+    trace!("output: {}", output);
+    output
+}
+
+pub trait ShellExporter {
+    /** Get the user shell completions file path */
+    fn get_completions_user_path(&self) -> String;
+    /** Get the system shell completions file path */
+    fn get_completions_sys_path(&self) -> String;
+}
 
 /** 
   * Export to multiple applications with a single unified interface
@@ -35,6 +73,9 @@ use crate::shortpaths::SP;
   *     User     :
   */
 pub trait Export {
+    /** Get the default local platform independent shell completions path */
+    fn get_completions_path(&self) -> String;
+
     /** Ensure the directory exists at runtime */
     fn prepare_directory(&self, output_file: Option<PathBuf>) -> PathBuf {
         let dest = match output_file {
@@ -47,28 +88,37 @@ pub trait Export {
         dest
     }
 
-    /** Get the default local platform independent shell completions path */
-    fn get_completions_path(&self) -> String;
+    fn set_completions_fileperms(&self, dest: &Path) {
+        set_completions_fileperms(dest)
+    }
 
-    /** Get the user shell completions file path */
-    fn get_completions_user_path(&self) -> String;
+    fn format_alias(&self, name: &str, path: &Path) -> String;
 
-    /** Get the system shell completions file path */
-    fn get_completions_sys_path(&self) -> String;
+    fn init_completions(&self) -> String {
+        String::new()
+    }
 
-    /** Make exported completions file read + user executable only */
-    fn set_completions_fileperms(&self, dest: &Path);
-
+    // Generate these with proc-macro later
     fn set_shortpaths(&mut self, shortpaths: &SP) -> Box<dyn Export>;
 
     fn set_env_vars(&mut self, env_vars: &EnvVars) -> Box<dyn Export>;
 
-    /** Generate shell completions */
+     /** Generate shell completions */
     fn gen_completions(&self) -> String;
 
-    /** Write shell completions to disk .
-      * If output_file is not None then the file is generated to output_file */
-    fn write_completions(&self, dest: &Path) -> PathBuf;
+    // /** Generate shell completions */
+    //fn gen_completions(&self) -> String {
+    //    if let Some(shortpaths) = self.shortpaths {
+    //        gen_completions(shortpaths, self.init_completions, self.format_alias)
+    //    } else {
+    //        panic!("Shortpaths cant be None in gen_completions");
+    //    }
+    //}
+
+    fn write_completions(&self, dest: &Path) -> PathBuf {
+        let output = self.gen_completions();
+        write_completions(dest, &output)
+    }
 }
 
 /** Returns the specific exporter */
