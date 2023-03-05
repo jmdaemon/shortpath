@@ -35,6 +35,7 @@ pub fn unique_vars(shortpaths: &SP, envpaths: &EP) -> EP {
 pub trait EnvPathOperationsExt{
     fn unique(&self, shortpaths: &SP) -> EP;
     fn non_null(self) -> EP;
+    fn strict(self) -> EP;
 }
 
 impl EnvPathOperationsExt for EP {
@@ -45,6 +46,18 @@ impl EnvPathOperationsExt for EP {
     fn non_null(self) -> EP {
         let envpaths: EP = self.into_iter().filter(|(_, envpath)| {
             !envpath.is_empty()
+        }).collect();
+        envpaths
+    }
+
+    fn strict(self) -> EP {
+        let envpaths: EP = self.into_iter().filter(|(envname, _)| {
+            matches!(envname.as_str(),
+            "XDG_CACHE_HOME"
+            | "XDG_CONFIG_HOME"
+            | "XDG_DATA_DIRS"
+            | "XDG_DATA_HOME"
+                )
         }).collect();
         envpaths
     }

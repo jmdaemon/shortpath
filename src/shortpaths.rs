@@ -511,7 +511,7 @@ pub fn resolve(shortpaths: &mut SP, resolve_type: ResolveType, mode: Mode, dry_r
 pub fn export_shortpaths(shortpaths: &SP, export_type: ExportType, output_file: Option<PathBuf>) -> PathBuf {
     // Sets environment variables
     let mut evars = EnvVars::new();
-    let vars = evars.vars.non_null().unique(shortpaths);
+    let vars = evars.vars.non_null().unique(shortpaths).strict();
     evars.vars = vars;
 
     let exp = get_exporter(export_type);

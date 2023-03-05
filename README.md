@@ -99,15 +99,11 @@ shortpaths export powershell
 
 ## Issues
 
+- Environment variables will expand awkwardly when not used in strict mode.
+    In order to make environment variables less strict, there needs to be
+    better filtering. However the current implementation is alright for now.
+
 ### API
-
-#### Environment Variables
-
-Environment variables are not as supported and are somewhat buggy.
-
-- Allowing any arbitrary envvar to be used in folding shortpaths is insecure.
-    This should be modified to allow only specific customizable env vars such as
-    `$profile`, the `XDG` variables, etc.
 
 #### Folding
 - Eliminate as many duplicate and overlapping paths as possible.

@@ -1,11 +1,13 @@
+use crate::{
+    shortpaths::{SP, Shortpath, expand_shortpath},
+    config::Config,
+    helpers::{expand_tilde, find_longest_keyname, tab_align, sort_shortpaths},
+    env::EnvVars,
+};
+
 use std::path::PathBuf;
 
 use serde::{Serialize, Deserialize};
-use crate::{
-    shortpaths::{SP, Shortpath, expand_shortpath, parse_env_alias, substitute_env_path},
-    config::Config,
-    helpers::{expand_tilde, find_longest_keyname, tab_align, sort_shortpaths, getenv}, env::{EnvVars, env_vars}
-};
 use log::{trace, info, debug};
 
 #[derive(Serialize, Deserialize, Default, Debug)]
@@ -74,8 +76,6 @@ impl ShortpathsAlignExt for Shortpaths {
                     debug!("envname: {}", envname);
                     debug!("envpath: {}", envpath);
                     if !envpath.is_empty() && path.contains(envpath) {
-                        //let this = format!("${{env:{}}}", envpath);
-                        //let with = envname;
                         let this = envpath;
                         let with = format!("${{env:{}}}", envname);
                         path = path.replace(this, &with);
