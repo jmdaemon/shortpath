@@ -9,11 +9,7 @@ use std::{
 
 use crate::{
     app::ExportType,
-    env::EnvVars,
-    export::{
-        bash::BashExporter,
-        powershell::PowershellExporter,
-    },
+    export::{bash::BashExporter, powershell::PowershellExporter},
     shortpaths::{SP, substitute_env_paths}
 };
 
@@ -98,25 +94,15 @@ pub trait Export {
         String::new()
     }
 
-    // Generate these with proc-macro later
-    fn set_shortpaths(&mut self, shortpaths: &SP) -> Box<dyn Export>;
+    /** Generate shell completions */
+    fn gen_completions(&self, shortpaths: SP) -> String {
+        let init_fn = || self.init_completions();
+        let transpile_fn = |name: &str, path: &Path| self.format_alias(name, path);
+        gen_completions(shortpaths, init_fn, transpile_fn)
+    }
 
-    fn set_env_vars(&mut self, env_vars: &EnvVars) -> Box<dyn Export>;
-
-     /** Generate shell completions */
-    fn gen_completions(&self) -> String;
-
-    // /** Generate shell completions */
-    //fn gen_completions(&self) -> String {
-    //    if let Some(shortpaths) = self.shortpaths {
-    //        gen_completions(shortpaths, self.init_completions, self.format_alias)
-    //    } else {
-    //        panic!("Shortpaths cant be None in gen_completions");
-    //    }
-    //}
-
-    fn write_completions(&self, dest: &Path) -> PathBuf {
-        let output = self.gen_completions();
+    fn write_completions(&self, dest: &Path, shortpaths: SP) -> PathBuf {
+        let output = self.gen_completions(shortpaths);
         write_completions(dest, &output)
     }
 }

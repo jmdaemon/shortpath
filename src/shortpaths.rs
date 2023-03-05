@@ -514,11 +514,10 @@ pub fn export_shortpaths(shortpaths: &SP, export_type: ExportType, output_file: 
     let vars = evars.vars.non_null().unique(shortpaths);
     evars.vars = vars;
 
-    let exp = get_exporter(export_type)
-        .set_shortpaths(shortpaths)
-        .set_env_vars(&evars);
+    let exp = get_exporter(export_type);
+
     let dest = exp.prepare_directory(output_file);
-    exp.write_completions(&dest)
+    exp.write_completions(&dest, shortpaths.to_owned())
 }
 
 /** Update a single shortpath's alias name or path
