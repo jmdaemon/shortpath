@@ -172,7 +172,7 @@ pub enum Hooks {
     #[command(about = "Shell hook to remove a shortpath")]
     Remove {
         #[arg(help = "Remove one or more specific shortpaths")]
-        names: Option<Vec<String>>,
+        filepaths: Option<Vec<PathBuf>>,
     },
 
     #[command(about = "Shell hook to update a shortpath")]

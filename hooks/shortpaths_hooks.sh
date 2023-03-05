@@ -39,20 +39,20 @@ mv() {
 
 # Find and remove any entry in the shortpaths config that contains "$src"
 rm() {
-    src_was_set=0
-
-    for var in "$@"; do
+    removed=()
+    for var in $@; do
         # Set dest
-        if [[ "$var" == -* && (src_was_set == 0) ]]; then
+        if [[ (! "$var" =~ "^-") && (! -z "$var") ]]; then
             src="$var"
-            src_was_set=1
-        fi
-
-        if [[ (src_was_set == 1) && (dest_was_set == 1) ]]; then
-            shortpaths hook remove "$src"
-
-            # Pass all the arguments
-            /usr/bin/rm $@
+            removed += "$var"
         fi
     done
+
+    if [[ ! -z $removed ]]; then
+        shortpath hook remove ${removed[@]}
+        # Move the files only if the shortpath hook passed
+        if [[ $? -eq 0 ]]; then
+            /usr/bin/rm $@
+        fi
+    fi
 }

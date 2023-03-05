@@ -73,22 +73,50 @@ fn main() {
             // NOTE: These will fail since the find_key_for_value function does
             // not take into account that the full_path doesn't always == path
             match hook {
-                Some(Hooks::Remove { names }) => {
-                    if names.is_none() {
+                Some(Hooks::Remove { filepaths }) => {
+                    // Exit if nothing was passed
+                    if filepaths.is_none() {
                         exit(1);
                     }
-                    info!("{:?}", names);
+                    println!("Given: {:?}", filepaths);
 
-                    let names: Vec<String> = names.unwrap().into_iter().filter(|p| {
-                        shortpaths.find_key_for_value(p).is_none()
-                    })
-                    .map(|p| String::from(fold_shortpath(PathBuf::from(p), &shortpaths).to_str().unwrap()))
-                    .collect();
-                    info!("{:?}", names);
+                    // Get the fully qualified file paths for the inputs
+                    let filepaths = filepaths.unwrap();
+                    let filepaths: Vec<PathBuf> = filepaths.into_iter().map(|path| {
+                        path.canonicalize().unwrap()
+                    }).collect();
+                    println!("Canonicalized Paths: {:?}", filepaths);
 
+                    // Filter only shortpath definitions
+                    let filepaths: Vec<PathBuf> = filepaths.into_iter().filter(|path| {
+                        let path = path.to_str().unwrap();
+                        shortpaths.find_key_for_value(path).is_none()
+                    }).collect();
+                    println!("Filtered Shortpaths: {:?}", filepaths);
+
+                    // Fold the resulting shortpaths
+                    let filepaths: Vec<String> = filepaths.into_iter().map(|p| {
+                        let folded = fold_shortpath(p, &shortpaths);
+                        let folded = folded.to_str().unwrap();
+                        String::from(folded)
+                    }).collect();
+                    println!("Folded Shortpaths: {:?}", filepaths);
+
+                    // Remove shortpath definitions
+                    let names: Vec<String> = filepaths.into_iter().filter_map(|path| {
+                        let key = shortpaths.find_key_for_value(path);
+                        println!("{:?}", key);
+                        if let Some(key) = key {
+                            return Some(key.to_owned())
+                        }
+                        None
+                    }).collect();
+                    println!("Key Names of Shortpaths: {:?}", names);
                     let removed = remove_shortpath(&mut shortpaths, names.as_slice(), true);
                     paths.shortpaths = shortpaths;
-                    info!("{:?}", removed);
+                    println!("{:?}", removed);
+
+                    // Display results to user
                     for (name, sp) in names.iter().zip(removed.into_iter()) {
                         let sp = sp.unwrap();
                         println!("Removed {}: {}", name, sp.path.display());

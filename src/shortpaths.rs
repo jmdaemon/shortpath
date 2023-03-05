@@ -340,7 +340,7 @@ pub fn expand_shortpath(sp: &Shortpath, shortpaths: &SP) -> PathBuf {
 
 // Commands
 pub fn add_shortpath(shortpaths: &mut SP, name: String, path: PathBuf) {
-    let shortpath = Shortpath::new(path, None);
+    let shortpath = Shortpath::new(path.clone(), Some(path));
     shortpaths.insert(name, shortpath);
 }
 
@@ -558,7 +558,7 @@ pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<St
     let entry_exists = || { shortpaths.get(current_name).is_some() }; 
     match (entry_exists(), name, path) {
         (true, Some(new_name), _) => { update_shortpath_name(current_name, new_name, shortpaths); }
-        (true, _, Some(new_path)) => { update_shortpath_path(current_name, new_path, None, shortpaths); }
+        (true, _, Some(new_path)) => { update_shortpath_path(current_name, new_path.clone(), Some(new_path), shortpaths); }
         (_, _, _)              => { println!("Nothing to do");}
     }
 }
