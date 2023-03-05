@@ -93,6 +93,9 @@ pub trait FindKeyIndexMapExt<'a, K, V> {
 
     /// Get key from value of IndexMap
     fn find_key_for_value(&'a self, value: V) -> Option<&'a K>;
+
+/// Get key from value of IndexMap
+    fn find_key_for_full_path(&'a self, value: V) -> Option<&'a K>;
 }
 
 impl<'a, V> FindKeyIndexMapExt<'a, String, V> for IndexMap<String, Shortpath>
@@ -109,6 +112,11 @@ where
     fn find_key_for_value(&'a self, value: V) -> Option<&'a String> {
         let v = value.into();
         self.iter().find_map(|(key, val)| if val.path.to_str().unwrap() == v { Some(key) } else { None })
+    }
+
+    fn find_key_for_full_path(&'a self, value: V) -> Option<&'a String> {
+        let v = value.into();
+        self.iter().find_map(|(key, val)| if val.full_path.as_ref()?.to_str().unwrap() == v { Some(key) } else { None })
     }
 }
 
@@ -212,6 +220,20 @@ pub fn get_sp_deps(alias_name: String, shortpaths: &SP) -> (String, String) {
     let depend_path = sp_depend_path.path.to_str().unwrap().to_string();
     debug!("depend_path = {}", &depend_path);
     (sp_depend_name, depend_path)
+}
+
+pub fn fold_shortpath(mut path: PathBuf, shortpaths: &SP) -> PathBuf {
+    info!("fold_shortpath()");
+    let mut output = path.to_str().unwrap().to_owned();
+    while let Some(parent) = path.parent() {
+        if let Some(key) = shortpaths.find_key_for_full_path(parent.to_str().unwrap()) {
+            let this = parent.to_str().unwrap();
+            let with = format!("${}", key);
+            output = output.replace(this, &with);
+        }
+        path = parent.to_owned();
+    }
+    PathBuf::from(output)
 }
 
 /**
@@ -520,23 +542,23 @@ pub fn export_shortpaths(shortpaths: &SP, export_type: ExportType, output_file: 
     exp.write_completions(&dest, shortpaths.to_owned())
 }
 
+pub fn update_shortpath_name(current_name: &str, new_name: String, shortpaths: &mut SP) {
+    let path = shortpaths.remove(current_name).unwrap();
+    shortpaths.insert(new_name, path);
+}
+
+pub fn update_shortpath_path(current_name: &str, new_path: PathBuf, full_path: Option<PathBuf>, shortpaths: &mut SP) {
+    let shortpath = Shortpath::new(new_path, full_path);
+    shortpaths.insert(current_name.to_owned(), shortpath);
+}
+
 /** Update a single shortpath's alias name or path
   * Changes the name or path if given and are unique */
 pub fn update_shortpath(shortpaths: &mut SP, current_name: &str, name: Option<String>, path: Option<PathBuf>) {
     let entry_exists = || { shortpaths.get(current_name).is_some() }; 
-
-    let update_path = |new_path: PathBuf, shortpaths: &mut SP| {
-        let shortpath = Shortpath::new(new_path, None);
-        shortpaths.insert(current_name.to_owned(), shortpath);
-    };
-    let update_name = |new_name: String, shortpaths: &mut SP| {
-        let path = shortpaths.remove(current_name).unwrap();
-        shortpaths.insert(new_name, path);
-    };
-
     match (entry_exists(), name, path) {
-        (true, Some(new_name), _) => { update_name(new_name, shortpaths); }
-        (true, _, Some(new_path)) => { update_path(new_path, shortpaths); }
+        (true, Some(new_name), _) => { update_shortpath_name(current_name, new_name, shortpaths); }
+        (true, _, Some(new_path)) => { update_shortpath_path(current_name, new_path, None, shortpaths); }
         (_, _, _)              => { println!("Nothing to do");}
     }
 }

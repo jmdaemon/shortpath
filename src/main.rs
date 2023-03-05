@@ -8,7 +8,7 @@ use shortpath::shortpaths::{
     resolve,
     export_shortpaths,
     update_shortpath,
-    show_shortpaths, FindKeyIndexMapExt,
+    show_shortpaths, FindKeyIndexMapExt, fold_shortpath, update_shortpath_path,
 };
 
 use std::path::PathBuf;
@@ -69,31 +69,65 @@ fn main() {
             update_shortpath(&mut shortpaths, &current_name, name, path);
             paths.shortpaths = shortpaths;
         }
-        Some(Commands::Hook { hook_type }) => {
+        Some(Commands::Hook { hook }) => {
             // NOTE: These will fail since the find_key_for_value function does
             // not take into account that the full_path doesn't always == path
-            match hook_type {
+            match hook {
                 Some(Hooks::Remove { names }) => {
                     if names.is_none() {
                         exit(1);
                     }
+                    info!("{:?}", names);
 
                     let names: Vec<String> = names.unwrap().into_iter().filter(|p| {
                         shortpaths.find_key_for_value(p).is_none()
-                    }).collect();
+                    })
+                    .map(|p| String::from(fold_shortpath(PathBuf::from(p), &shortpaths).to_str().unwrap()))
+                    .collect();
+                    info!("{:?}", names);
 
                     let removed = remove_shortpath(&mut shortpaths, names.as_slice(), true);
                     paths.shortpaths = shortpaths;
+                    info!("{:?}", removed);
                     for (name, sp) in names.iter().zip(removed.into_iter()) {
                         let sp = sp.unwrap();
                         println!("Removed {}: {}", name, sp.path.display());
                     }
                 }
                 Some(Hooks::Move { src, dest }) => {
+                    println!("Given: {}", src.display());
+                    println!("Given: {}", dest.display());
+                    // Use the fully qualified paths
+                    let src = src.canonicalize().unwrap();
+                    println!("{}", src.display());
+
+                    let mut new_dest = src.clone();
+                    new_dest.pop();
+                    new_dest.push(dest);
+                    let dest = new_dest;
+                    //let dest = dest.canonicalize().unwrap();
+                    println!("{}", dest.display());
+
                     let spclone = shortpaths.clone(); 
-                    let key = spclone.find_key_for_value(src);
+                    // Expand all the shortpaths
+                    //let p = fold_shortpath(PathBuf::from(src), &shortpaths);
+                    let folded = fold_shortpath(src, &shortpaths);
+                    let folded = folded.to_str().unwrap();
+                    println!("folded: {}", folded);
+                    //let folded = {
+                        //let p = fold_shortpath(PathBuf::from(src), &shortpaths);
+                        //p.to_str().unwrap().to_owned()
+                    //};
+                    //let folded = {
+                        //p.to_str().unwrap()
+                    //};
+                    let key = spclone.find_key_for_value(folded);
+                    println!("key: {:?}", key);
                     if let Some(key) = key {
-                        update_shortpath(&mut shortpaths, key, Some(key.to_owned()), Some(PathBuf::from(dest)));
+                        //update_shortpath(&mut shortpaths, key, Some(key.to_owned()), Some(PathBuf::from(dest)));
+                        //update_shortpath(&mut shortpaths, key, Some(key.to_owned()), Some(dest));
+                        let folded = fold_shortpath(dest.clone(), &shortpaths);
+                        update_shortpath_path(key, folded, Some(dest), &mut shortpaths);
                         paths.shortpaths = shortpaths;
                     }
                 }

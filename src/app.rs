@@ -163,7 +163,7 @@ pub enum Commands {
     #[command(about = "Hooks for running shortpath automatically")]
     Hook {
         #[command(subcommand)]
-        hook_type: Option<Hooks>,
+        hook: Option<Hooks>,
     },
 }
 
@@ -177,8 +177,8 @@ pub enum Hooks {
 
     #[command(about = "Shell hook to update a shortpath")]
     Move {
-        src: String,
-        dest: String,
+        src: PathBuf,
+        dest: PathBuf,
     },
 }
 

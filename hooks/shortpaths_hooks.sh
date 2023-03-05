@@ -8,26 +8,40 @@
 mv() {
     src_was_set=0
     dest_was_set=0
+    src=""
+    dest=""
 
-    for var in "$@" do
+    echo $@
+    for var in $@; do
+        echo $var
         # Set dest
-        if [[ "$var" == -* && (src_was_set == 0) ]]; then
-            src="$var"
+        # If the variable 
+        if [[ (! "$var" =~ "^-") && (! -z "$var") && (src_was_set -eq 0) ]]; then
             src_was_set=1
+            src="$var"
+            unset var
+            echo "Setting src: $src"
+            #shift
+            #shift
         fi
 
         # Set source
-        if [[ "$dest" == -* && (dest_was_set == 0) ]]; then
-            dest="$var"
+        if [[ (! "$var" =~ "^-") && (! -z "$var") && (dest_was_set -eq 0) ]]; then
             dest_was_set=1
+            dest="$var"
+            #shift
+            unset var
+            echo "Setting dest: $dest"
         fi
 
         # Do the move
-        if [[ (src_was_set == 1) && (dest_was_set == 1) ]]; then
-            shortpaths move_hook "$src" "$dest"
+        #if [[ (src_was_set == 1) && (dest_was_set == 1) ]]; then
+        if [[ (src_was_set -eq 1) && (dest_was_set -eq 1) ]]; then
+            shortpath -v hook move "$src" "$dest"
+            #echo "shortpaths -v hook move \"$src\" \"$dest\""
 
             # Pass all the arguments
-            /usr/bin/mv $@
+            /usr/bin/mv "$src" "$dest"
         fi
     done
 }
@@ -36,7 +50,7 @@ mv() {
 rm() {
     src_was_set=0
 
-    for var in "$@" do
+    for var in "$@"; do
         # Set dest
         if [[ "$var" == -* && (src_was_set == 0) ]]; then
             src="$var"
@@ -44,7 +58,7 @@ rm() {
         fi
 
         if [[ (src_was_set == 1) && (dest_was_set == 1) ]]; then
-            shortpaths remove_hook "$src"
+            shortpaths hook remove "$src"
 
             # Pass all the arguments
             /usr/bin/rm $@
