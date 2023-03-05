@@ -105,9 +105,6 @@ shortpaths export powershell
 
 Environment variables are not as supported and are somewhat buggy.
 
-- If an environment variable exists, with the shortpath variable containing the name of
-    the shortpath of the same name, the envvar will replace the substring with itself
-    thus breaking the path.
 - Allowing any arbitrary envvar to be used in folding shortpaths is insecure.
     This should be modified to allow only specific customizable env vars such as
     `$profile`, the `XDG` variables, etc.

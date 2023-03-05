@@ -70,14 +70,16 @@ impl ShortpathsAlignExt for Shortpaths {
         let shortpaths: SP = self.shortpaths.into_iter().map(|(name, mut sp)| {
             let mut path = sp.path.to_str().unwrap().to_owned();
             evars.vars.iter().for_each(|(envname, envpath)| {
-                debug!("envname: {}", envname);
-                debug!("envpath: {}", envpath);
-                if !envpath.is_empty() && path.contains(envpath) {
-                    //let this = format!("${{env:{}}}", envpath);
-                    //let with = envname;
-                    let this = envpath;
-                    let with = format!("${{env:{}}}", envname);
-                    path = path.replace(this, &with);
+                if envname != &name {
+                    debug!("envname: {}", envname);
+                    debug!("envpath: {}", envpath);
+                    if !envpath.is_empty() && path.contains(envpath) {
+                        //let this = format!("${{env:{}}}", envpath);
+                        //let with = envname;
+                        let this = envpath;
+                        let with = format!("${{env:{}}}", envname);
+                        path = path.replace(this, &with);
+                    }
                 }
             });
             sp.path = PathBuf::from(path);
