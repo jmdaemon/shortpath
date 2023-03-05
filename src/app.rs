@@ -159,7 +159,29 @@ pub enum Commands {
         #[arg(short, long, help = "New shortpath path")]
         path: Option<PathBuf>,
     },
+
+    #[command(about = "Hooks for running shortpath automatically")]
+    Hook {
+        #[command(subcommand)]
+        hook_type: Option<Hooks>,
+    },
 }
+
+#[derive(Subcommand)]
+pub enum Hooks {
+    #[command(about = "Shell hook to remove a shortpath")]
+    Remove {
+        #[arg(help = "Remove one or more specific shortpaths")]
+        names: Option<Vec<String>>,
+    },
+
+    #[command(about = "Shell hook to update a shortpath")]
+    Move {
+        src: String,
+        dest: String,
+    },
+}
+
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum ExportType {
@@ -176,4 +198,10 @@ pub enum Mode {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum ResolveType {
     Matching
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+pub enum HookType {
+    Move,
+    Remove,
 }

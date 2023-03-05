@@ -1,4 +1,4 @@
-use shortpath::app::{create_logger, CLI, Commands};
+use shortpath::app::{create_logger, CLI, Commands, Hooks};
 use shortpath::builder::{ShortpathsBuilder, ShortpathOperationsExt, to_disk};
 use shortpath::consts::CONFIG_FILE_PATH;
 use shortpath::shortpaths::{
@@ -8,9 +8,10 @@ use shortpath::shortpaths::{
     resolve,
     export_shortpaths,
     update_shortpath,
-    show_shortpaths,
+    show_shortpaths, FindKeyIndexMapExt,
 };
 
+use std::path::PathBuf;
 use std::process::exit;
 
 use log::info;
@@ -67,6 +68,37 @@ fn main() {
             }
             update_shortpath(&mut shortpaths, &current_name, name, path);
             paths.shortpaths = shortpaths;
+        }
+        Some(Commands::Hook { hook_type }) => {
+            // NOTE: These will fail since the find_key_for_value function does
+            // not take into account that the full_path doesn't always == path
+            match hook_type {
+                Some(Hooks::Remove { names }) => {
+                    if names.is_none() {
+                        exit(1);
+                    }
+
+                    let names: Vec<String> = names.unwrap().into_iter().filter(|p| {
+                        shortpaths.find_key_for_value(p).is_none()
+                    }).collect();
+
+                    let removed = remove_shortpath(&mut shortpaths, names.as_slice(), true);
+                    paths.shortpaths = shortpaths;
+                    for (name, sp) in names.iter().zip(removed.into_iter()) {
+                        let sp = sp.unwrap();
+                        println!("Removed {}: {}", name, sp.path.display());
+                    }
+                }
+                Some(Hooks::Move { src, dest }) => {
+                    let spclone = shortpaths.clone(); 
+                    let key = spclone.find_key_for_value(src);
+                    if let Some(key) = key {
+                        update_shortpath(&mut shortpaths, key, Some(key.to_owned()), Some(PathBuf::from(dest)));
+                        paths.shortpaths = shortpaths;
+                    }
+                }
+                _ => {}
+            }
         }
         _ => {}
     }
