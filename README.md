@@ -130,19 +130,12 @@ Environment variables are not as supported and are somewhat buggy.
     - Shortpath aliases have higher priority than environment variables
     - All shortpath aliases are folded exhaustively
 
-- Shortpaths config isn't sanitized before it is used.
+- Shortpaths config isn't sanitized before it is used in `expand_shortpath` and `fold_shortpath`.
     - The config file strings aren't checked for correctness before they are used,
         thereby allowing for more undefined behavior at runtime.
-
-- `expand_shortpath`, `fold_shortpath` are not fallible, which means
-    that if there's a bad shortpath, then various bugs *could* occur.
-    This isn't so bad but it would be nice to have more readable errors,
-    in case it was either able not to read the path, or if the path was
-    not valid.
-    - 
 - Leverage rustdoc to document library, and provide examples in `examples`
 - Create `powershell` exporter.
-- Write more unit tests, preferably after the builder api is finished.
+- Write more unit tests.
 
 Things that are nice to have but are not necessary:
 
@@ -181,10 +174,5 @@ The binary is still missing one key feature, namely the update and remove hooks:
         **NOTE** Be sure to attempt it with the path itself, and the path expanded (if its an alias).
 
 - Detailed manpage file for Linux users.
-
-## TODO
-
-- Profile/benchmark shortpaths
-    - Benches crate?
 
 - Consider `tracing` crate.
