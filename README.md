@@ -106,16 +106,40 @@ shortpaths export powershell
 
 ### API
 
+#### Environment Variables
+
+Environment variables are not as supported and are somewhat buggy.
+
+- If an environment variable exists, with the shortpath variable containing the name of
+    the shortpath of the same name, the envvar will replace the substring with itself
+    thus breaking the path.
+- Allowing any arbitrary envvar to be used in folding shortpaths is insecure.
+    This should be modified to allow only specific customizable env vars such as
+    `$profile`, the `XDG` variables, etc.
+
+#### Folding
+
+- In `resolve_shortpath` the newly updated shortpath won't be folded after being updated.
+- The shortpaths file isn't sorted after running add/remove/update commands.
+
 - Eliminate as many duplicate and overlapping paths as possible.
     One big issue currently is that if there are many shortpaths with overlapping paths,
     there will be more breakages than if they relied on their respective GCD paths.
-- Note: There's a small bug in `resolve_shortpath` where the newly updated shortpath
-    won't be folded after being updated.
+
+- There needs to be a way to exhaustively determine shortest paths given the current aliases such that:
+    - Shortpath aliases have higher priority than environment variables
+    - All shortpath aliases are folded exhaustively
+
+- Shortpaths config isn't sanitized before it is used.
+    - The config file strings aren't checked for correctness before they are used,
+        thereby allowing for more undefined behavior at runtime.
+
 - `expand_shortpath`, `fold_shortpath` are not fallible, which means
     that if there's a bad shortpath, then various bugs *could* occur.
     This isn't so bad but it would be nice to have more readable errors,
     in case it was either able not to read the path, or if the path was
     not valid.
+    - 
 - Leverage rustdoc to document library, and provide examples in `examples`
 - Create `powershell` exporter.
 - Write more unit tests, preferably after the builder api is finished.
