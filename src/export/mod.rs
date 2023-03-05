@@ -15,6 +15,7 @@ use crate::{
 
 use log::{trace, info};
 
+// General purpose functions
 /** Make exported completions file rwx by the current only */
 fn set_completions_fileperms(dest: &Path) {
     let mut perms = dest.metadata().unwrap().permissions();
@@ -110,8 +111,7 @@ pub trait Export {
 /** Returns the specific exporter */
 pub fn get_exporter(export_type: ExportType) -> Box<dyn Export> {
     match export_type {
-        ExportType::Bash => Box::new(BashExporter::default()),
-        ExportType::Powershell => Box::new(PowershellExporter::default()),
-        _ => Box::new(BashExporter::default()),
+        ExportType::Bash => Box::<BashExporter>::default(),
+        ExportType::Powershell => Box::<PowershellExporter>::default(),
     }
 }
