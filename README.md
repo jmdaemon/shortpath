@@ -38,6 +38,15 @@ If you would prefer to work through your paths manually then `shortpaths` has yo
 
 See [here](#usage) for more information on managing shortpaths.
 
+### Why not use Environment Variables?
+
+Solutions that would involve the use of environment variables would be buggy,
+ad-hoc, non portable and limited only to specific use cases.
+
+By creating and using shortpaths, we can have the same functionality as
+a environment variable paths, while being portable to other platforms
+and reusable by other applications.
+
 ## Usage
 
 ```bash
@@ -100,6 +109,20 @@ shortpaths export powershell
     better filtering. However the current implementation is alright for now.
 
 ### API
+
+Currently, folding and expanding shortpaths is messy and ad-hoc, and filled with many side-effects.
+The API should be refactored to have a unified and logical method for folding and expanding shortpaths.
+The API must
+
+- Expand/Fold a single shortpaths
+- Expand/Fold multiple shortpaths
+- Expand/Fold nested shortpath aliases
+- Expand/Fold nested shortpath environment variables (strictly)
+
+As a library, there needs to be a way to manage multiple shortpath configs.
+Applications that make use of the library will need to create their own shortpath configs
+and the shortpath binary needs to make use of these configurations in order to provide
+better application support.
 
 #### Folding
 - Eliminate as many duplicate and overlapping paths as possible.
