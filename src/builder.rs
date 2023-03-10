@@ -187,5 +187,5 @@ pub fn to_disk(paths: Shortpaths) {
     if let Err(e) = result {
         eprintln!("Failed to write shortpaths config to disk: {}", e);
     }
-    info!("Wrote shortpaths config to {}", cfg.file.display());
+    info!("Wrote shortpaths config to {}", cfg.path.display());
 }

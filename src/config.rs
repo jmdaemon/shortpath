@@ -17,13 +17,13 @@ use directories::ProjectDirs;
 pub struct Config {
     #[derivative(Default(value = "ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).expect(\"Could not initialize config\")"))]
     pub project_dirs: ProjectDirs,
-    pub file: PathBuf
+    pub path: PathBuf
 }
 
 impl Config {
     pub fn new(file: impl Into<String>) -> Config {
         let cfg = Config::default();
-        Config {file: cfg.format_config_path(file.into()), ..cfg}
+        Config {path: cfg.format_config_path(file.into()), ..cfg}
     }
 
     pub fn make_config_directory(&self) {
@@ -35,10 +35,10 @@ impl Config {
     }
 
     pub fn read_config(&self) -> String {
-        read_to_string(&self.file).expect("Could not read config file.")
+        read_to_string(&self.path).expect("Could not read config file.")
     }
 
     pub fn write_config(&self, conts: &str) -> std::io::Result<()> {
-        write(&self.file, conts)
+        write(&self.path, conts)
     }
 }
