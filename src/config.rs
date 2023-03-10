@@ -23,15 +23,15 @@ pub struct Config {
 impl Config {
     pub fn new(file: impl Into<String>) -> Config {
         let cfg = Config::default();
-        Config {path: cfg.format_config_path(file.into()), ..cfg}
+        Config {path: cfg.format_path(file.into()), ..cfg}
+    }
+
+    fn format_path(&self, config: impl Into<String>) -> PathBuf {
+        self.project_dirs.config_dir().to_path_buf().join(config.into())
     }
 
     pub fn make_dirs(&self) {
         create_dir_all(self.project_dirs.config_dir()).expect("Could not create config directory")
-    }
-
-    pub fn format_config_path(&self, config: impl Into<String>) -> PathBuf {
-        self.project_dirs.config_dir().to_path_buf().join(config.into())
     }
 
     pub fn read(&self) -> String {
