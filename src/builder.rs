@@ -160,7 +160,7 @@ impl ShortpathsBuilder {
     pub fn read_shortpaths(self) -> Self {
         assert!(self.cfg.is_some());
         let cfg = self.cfg.unwrap();
-        let toml_conts = cfg.read_config();
+        let toml_conts = cfg.read();
 
         let sp = toml::from_str(&toml_conts);
         assert!(sp.is_ok());
@@ -183,7 +183,7 @@ pub fn to_disk(paths: Shortpaths) {
     let paths = paths.fold_env_paths();
     let conts = paths.tab_align_paths();
     let cfg = paths.cfg.expect("Config was empty");
-    let result = cfg.write_config(&conts);
+    let result = cfg.write(&conts);
     if let Err(e) = result {
         eprintln!("Failed to write shortpaths config to disk: {}", e);
     }

@@ -26,7 +26,7 @@ impl Config {
         Config {path: cfg.format_config_path(file.into()), ..cfg}
     }
 
-    pub fn make_config_directory(&self) {
+    pub fn make_dirs(&self) {
         create_dir_all(self.project_dirs.config_dir()).expect("Could not create config directory")
     }
 
@@ -34,11 +34,11 @@ impl Config {
         self.project_dirs.config_dir().to_path_buf().join(config.into())
     }
 
-    pub fn read_config(&self) -> String {
+    pub fn read(&self) -> String {
         read_to_string(&self.path).expect("Could not read config file.")
     }
 
-    pub fn write_config(&self, conts: &str) -> std::io::Result<()> {
+    pub fn write(&self, conts: &str) -> std::io::Result<()> {
         write(&self.path, conts)
     }
 }
