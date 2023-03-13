@@ -38,7 +38,7 @@ rm() {
     removed=()
     for var in $@; do
         if [[ (! "$var" =~ "^-") && (! -z "$var") ]]; then
-            removed += "$var"
+            removed+="$var"
         fi
     done
 
