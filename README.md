@@ -149,6 +149,29 @@ Things that are nice to have but are not necessary:
 - Enable feature to expand and fold environment variables.
 - Use custom GAT iterator to simplify expand_shortpath
 
+- Create feature to detect shortpaths that don't exist on disk
+
+- Parsing of the shortpath aliases is very hacky. One solution is to upgrade to a proper Lexer Token Parser.
+    This new parser would be required to:
+    - Iterate through nested shortpaths
+    Additional, this parser could make it easier to:
+    - Detect shortpaths that don't exist
+        - In this case, shortpath could continue to the next path on erroring out.
+    - Incorporate more complex shortpath replacements
+    - Be more efficient & use less memory on the stack.
+    - Incorporate nesting limit sizes `alias_nest_limit=3` as a config option.
+    - Offer easier means of exposing & exporting the shortpaths to disk
+
+- Add custom option configurations. Some ideas for config options:
+    - `alias_nest_limit`: Set nesting limit for parsing shortpaths
+    - `strict`: Error and terminate immediately on the first invalid shortpath
+    - `allow_env_var_aliases`: Allow/disallow using environment variables in name paths
+    - `allow_env_vars []`: Allows only the specified environment variables to filter.
+
+- Decrease SLOC count. For a project of this size, it shouldn't be 1K SLOC.
+    There is a lot of duplicate code, and code that generally doesn't make sense/doesn't do what is intended.
+    Maybe after the parser upgrade this will be halved or even reduced by a higher percent?
+
 - More unit tests, more refactoring.
 
 ## Binary
@@ -165,6 +188,13 @@ For the shell hooks:
 - `shortpath refresh`: Platform specific.
     Unsets all shortpath variables for the platform (bash, powershell), sets them again, and then refreshes the current shell
     with the new definitions.
+
+- `shortpath clear [alias]`:
+    - Clears the shortpath alias for the specified shortpath alias.
+    - Prints out the cleared shortpath
+    - Cross platform and works on both Linux \& Windows
+- `shortpath clear [alias] -e`:
+    - Clears only the environment variable
 
 - Detailed manpage file for Linux users.
 
